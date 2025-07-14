@@ -38,22 +38,31 @@ DEBUG = os.environ.get("DJANGO_DEBUG", DEBUG) == "True"
 
 # Application definition
 
-INSTALLED_APPS = [
+DJANGO_APPS = [
+    # The adminlte3 theme must be before django.contrib.admin
+    'adminlte3',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'rest_framework', # For building REST APIs
-    'rest_framework_simplejwt', # For JWT authentication
-    'channels', # For WebSocket support
-    'phonenumber_field', # For phone number validation and storage
-    'users',  # Custom user app
-    'wallets.apps.WalletsConfig', # Wallet and Transaction app
-    'corsheaders', # For handling Cross-Origin Resource Sharing
-    'adminlte3',  # Add django-adminlte3
 ]
+
+THIRD_PARTY_APPS = [
+    'rest_framework',           # For building REST APIs
+    'rest_framework_simplejwt', # For JWT authentication
+    'channels',                 # For WebSocket support
+    'phonenumber_field',        # For phone number validation and storage
+    'corsheaders',              # For handling Cross-Origin Resource Sharing
+]
+
+LOCAL_APPS = [
+    'users.apps.UsersConfig',     # Custom user app
+    'wallets.apps.WalletsConfig', # Wallet and Transaction app
+]
+
+INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -225,13 +234,13 @@ LOGGING = {
 }
 
 # Custom Application Settings
-from users.models import VerificationLevels
 from decimal import Decimal
 
 # Daily transaction limits based on user's KYC verification level.
+# These integer keys correspond to the VerificationLevels enum in users/models.py
 TRANSACTION_LIMITS = {
-    VerificationLevels.LEVEL_0: Decimal('0.00'),      # Unverified users cannot transact.
-    VerificationLevels.LEVEL_1: Decimal('100.00'),     # Mobile verified users.
-    VerificationLevels.LEVEL_2: Decimal('1000.00'),    # Identity verified users.
-    VerificationLevels.LEVEL_3: Decimal('10000.00'),   # Address verified users.
+    0: Decimal('0.00'),      # Unverified (LEVEL_0)
+    1: Decimal('100.00'),    # Mobile Verified (LEVEL_1)
+    2: Decimal('1000.00'),   # Identity Verified (LEVEL_2)
+    3: Decimal('10000.00'),  # Address Verified (LEVEL_3)
 }
