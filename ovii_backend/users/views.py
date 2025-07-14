@@ -9,9 +9,15 @@ from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle
 from wallets.permissions import CanPerformTransactions
+from django.http import JsonResponse
+from django.contrib.admin.views.decorators import staff_member_required
+from django.db.models import Count
+from django.db.models.functions import TruncDay
+import datetime
 
-from .models import OviiUser, KYCDocument
-from .serializers import UserDetailSerializer, OTPRequestSerializer, OTPVerificationSerializer, SetTransactionPINSerializer, KYCDocumentSerializer, AdminUserManagementSerializer, UserProfileUpdateSerializer
+from .models import OviiUser, KYCDocument, VerificationLevels
+from .serializers import (UserDetailSerializer, OTPRequestSerializer, OTPVerificationSerializer,
+                          SetTransactionPINSerializer, KYCDocumentSerializer, AdminUserManagementSerializer, UserProfileUpdateSerializer)
 
 
 class OTPRequestView(generics.CreateAPIView):
@@ -95,3 +101,35 @@ class KYCDocumentViewSet(mixins.CreateModelMixin,
     def get_queryset(self):
         """This view should only return documents for the currently authenticated user."""
         return KYCDocument.objects.filter(user=self.request.user)
+
+
+@staff_member_required
+def dashboard_chart_data(request):
+    """
+    Provides data for the admin dashboard charts as JSON.
+    """
+    # 1. Data for Users by Verification Level (Pie Chart)
+    verification_counts = OviiUser.objects.values('verification_level').annotate(count=Count('id')).order_by('verification_level')
+    verification_data = {
+        'labels': [VerificationLevels(level['verification_level']).label for level in verification_counts],
+        'counts': [level['count'] for level in verification_counts]
+    }
+
+    # 2. Data for User Signups in the Last 30 Days (Line Chart)
+    thirty_days_ago = datetime.date.today() - datetime.timedelta(days=30)
+    signups = (
+        OviiUser.objects.filter(date_joined__gte=thirty_days_ago)
+        .annotate(day=TruncDay('date_joined'))
+        .values('day')
+        .annotate(count=Count('id'))
+        .order_by('day')
+    )
+    signup_data = {
+        'labels': [s['day'].strftime('%b %d') for s in signups],
+        'counts': [s['count'] for s in signups]
+    }
+
+    return JsonResponse({
+        'verification_data': verification_data,
+        'signup_data': signup_data,
+    })

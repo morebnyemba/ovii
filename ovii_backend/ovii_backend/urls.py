@@ -22,6 +22,8 @@ from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
 )
+from users import views as user_views
+
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -34,6 +36,10 @@ urlpatterns = [
 
 ]
 
+# Custom admin URLs
+urlpatterns.insert(0, path('admin/dashboard/chart-data/', user_views.dashboard_chart_data, name='admin_chart_data'))
+
 # Serve media files during development
 if settings.DEBUG:
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

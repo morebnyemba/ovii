@@ -1,0 +1,96 @@
+{% extends "jazzmin/index.html" %}
+
+{% block content %}
+    {# Keep the original content from the Jazzmin template #}
+    {{ block.super }}
+
+    {# Add our custom charts below the default content #}
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-pie-chart"></i> Users by Verification Level</h3>
+                </div>
+                <div class="card-body">
+                    <canvas id="verificationChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-chart-line"></i> User Signups (Last 30 Days)</h3>
+                </div>
+                <div class="card-body">
+                    <canvas id="signupsChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block jazzmin_js %}
+    {{ block.super }}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        fetch("{% url 'admin_chart_data' %}")
+            .then(response => response.json())
+            .then(data => {
+                // --- Verification Level Pie Chart ---
+                const verificationCtx = document.getElementById('verificationChart').getContext('2d');
+                new Chart(verificationCtx, {
+                    type: 'pie',
+                    data: {
+                        labels: data.verification_data.labels,
+                        datasets: [{
+                            label: 'Users',
+                            data: data.verification_data.counts,
+                            backgroundColor: [
+                                'rgba(255, 107, 107, 0.7)', // Coral Red (Unverified)
+                                'rgba(54, 162, 235, 0.7)', // Blue (Mobile)
+                                'rgba(255, 194, 71, 0.7)', // Sunrise Gold (Identity)
+                                'rgba(51, 217, 178, 0.7)',  // Electric Mint (Address)
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { position: 'top' }
+                        }
+                    }
+                });
+
+                // --- User Signups Line Chart ---
+                const signupsCtx = document.getElementById('signupsChart').getContext('2d');
+                new Chart(signupsCtx, {
+                    type: 'line',
+                    data: {
+                        labels: data.signup_data.labels,
+                        datasets: [{
+                            label: 'New Users',
+                            data: data.signup_data.counts,
+                            fill: false,
+                            borderColor: '#1A1B4B', // Indigo Foundation
+                            tension: 0.1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    stepSize: 1 // Ensure y-axis shows whole numbers for user counts
+                                }
+                            }
+                        }
+                    }
+                });
+            })
+            .catch(error => console.error('Error fetching chart data:', error));
+    });
+    </script>
+{% endblock %}

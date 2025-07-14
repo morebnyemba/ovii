@@ -3,7 +3,7 @@ from django.contrib.auth.admin import UserAdmin
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
 
-from .models import OviiUser, KYCDocument, VerificationLevels, DocumentStatus
+from .models import OviiUser, KYCDocument, OTPRequest, VerificationLevels, DocumentStatus
 from .tasks import send_realtime_notification
 
 @admin.register(OviiUser)
@@ -116,3 +116,27 @@ class OviiUserAdmin(UserAdmin):
                 upgraded_count += 1
 
         self.message_user(request, f'{upgraded_count} users were successfully upgraded to Level 3.')
+
+
+@admin.register(KYCDocument)
+class KYCDocumentAdmin(admin.ModelAdmin):
+    """Admin configuration for KYC documents."""
+    list_display = ('user', 'document_type', 'status', 'uploaded_at', 'reviewed_at')
+    list_filter = ('status', 'document_type', 'uploaded_at')
+    search_fields = ('user__phone_number', 'user__email', 'user__first_name', 'user__last_name')
+    readonly_fields = ('uploaded_at', 'reviewed_at')
+    # Use a search widget for the user field for better performance with many users.
+    raw_id_fields = ('user',)
+
+
+@admin.register(OTPRequest)
+class OTPRequestAdmin(admin.ModelAdmin):
+    """Admin configuration for OTP requests, useful for support and debugging."""
+    list_display = ('phone_number', 'code', 'created_at', 'expires_at', 'is_expired_status')
+    readonly_fields = ('phone_number', 'code', 'created_at', 'expires_at')
+    search_fields = ('phone_number',)
+
+    @admin.display(boolean=True, description='Is Expired?')
+    def is_expired_status(self, obj):
+        """Custom method to display the expiration status in the admin list."""
+        return obj.is_expired()

@@ -13,7 +13,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent
 AUTH_USER_MODEL = 'users.OviiUser'
 
 
@@ -38,8 +38,7 @@ DEBUG = os.environ.get("DJANGO_DEBUG", DEBUG) == "True"
 
 DJANGO_APPS = [
     # The adminlte4 theme must be before django.contrib.admin
-    'adminlte4',  
-    'adminlte4_theme',
+    'jazzmin',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -54,7 +53,6 @@ THIRD_PARTY_APPS = [
     'channels',                 # For WebSocket support
     'phonenumber_field',        # For phone number validation and storage
     'corsheaders',              # For handling Cross-Origin Resource Sharing
-                  # AdminLTE4 components and widgets
 ]
 
 LOCAL_APPS = [
@@ -88,7 +86,8 @@ ROOT_URLCONF = 'ovii_backend.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        # Tell Django to look for templates in a project-level 'templates' directory.
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -109,7 +108,7 @@ WSGI_APPLICATION = 'ovii_backend.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': os.environ.get("DATABASE_ENGINE", 'django.db.backends.sqlite3'),
-        'NAME': os.environ.get("DATABASE_NAME", BASE_DIR / 'db.sqlite3'),
+        'NAME': os.environ.get("DATABASE_NAME", BASE_DIR.parent / 'db.sqlite3'),
     }
 }
 
@@ -153,16 +152,16 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
 STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'ovii_backend/static'),
+    BASE_DIR / 'static',
 ]
 
 
 # Media files (User-uploaded content)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/#serving-files-uploaded-by-a-user-during-development
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_ROOT = BASE_DIR.parent / 'media'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
@@ -247,17 +246,56 @@ TRANSACTION_LIMITS = {
     3: Decimal('10000.00'),  # Address Verified (LEVEL_3)
 }
 
-# AdminLTE 4 Theme Settings
-ADMINLTE_SITE_TITLE = "Ovii Admin"
-ADMINLTE_SITE_HEADER = "Ovii"
-ADMINLTE_CUSTOM_CSS = "admin/css/custom.css"
+# Django Jazzmin Settings
+JAZZMIN_SETTINGS = {
+    # Page title, browser tab text and header text
+    "site_title": "Ovii Admin",
+    "site_header": "Ovii",
+    "site_brand": "Ovii",  # Brand text in the sidebar
 
-# Model icons for a more intuitive admin interface
-ADMINLTE_MODEL_ICONS = {
-    "auth.group": "fas fa-users-cog",
-    "users.oviiuser": "fas fa-user-check",
-    "wallets.wallet": "fas fa-wallet",
-    "wallets.transaction": "fas fa-exchange-alt",
-    "users.kycdocument": "fas fa-id-card",
-    "users.otprequest": "fas fa-key",
+
+    # Welcome text on the login screen
+    "welcome_sign": "Welcome to the Ovii Admin Panel",
+
+    # Copyright on the footer
+    "copyright": "Ovii Ltd. Powered by Slyker Tech Web Services",
+
+    # The model icons to display on the side menu
+    "icons": {
+        "auth": "fas fa-users-cog",
+        "auth.user": "fas fa-user",
+        "auth.Group": "fas fa-users",
+        "users.OviiUser": "fas fa-user-check",
+        "users.KYCDocument": "fas fa-id-card",
+        "users.OTPRequest": "fas fa-key",
+        "wallets.Wallet": "fas fa-wallet",
+        "wallets.Transaction": "fas fa-exchange-alt",
+    },
+
+    # Custom CSS to apply to the admin
+    "custom_css": "admin/css/custom.css",
+
+    # A very useful tool for developers to tweak the UI live
+    "show_ui_builder": True,
+
+    # UI Tweaks
+    "ui_tweaks": {
+        "navbar_small_text": False,
+        "footer_small_text": False,
+        "body_small_text": False,
+        "brand_small_text": False,
+        "brand_colour": False,  # Let custom.css handle this
+        "accent": "accent-warning",  # Corresponds well with your 'Sunrise Gold'
+        "navbar": "navbar-dark",
+        "no_navbar_border": True,
+        "sidebar": "sidebar-dark-indigo",  # A custom class for our CSS
+        "sidebar_nav_flat_style": True,
+        "sidebar_nav_legacy_style": False,
+        "sidebar_nav_child_indent": True,
+        "sidebar_nav_accordion": True,
+        "theme": "default",  # Using default and overriding with CSS
+    },
+
+    # Reorder apps in the sidebar for a more logical layout
+    "order_with_respect_to": ["users", "wallets", "auth"],
 }
