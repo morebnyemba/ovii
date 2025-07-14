@@ -1,0 +1,30 @@
+# Django
+*.log
+*.pot
+*.pyc
+__pycache__/
+local_settings.py
+db.sqlite3
+
+# Media files
+# User-uploaded content should not be in version control.
+/media/
+
+# Python
+*.egg-info/
+.DS_Store
+
+# Virtualenv
+venv/
+env/
+.env
+
+# IDE / Editor
+.idea/
+.vscode/
+
+# Celery
+celerybeat-schedule
+
+# Static files (if you run collectstatic)
+/static/
