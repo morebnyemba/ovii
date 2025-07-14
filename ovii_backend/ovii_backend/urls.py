@@ -30,6 +30,8 @@ urlpatterns = [
     # JWT Token Endpoints
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('adminlte3/', include('adminlte3.urls')),  # Add this line
+
 ]
 
 # Serve media files during development

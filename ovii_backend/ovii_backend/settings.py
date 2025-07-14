@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'users',  # Custom user app
     'wallets.apps.WalletsConfig', # Wallet and Transaction app
     'corsheaders', # For handling Cross-Origin Resource Sharing
+    'adminlte3',  # Add django-adminlte3
 ]
 
 MIDDLEWARE = [
