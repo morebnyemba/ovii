@@ -36,11 +36,10 @@ load_dotenv()
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", SECRET_KEY)
 DEBUG = os.environ.get("DJANGO_DEBUG", DEBUG) == "True"
 
-# Application definition
-
 DJANGO_APPS = [
-    # The adminlte3 theme must be before django.contrib.admin
-    'adminlte3',
+    # The adminlte4 theme must be before django.contrib.admin
+    'adminlte4',  
+    'adminlte4_theme',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -55,6 +54,7 @@ THIRD_PARTY_APPS = [
     'channels',                 # For WebSocket support
     'phonenumber_field',        # For phone number validation and storage
     'corsheaders',              # For handling Cross-Origin Resource Sharing
+                  # AdminLTE4 components and widgets
 ]
 
 LOCAL_APPS = [
@@ -154,7 +154,9 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'ovii_backend/static'),
+]
 
 
 # Media files (User-uploaded content)
@@ -243,4 +245,19 @@ TRANSACTION_LIMITS = {
     1: Decimal('100.00'),    # Mobile Verified (LEVEL_1)
     2: Decimal('1000.00'),   # Identity Verified (LEVEL_2)
     3: Decimal('10000.00'),  # Address Verified (LEVEL_3)
+}
+
+# AdminLTE 4 Theme Settings
+ADMINLTE_SITE_TITLE = "Ovii Admin"
+ADMINLTE_SITE_HEADER = "Ovii"
+ADMINLTE_CUSTOM_CSS = "admin/css/custom.css"
+
+# Model icons for a more intuitive admin interface
+ADMINLTE_MODEL_ICONS = {
+    "auth.group": "fas fa-users-cog",
+    "users.oviiuser": "fas fa-user-check",
+    "wallets.wallet": "fas fa-wallet",
+    "wallets.transaction": "fas fa-exchange-alt",
+    "users.kycdocument": "fas fa-id-card",
+    "users.otprequest": "fas fa-key",
 }
