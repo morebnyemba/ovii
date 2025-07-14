@@ -13,7 +13,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 AUTH_USER_MODEL = 'users.OviiUser'
 
 
@@ -22,12 +22,19 @@ AUTH_USER_MODEL = 'users.OviiUser'
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-x1hv@le&dft+59o624lfp24h(h*c@zc-rv$o53#o3a9@^pc8_#'
-
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
 ALLOWED_HOSTS = []
 
+
+# Load environment variables from .env file
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", SECRET_KEY)
+DEBUG = os.environ.get("DJANGO_DEBUG", DEBUG) == "True"
 
 # Application definition
 
@@ -60,10 +67,12 @@ MIDDLEWARE = [
 ]
 
 # CORS Configuration
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000", # The default port for a Next.js app
-    "http://127.0.0.1:3000",
-]
+FRONTEND_ORIGIN = os.environ.get("FRONTEND_ORIGIN", "http://localhost:3000")
+CORS_ALLOWED_ORIGINS = [FRONTEND_ORIGIN]
+
+if FRONTEND_ORIGIN != "http://localhost:3000":  # For development with vite
+    CORS_ALLOWED_ORIGINS.append("http://localhost:3000")
+
 
 ROOT_URLCONF = 'ovii_backend.urls'
 
@@ -85,16 +94,19 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'ovii_backend.wsgi.application'
 
-
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': os.environ.get("DATABASE_ENGINE", 'django.db.backends.sqlite3'),
+        'NAME': os.environ.get("DATABASE_NAME", BASE_DIR / 'db.sqlite3'),
     }
 }
+
+if DATABASES['default']['ENGINE'] != 'django.db.backends.sqlite3':
+    DATABASES['default']['USER'] = os.environ.get("DATABASE_USER")
+    DATABASES['default']['PASSWORD'] = os.environ.get("DATABASE_PASSWORD")
 
 
 # Password validation
@@ -131,7 +143,10 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+
 
 # Media files (User-uploaded content)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/#serving-files-uploaded-by-a-user-during-development
@@ -153,7 +168,7 @@ REST_FRAMEWORK = {
         'rest_framework.throttling.UserRateThrottle'
     ],
     'DEFAULT_THROTTLE_RATES': {
-        'anon': '100/day', # Default for anonymous users
+        'anon': '1000/day', # Default for anonymous users
         'user': '1000/day', # Default for authenticated users
         'otp.request': '5/hour' # Custom rate for OTP requests
     }
@@ -169,16 +184,15 @@ ASGI_APPLICATION = 'ovii_backend.asgi.application'
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {
-            "hosts": [("127.0.0.1", 6379)],
-        },
+        "CONFIG": {"hosts": [(os.environ.get("REDIS_HOST", "127.0.0.1"), 6379)]},
     },
 }
 
 # Celery Configuration
 # This tells Celery to use Redis as the message broker and result backend.
-CELERY_BROKER_URL = 'redis://127.0.0.1:6379/0'
-CELERY_RESULT_BACKEND = 'redis://127.0.0.1:6379/0'
+redis_host = os.environ.get("REDIS_HOST", "127.0.0.1")
+CELERY_BROKER_URL = f'redis://{redis_host}:6379/0'
+CELERY_RESULT_BACKEND = f'redis://{redis_host}:6379/0'
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
