@@ -61,32 +61,43 @@ class OviiUserAdmin(UserAdmin):
         Custom admin action to approve a user's pending ID document and
         upgrade their verification level.
         """
-        # Ensure we only try to upgrade users from the correct level.
-        upgradable_users = queryset.filter(verification_level=VerificationLevels.LEVEL_1)
-
         upgraded_count = 0
-        for user in upgradable_users:
+        skipped_count = 0
+        no_doc_count = 0
+
+        for user in queryset:
+            if user.verification_level != VerificationLevels.LEVEL_1:
+                skipped_count += 1
+                continue
+
             # Find the user's pending ID card document
             pending_doc = user.kyc_documents.filter(
                 document_type=KYCDocument.DocumentType.ID_CARD,
                 status=DocumentStatus.PENDING
             ).first()
-
+            
             if pending_doc:
                 pending_doc.status = DocumentStatus.APPROVED
                 pending_doc.reviewed_at = timezone.now()
                 pending_doc.save()
-
+                
                 user.verification_level = VerificationLevels.LEVEL_2
                 user.save(update_fields=['verification_level'])
-
+                
                 send_realtime_notification.delay(
                     user.id,
                     "Congratulations! Your identity document has been approved."
                 )
                 upgraded_count += 1
+            else:
+                no_doc_count += 1
 
-        self.message_user(request, f'{upgraded_count} users were successfully upgraded to Level 2.')
+        if upgraded_count > 0:
+            self.message_user(request, f'{upgraded_count} users were successfully upgraded to Level 2.')
+        if skipped_count > 0:
+            self.message_user(request, f'{skipped_count} users were skipped (not at Level 1).', level='WARNING')
+        if no_doc_count > 0:
+            self.message_user(request, f'{no_doc_count} users were skipped (no pending ID document found).', level='ERROR')
 
     @admin.action(description='Approve address documents and upgrade users to Level 3')
     def approve_address_verification(self, request, queryset):
