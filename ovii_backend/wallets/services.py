@@ -54,13 +54,14 @@ def perform_wallet_transfer(source_wallet: Wallet, destination_wallet: Wallet, a
     if amount_sent_today + amount > daily_limit:
         raise TransactionLimitExceededError(f"You have exceeded your daily transaction limit of ${daily_limit}.")
 
-    # --- Balance Check ---
-    if source_wallet.balance < amount:
-        raise InsufficientFundsError("Insufficient funds in the source wallet.")
-
     # Lock the rows for update to prevent race conditions
     source_wallet = Wallet.objects.select_for_update().get(pk=source_wallet.pk)
     destination_wallet = Wallet.objects.select_for_update().get(pk=destination_wallet.pk)
+
+    # --- Balance Check (after locking) ---
+    # This check is now safe from race conditions.
+    if source_wallet.balance < amount:
+        raise InsufficientFundsError("Insufficient funds in the source wallet.")
 
     # Perform the transfer
     source_wallet.balance -= amount

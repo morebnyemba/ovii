@@ -66,7 +66,10 @@ class TransactionCreateSerializer(serializers.Serializer):
         # Check if the destination user exists and has a wallet
         try:
             destination_user = OviiUser.objects.get(phone_number=destination_phone_number)
-            data['destination_wallet'] = destination_user.wallet
+            # It's good practice to explicitly check for the related wallet.
+            if not hasattr(destination_user, 'wallet'):
+                raise Wallet.DoesNotExist()
+            data['destination_wallet'] = getattr(destination_user, 'wallet')
         except (OviiUser.DoesNotExist, Wallet.DoesNotExist):
             raise serializers.ValidationError({"destination_phone_number": "User with this phone number does not have a wallet."})
 

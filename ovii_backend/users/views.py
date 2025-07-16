@@ -8,7 +8,7 @@ from rest_framework import generics, viewsets, status, mixins
 from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle
-from wallets.permissions import CanPerformTransactions
+from wallets.permissions import IsMobileVerifiedOrHigher
 from django.http import JsonResponse
 from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models import Count
@@ -46,12 +46,12 @@ class SetTransactionPINView(generics.GenericAPIView):
     API view for an authenticated user to set their transaction PIN.
     """
     serializer_class = SetTransactionPINSerializer
-    permission_classes = [IsAuthenticated, CanPerformTransactions]
+    permission_classes = [IsAuthenticated, IsMobileVerifiedOrHigher]
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        request.user.set_pin(serializer.validated_data['pin'])
+        request.user.set_pin(serializer.validated_data['pin'])  # Ensure this method hashes the PIN
         return Response({"detail": "Transaction PIN set successfully."}, status=status.HTTP_200_OK)
 
 class UserProfileView(generics.RetrieveUpdateAPIView):

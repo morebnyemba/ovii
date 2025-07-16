@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from .models import Transaction
 from .serializers import (WalletSerializer, TransactionSerializer,
                           TransactionCreateSerializer)
-from users.permissions import CanPerformTransactions
+from .permissions import IsMobileVerifiedOrHigher
 from .services import perform_wallet_transfer, InsufficientFundsError, TransactionLimitExceededError
 
 
@@ -41,7 +41,7 @@ class CreateTransactionView(generics.CreateAPIView):
     Uses the perform_wallet_transfer service to ensure atomicity.
     """
     serializer_class = TransactionCreateSerializer
-    permission_classes = [IsAuthenticated, CanPerformTransactions]
+    permission_classes = [IsAuthenticated, IsMobileVerifiedOrHigher]
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
