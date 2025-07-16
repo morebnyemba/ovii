@@ -263,7 +263,6 @@ JAZZMIN_SETTINGS = {
     # The model icons to display on the side menu
     "icons": {
         "auth": "fas fa-users-cog",
-        "auth.user": "fas fa-user",
         "auth.Group": "fas fa-users",
         "users.OviiUser": "fas fa-user-check",
         "users.KYCDocument": "fas fa-id-card",
@@ -276,26 +275,41 @@ JAZZMIN_SETTINGS = {
     "custom_css": "admin/css/custom.css",
 
     # A very useful tool for developers to tweak the UI live
-    "show_ui_builder": True,
-
-    # UI Tweaks
-    "ui_tweaks": {
-        "navbar_small_text": False,
-        "footer_small_text": False,
-        "body_small_text": False,
-        "brand_small_text": False,
-        "brand_colour": False,  # Let custom.css handle this
-        "accent": "accent-warning",  # Corresponds well with your 'Sunrise Gold'
-        "navbar": "navbar-dark",
-        "no_navbar_border": True,
-        "sidebar": "sidebar-dark-indigo",  # A custom class for our CSS
-        "sidebar_nav_flat_style": True,
-        "sidebar_nav_legacy_style": False,
-        "sidebar_nav_child_indent": True,
-        "sidebar_nav_accordion": True,
-        "theme": "default",  # Using default and overriding with CSS
-    },
+    "show_ui_builder": False,
 
     # Reorder apps in the sidebar for a more logical layout
     "order_with_respect_to": ["users", "wallets", "auth"],
+}
+
+# Optional, but recommended for a cleaner look
+JAZZMIN_UI_TWEAKS = {
+    "navbar_small_text": False,
+    "footer_small_text": False,
+    "body_small_text": False,
+    "brand_small_text": False,
+    "brand_colour": "navbar-indigo", # Corresponds to a default jazzmin color, but will be overridden by your CSS
+    "accent": "accent-warning", # Similarly, will be overridden by your CSS for buttons, etc.
+    "navbar": "navbar-indigo navbar-dark",
+    "no_navbar_border": False,
+    "navbar_fixed": True,
+    "layout_boxed": False,
+    "footer_fixed": False,
+    "sidebar_fixed": True,
+    "sidebar": "sidebar-dark-indigo",
+    "sidebar_nav_small_text": False,
+    "sidebar_disable_expand": False,
+    "sidebar_nav_child_indent": False,
+    "sidebar_nav_compact_style": False,
+    "sidebar_nav_legacy_style": False,
+    "sidebar_nav_flat_style": True, # Recommended for a modern look
+    "theme": "default",
+    "dark_mode_theme": None,
+    "button_classes": {
+        "primary": "btn-primary",
+        "secondary": "btn-secondary",
+        "info": "btn-info",
+        "warning": "btn-warning",
+        "danger": "btn-danger",
+        "success": "btn-success"
+    },
 }

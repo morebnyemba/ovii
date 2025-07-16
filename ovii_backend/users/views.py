@@ -11,11 +11,12 @@ from rest_framework.throttling import AnonRateThrottle
 from wallets.permissions import IsMobileVerifiedOrHigher
 from django.http import JsonResponse
 from django.contrib.admin.views.decorators import staff_member_required
-from django.db.models import Count
+from django.db.models import Count, Sum
 from django.db.models.functions import TruncDay
 import datetime
 
 from .models import OviiUser, KYCDocument, VerificationLevels
+from wallets.models import Transaction, Wallet
 from .serializers import (UserDetailSerializer, OTPRequestSerializer, OTPVerificationSerializer,
                           SetTransactionPINSerializer, KYCDocumentSerializer, AdminUserManagementSerializer, UserProfileUpdateSerializer)
 
@@ -129,7 +130,20 @@ def dashboard_chart_data(request):
         'counts': [s['count'] for s in signups]
     }
 
+    # 3. Data for Transaction Volume in the Last 30 Days (Bar Chart)
+    transactions = (
+        Transaction.objects.filter(timestamp__gte=thirty_days_ago, status=Transaction.Status.COMPLETED)
+        .annotate(day=TruncDay('timestamp'))
+        .values('day')
+        .annotate(volume=Sum('amount'))
+        .order_by('day')
+    )
+    transaction_data = {
+        'labels': [t['day'].strftime('%b %d') for t in transactions],
+        'volumes': [t['volume'] for t in transactions]
+    }
     return JsonResponse({
         'verification_data': verification_data,
         'signup_data': signup_data,
+        'transaction_data': transaction_data,
     })
