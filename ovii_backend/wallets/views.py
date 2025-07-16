@@ -2,12 +2,11 @@ from django.db.models import Q
 from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-
 from .models import Transaction
 from .serializers import (WalletSerializer, TransactionSerializer,
                           TransactionCreateSerializer)
-from .permissions import CanPerformTransactions
-from .services import InsufficientFundsError, TransactionLimitExceededError, perform_wallet_transfer
+from users.permissions import CanPerformTransactions
+from .services import perform_wallet_transfer, InsufficientFundsError, TransactionLimitExceededError
 
 
 class MyWalletView(generics.RetrieveAPIView):
@@ -33,7 +32,7 @@ class TransactionHistoryView(generics.ListAPIView):
         user_wallet = self.request.user.wallet
         return Transaction.objects.filter(
             Q(source_wallet=user_wallet) | Q(destination_wallet=user_wallet)
-        ).order_by('-timestamp')
+        ).select_related('source_wallet__user', 'destination_wallet__user').order_by('-timestamp')
 
 
 class CreateTransactionView(generics.CreateAPIView):
