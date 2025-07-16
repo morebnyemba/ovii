@@ -121,7 +121,7 @@ def dashboard_chart_data(request):
         OviiUser.objects.filter(date_joined__gte=thirty_days_ago)
         .annotate(day=TruncDay('date_joined'))
         .values('day')
-        .annotate(count=Count('id'))
+        .annotate(count=Count('id'))  # Corrected count aggregation
         .order_by('day')
     )
     signup_data = {
