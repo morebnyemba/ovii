@@ -2,6 +2,16 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import api from '@/lib/api';
 
 export default function VerifyOTPPage() {
@@ -53,28 +63,35 @@ export default function VerifyOTPPage() {
     };
 
     return (
-        <div className="flex items-center justify-center min-h-screen bg-[--ovii-off-white]">
-            <div className="p-8 bg-white rounded-lg shadow-md w-full max-w-sm">
-                <h1 className="text-2xl font-bold mb-2 text-center text-[--ovii-indigo]">Verify Your Phone</h1>
-                <p className="text-center text-gray-600 mb-6">Enter the code sent to {phoneNumber}</p>
-                <form onSubmit={handleSubmit}>
-                    <div className="mb-4">
-                        <label htmlFor="otp" className="block text-sm font-medium text-gray-700 mb-1">Verification Code</label>
-                        <input
-                            type="number"
-                            id="otp"
-                            value={otp}
-                            onChange={(e) => setOtp(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-[--ovii-gold] focus:border-[--ovii-gold] text-center tracking-[0.5em]"
-                            required
-                        />
-                    </div>
-                    {error && <p className="text-[--ovii-coral] text-sm mb-4">{error}</p>}
-                    <button type="submit" disabled={loading} className="w-full bg-[--ovii-gold] text-[--ovii-indigo] font-bold py-2 px-4 rounded-md hover:bg-opacity-90 transition-colors disabled:bg-gray-400">
-                        {loading ? 'Verifying...' : 'Verify & Login'}
-                    </button>
-                </form>
-            </div>
+        <div className="flex items-center justify-center min-h-screen bg-background">
+            <Card className="w-full max-w-sm">
+                <CardHeader className="text-center">
+                    <CardTitle className="text-2xl text-[--ovii-indigo]">Verify Your Phone</CardTitle>
+                    <CardDescription>
+                        Enter the code sent to {phoneNumber}
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <form onSubmit={handleSubmit} className="grid gap-4">
+                        <div className="grid gap-2">
+                            <Label htmlFor="otp">Verification Code</Label>
+                            <Input
+                                id="otp"
+                                type="tel"
+                                inputMode="numeric"
+                                required
+                                value={otp}
+                                onChange={(e) => setOtp(e.target.value)}
+                                className="text-center tracking-[0.5em]"
+                            />
+                        </div>
+                        {error && <p className="text-[--ovii-coral] text-sm">{error}</p>}
+                        <Button type="submit" className="w-full bg-[--ovii-gold] text-[--ovii-indigo] hover:bg-[--ovii-gold]/90" disabled={loading}>
+                            {loading ? "Verifying..." : "Verify & Login"}
+                        </Button>
+                    </form>
+                </CardContent>
+            </Card>
         </div>
     );
 }
