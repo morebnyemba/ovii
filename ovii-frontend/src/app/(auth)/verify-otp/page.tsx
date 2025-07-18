@@ -35,9 +35,13 @@ export default function VerifyOTPPage() {
 
             // On successful verification, store tokens and redirect
             const { access, refresh } = response.data;
-            localStorage.setItem('access_token', access);
-            localStorage.setItem('refresh_token', refresh);
-            
+            // Instead of localStorage, we now send the token to our own API route to set as a secure cookie.
+            await fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ access, refresh }), // Sending refresh token is optional for this step but good practice
+            });
+
             router.push('/'); // Redirect to the dashboard
 
         } catch (err) {

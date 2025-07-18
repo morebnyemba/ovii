@@ -3,7 +3,8 @@
 import React from 'react';
 import Link from 'next/link';
 import { Wallet, Landmark, History, User, LogOut, Menu, X } from 'lucide-react';
-import { useState } from 'react';
+import { useState, use } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function DashboardLayout({
     children,
@@ -11,6 +12,7 @@ export default function DashboardLayout({
     children: React.ReactNode;
 }) {
     const [isSidebarOpen, setSidebarOpen] = useState(false);
+    const router = useRouter();
 
     const navItems = [
         { name: 'Wallet', href: '/', icon: Wallet },
@@ -18,6 +20,14 @@ export default function DashboardLayout({
         { name: 'History', href: '/history', icon: History },
         { name: 'Profile', href: '/profile', icon: User },
     ];
+
+    const handleLogout = async () => {
+        await fetch('/api/logout', {
+            method: 'POST',
+        });
+        // Using router.replace to prevent going back to the dashboard via browser back button
+        router.replace('/login');
+    };
 
     const SidebarContent = () => (
         <>
@@ -38,7 +48,7 @@ export default function DashboardLayout({
                 ))}
             </nav>
             <div className="p-4 border-t border-white/20">
-                <button className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-white/10 transition-colors">
+                <button onClick={handleLogout} className="flex items-center w-full px-4 py-3 rounded-lg hover:bg-white/10 transition-colors">
                     <LogOut className="w-5 h-5 mr-3" />
                     <span>Logout</span>
                 </button>
