@@ -49,24 +49,24 @@ export default function VerifyOTPPage() {
     };
 
     return (
-        <div className="flex items-center justify-center min-h-screen bg-gray-100">
+        <div className="flex items-center justify-center min-h-screen bg-[--ovii-off-white]">
             <div className="p-8 bg-white rounded-lg shadow-md w-full max-w-sm">
-                <h1 className="text-2xl font-bold mb-2 text-center text-ovii-indigo">Verify Your Phone</h1>
+                <h1 className="text-2xl font-bold mb-2 text-center text-[--ovii-indigo]">Verify Your Phone</h1>
                 <p className="text-center text-gray-600 mb-6">Enter the code sent to {phoneNumber}</p>
                 <form onSubmit={handleSubmit}>
                     <div className="mb-4">
                         <label htmlFor="otp" className="block text-sm font-medium text-gray-700 mb-1">Verification Code</label>
                         <input
-                            type="text"
+                            type="number"
                             id="otp"
                             value={otp}
                             onChange={(e) => setOtp(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-ovii-gold focus:border-ovii-gold text-center tracking-[0.5em]"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-[--ovii-gold] focus:border-[--ovii-gold] text-center tracking-[0.5em]"
                             required
                         />
                     </div>
-                    {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
-                    <button type="submit" disabled={loading} className="w-full bg-ovii-gold text-ovii-indigo font-bold py-2 px-4 rounded-md hover:bg-opacity-90 transition-colors disabled:bg-gray-400">
+                    {error && <p className="text-[--ovii-coral] text-sm mb-4">{error}</p>}
+                    <button type="submit" disabled={loading} className="w-full bg-[--ovii-gold] text-[--ovii-indigo] font-bold py-2 px-4 rounded-md hover:bg-opacity-90 transition-colors disabled:bg-gray-400">
                         {loading ? 'Verifying...' : 'Verify & Login'}
                     </button>
                 </form>
