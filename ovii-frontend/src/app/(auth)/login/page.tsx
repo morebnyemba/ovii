@@ -17,7 +17,6 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [shake, setShake]   = useState(false);
-
   const router = useRouter();
 
   /* ------------------------------------------------------------------ */
@@ -41,7 +40,8 @@ export default function LoginPage() {
     console.log('✅ Validation passed');
 
     // --- Build payload -------------------------------------------------
-    const payload = { phone: cleaned };
+    // Key must be "phone_number" to match OTPRequestSerializer
+    const payload = { phone_number: '+' + cleaned };
     console.log('Payload to send:', payload);
 
     setLoading(true);
@@ -49,24 +49,18 @@ export default function LoginPage() {
     try {
       console.log('📤 POST /users/otp/request/');
       const res = await api.post('/users/otp/request/', payload, {
-        // Force axios to send JSON (it usually does, but just in case)
         headers: { 'Content-Type': 'application/json' },
       });
       console.log('📥 Response status:', res.status);
       console.log('📥 Response data:', res.data);
 
-      // Persist phone for the verify page
-      localStorage.setItem('phone_for_verification', cleaned);
+      localStorage.setItem('phone_for_verification', '+' + cleaned);
       console.log('✅ Redirecting to /verify-otp');
       router.push('/verify-otp');
     } catch (err: any) {
-      console.error('❌ Axios error object:', err);
-      console.error('❌ Error response:', err.response);
-      console.error('❌ Error message:', err.message);
-
-      // Exact server message if available
+      console.error('❌ Axios error:', err);
       const detail =
-        err.response?.data?.phone?.[0] ||
+        err.response?.data?.phone_number?.[0] ||
         err.response?.data?.detail ||
         'Couldn’t send OTP. Try again.';
       triggerError(detail);
