@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
-import { FiPhone, FiLoader, FiAlertCircle } from 'react-icons/fi';
+import { FiPhone, FiLoader, FiAlertCircle, FiShield, FiZap } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const COLORS = {
@@ -24,7 +24,6 @@ export default function LoginPage() {
   const [isMounted, setIsMounted] = useState(false);
   const router = useRouter();
 
-  // Set mounted state for animations
   useEffect(() => {
     setIsMounted(true);
     return () => setIsMounted(false);
@@ -34,7 +33,6 @@ export default function LoginPage() {
     e.preventDefault();
     setError('');
     
-    // Client-side validation
     const cleaned = phoneNumber.replace(/\D/g, '');
     if (!/^\+?\d{10,15}$/.test(cleaned)) {
       triggerError('Please enter a valid phone number (e.g. +263 712 345 678)');
@@ -45,9 +43,7 @@ export default function LoginPage() {
 
     try {
       const payload = { phone_number: '+' + cleaned };
-      const res = await api.post('/users/otp/request/', payload, {
-        headers: { 'Content-Type': 'application/json' },
-      });
+      const res = await api.post('/users/otp/request/', payload);
 
       localStorage.setItem('phone_for_verification', '+' + cleaned);
       router.push('/verify-otp');
@@ -84,7 +80,7 @@ export default function LoginPage() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
-      className="flex min-h-screen items-center justify-center bg-gradient-to-br from-indigo-900 to-teal-400 p-4 md:p-8"
+      className="flex min-h-screen items-center justify-center bg-gradient-to-br p-4 md:p-8"
       style={{
         background: `linear-gradient(135deg, ${COLORS.darkIndigo} 0%, ${COLORS.mint} 100%)`,
       }}
@@ -102,23 +98,35 @@ export default function LoginPage() {
           style={{ backgroundColor: COLORS.white }}
         >
           <div className="mb-6 text-center">
-            <motion.h1
+            <motion.div
               initial={{ y: -10, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.1 }}
+              className="flex justify-center"
+            >
+              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-indigo-100">
+                <FiZap className="text-2xl" style={{ color: COLORS.gold }} />
+              </div>
+            </motion.div>
+            
+            <motion.h1
+              initial={{ y: -10, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.2 }}
               className="text-3xl font-bold md:text-4xl"
               style={{ color: COLORS.indigo }}
             >
               Welcome to Ovii
             </motion.h1>
+            
             <motion.p
               initial={{ y: -10, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.2 }}
+              transition={{ delay: 0.3 }}
               className="mt-2 text-sm opacity-80 md:text-base"
               style={{ color: COLORS.indigo }}
             >
-              Enter your phone number to continue
+              Your secure digital wallet for instant payments
             </motion.p>
           </div>
 
@@ -126,28 +134,36 @@ export default function LoginPage() {
             <motion.div
               initial={{ y: 10, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.3 }}
-              className="relative"
+              transition={{ delay: 0.4 }}
+              className="space-y-2"
             >
-              <FiPhone
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-xl"
-                style={{ color: COLORS.indigo }}
-              />
-              <input
-                type="tel"
-                value={phoneNumber}
-                onChange={(e) => handleChange(e.target.value)}
-                placeholder="+263 712 345 678"
-                maxLength={16}
-                required
-                className="w-full rounded-lg border-2 bg-transparent py-3 pl-10 pr-3 text-lg focus:outline-none focus:ring-2 focus:ring-offset-2"
-                style={{
-                  borderColor: COLORS.mint,
-                  color: COLORS.indigo,
-                  backgroundColor: COLORS.lightGray,
-                  focusRingColor: COLORS.gold,
-                }}
-              />
+              <label htmlFor="phone" className="block text-sm font-medium" style={{ color: COLORS.indigo }}>
+                Mobile Number
+              </label>
+              <div className="relative">
+                <FiPhone
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-xl"
+                  style={{ color: COLORS.indigo }}
+                />
+                <input
+                  id="phone"
+                  type="tel"
+                  value={phoneNumber}
+                  onChange={(e) => handleChange(e.target.value)}
+                  placeholder="+263 712 345 678"
+                  maxLength={16}
+                  required
+                  className="w-full rounded-lg border-2 bg-transparent py-3 pl-10 pr-3 text-lg focus:outline-none focus:ring-2 focus:ring-offset-2"
+                  style={{
+                    borderColor: COLORS.mint,
+                    color: COLORS.indigo,
+                    backgroundColor: COLORS.lightGray,
+                  }}
+                />
+              </div>
+              <p className="text-xs text-gray-500">
+                We'll send a 6-digit verification code to this number
+              </p>
             </motion.div>
 
             <AnimatePresence>
@@ -170,7 +186,8 @@ export default function LoginPage() {
             <motion.div
               initial={{ y: 10, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.4 }}
+              transition={{ delay: 0.5 }}
+              className="space-y-4"
             >
               <button
                 type="submit"
@@ -179,30 +196,63 @@ export default function LoginPage() {
                 style={{
                   backgroundColor: COLORS.gold,
                   color: COLORS.indigo,
-                  focusRingColor: COLORS.mint,
                 }}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
               >
                 {loading ? (
                   <>
                     <FiLoader className="animate-spin" />
-                    <span>Sending OTP...</span>
+                    <span>Securing your account...</span>
                   </>
                 ) : (
-                  'Send OTP'
+                  'Continue Securely'
                 )}
               </button>
+
+              <div className="flex items-center justify-center gap-2 text-xs text-gray-500">
+                <FiShield className="text-indigo-400" />
+                <span>Bank-grade security encryption</span>
+              </div>
             </motion.div>
           </form>
 
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
+            transition={{ delay: 0.6 }}
+            className="mt-8 space-y-4 border-t pt-4"
+          >
+            <div className="text-center text-sm" style={{ color: COLORS.indigo }}>
+              <p className="font-medium">New to Ovii?</p>
+              <p className="text-xs opacity-80">Create an account to enjoy:</p>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="flex items-center gap-1 rounded bg-indigo-50 p-2">
+                <div className="h-4 w-4 rounded-full" style={{ backgroundColor: COLORS.mint }} />
+                <span>Instant Transfers</span>
+              </div>
+              <div className="flex items-center gap-1 rounded bg-indigo-50 p-2">
+                <div className="h-4 w-4 rounded-full" style={{ backgroundColor: COLORS.gold }} />
+                <span>Bill Payments</span>
+              </div>
+              <div className="flex items-center gap-1 rounded bg-indigo-50 p-2">
+                <div className="h-4 w-4 rounded-full" style={{ backgroundColor: COLORS.coral }} />
+                <span>Mobile Airtime</span>
+              </div>
+              <div className="flex items-center gap-1 rounded bg-indigo-50 p-2">
+                <div className="h-4 w-4 rounded-full" style={{ backgroundColor: COLORS.indigo }} />
+                <span>Secure Wallet</span>
+              </div>
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.7 }}
             className="mt-6 text-center text-xs text-gray-500"
           >
-            By continuing, you agree to our Terms of Service and Privacy Policy
+            By continuing, you agree to our <a href="#" className="underline">Terms of Service</a> and <a href="#" className="underline">Privacy Policy</a>
           </motion.div>
         </motion.div>
       </motion.div>
