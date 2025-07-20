@@ -17,9 +17,12 @@ import datetime
 
 from .models import OviiUser, KYCDocument, VerificationLevels
 from wallets.models import Transaction, Wallet
-from .serializers import (UserDetailSerializer, OTPRequestSerializer, OTPVerificationSerializer,
-                          SetTransactionPINSerializer, KYCDocumentSerializer, AdminUserManagementSerializer, UserProfileUpdateSerializer)
-
+from .serializers import (
+    UserDetailSerializer, OTPRequestSerializer,
+    UserLoginSerializer, UserRegistrationSerializer,
+    SetTransactionPINSerializer, KYCDocumentSerializer,
+    AdminUserManagementSerializer, UserProfileUpdateSerializer
+)
 
 class OTPRequestView(generics.CreateAPIView):
     """
@@ -35,12 +38,29 @@ class OTPRequestView(generics.CreateAPIView):
         self.throttle_scope = 'otp.request'
         return super().get_throttles()
 
-class OTPVerificationView(generics.CreateAPIView):
+    def create(self, request, *args, **kwargs):
+        """Overrides the default create to handle custom response data."""
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        response_data = serializer.save()  # This calls our serializer's .create() method
+        return Response(response_data, status=status.HTTP_201_CREATED)
+
+
+class UserLoginView(generics.CreateAPIView):
     """
-    API view for verifying an OTP and creating/logging in a user.
+    API view for user login with OTP.
     """
-    serializer_class = OTPVerificationSerializer
+    serializer_class = UserLoginSerializer
     permission_classes = [AllowAny]
+
+
+class UserRegistrationView(generics.CreateAPIView):
+    """
+    API view for user registration with OTP.
+    """
+    serializer_class = UserRegistrationSerializer
+    permission_classes = [AllowAny]
+
 
 class SetTransactionPINView(generics.GenericAPIView):
     """

@@ -10,7 +10,6 @@ from phonenumber_field.serializerfields import PhoneNumberField
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import OviiUser, OTPRequest, KYCDocument
 from .tasks import generate_and_log_otp, send_welcome_notification
-from .services import get_or_create_user_on_otp_verify
 
 class UserDetailSerializer(serializers.ModelSerializer):
     """
@@ -76,40 +75,30 @@ class SetTransactionPINSerializer(serializers.Serializer):
 
 class OTPRequestSerializer(serializers.Serializer):
     """
-    Serializer for requesting an OTP. Takes an email and triggers OTP generation.
+    Serializer for requesting an OTP. Takes a phone number and triggers OTP generation.
     """
     phone_number = PhoneNumberField(write_only=True)
+    request_id = serializers.UUIDField(read_only=True, help_text="The unique ID for this OTP request. Send this back during verification.")
 
     def create(self, validated_data):
         phone_number = validated_data['phone_number']
         # Trigger the Celery task to generate and log the OTP and get the request_id
         task_result = generate_and_log_otp.delay(str(phone_number))
-        return {'request_id': task_result.get()}
+        # .get() makes this a synchronous operation. It's acceptable here as the task is fast.
+        # Convert the PhoneNumber object to a string for the JSON response.
+        return {'request_id': task_result.get(), 'phone_number': str(phone_number)}
 
 
-class OTPVerificationSerializer(serializers.Serializer):
+class BaseOTPVerificationSerializer(serializers.Serializer):
     """
-    Serializer for verifying an OTP and logging in or registering a user.
+    Base serializer for OTP verification. Handles common validation logic.
     """
     request_id = serializers.UUIDField(write_only=True)
     code = serializers.CharField(max_length=6, min_length=6, write_only=True)
-    # New fields for KYC check during verification
-    id_number = serializers.CharField(max_length=50, write_only=True)
-    first_name = serializers.CharField(max_length=150, write_only=True)
-    last_name = serializers.CharField(max_length=150, write_only=True)
-    date_of_birth = serializers.DateField(write_only=True)
-    gender = serializers.ChoiceField(choices=OviiUser.Gender.choices, write_only=True)
-    # All personal details are now required on registration.
-    email = serializers.EmailField(write_only=True)
-    address_line_1 = serializers.CharField(max_length=255, write_only=True)
-    address_line_2 = serializers.CharField(max_length=255, required=False, allow_blank=True, write_only=True)
-    city = serializers.CharField(max_length=100, write_only=True)
-    postal_code = serializers.CharField(max_length=20, write_only=True)
-    country = serializers.CharField(max_length=100, write_only=True)
 
     def validate(self, attrs):
-        request_id = attrs['request_id']
-        code = attrs['code']
+        request_id = attrs.get('request_id')
+        code = attrs.get('code')
 
         try:
             otp_request = OTPRequest.objects.get(request_id=request_id, code=code)
@@ -122,24 +111,30 @@ class OTPVerificationSerializer(serializers.Serializer):
         attrs['otp_request'] = otp_request
         return attrs
 
-    def validate_email(self, value):
-        """
-        Check that the email is not already in use.
-        """
-        if OviiUser.objects.filter(email__iexact=value).exists():
-            raise serializers.ValidationError("An account with this email address already exists.")
-        return value
+
+class UserLoginSerializer(BaseOTPVerificationSerializer):
+    """
+    Serializer for verifying an OTP and logging in an existing user.
+    """
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        otp_request = attrs['otp_request']
+
+        try:
+            user = OviiUser.objects.get(phone_number=otp_request.phone_number)
+        except OviiUser.DoesNotExist:
+            raise serializers.ValidationError("No account found with this phone number. Please register.")
+
+        attrs['user'] = user
+        return attrs
 
     def create(self, validated_data):
+        user = validated_data['user']
         otp_request = validated_data['otp_request']
-        user, created = get_or_create_user_on_otp_verify(validated_data)
 
         if not user.is_active:
             user.is_active = True
             user.save(update_fields=['is_active'])
-
-        if created:
-            send_welcome_notification.delay(user.id)
 
         otp_request.delete()
 
@@ -152,6 +147,65 @@ class OTPVerificationSerializer(serializers.Serializer):
             }
         }
 
+
+class UserRegistrationSerializer(BaseOTPVerificationSerializer):
+    """
+    Serializer for verifying an OTP and registering a new user.
+    """
+    id_number = serializers.CharField(max_length=50, write_only=True)
+    first_name = serializers.CharField(max_length=150, write_only=True)
+    last_name = serializers.CharField(max_length=150, write_only=True)
+    date_of_birth = serializers.DateField(write_only=True)
+    gender = serializers.ChoiceField(choices=OviiUser.Gender.choices, write_only=True)
+    email = serializers.EmailField(write_only=True)
+    address_line_1 = serializers.CharField(max_length=255, write_only=True)
+    address_line_2 = serializers.CharField(max_length=255, required=False, allow_blank=True, write_only=True)
+    city = serializers.CharField(max_length=100, write_only=True)
+    postal_code = serializers.CharField(max_length=20, write_only=True)
+    country = serializers.CharField(max_length=100, write_only=True)
+    
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        otp_request = attrs['otp_request']
+
+        # Check if a user with this phone number already exists
+        if OviiUser.objects.filter(phone_number=otp_request.phone_number).exists():
+            raise serializers.ValidationError({
+                "phone_number": "An account with this phone number already exists. Please log in."
+            })
+
+        return attrs
+
+    def validate_email(self, value):
+        """Check that the email is not already in use."""
+        if OviiUser.objects.filter(email__iexact=value).exists():
+            raise serializers.ValidationError("An account with this email address already exists. Please log in.")
+        return value
+
+    def create(self, validated_data):
+        otp_request = validated_data.pop('otp_request')
+        # Remove fields not part of the OviiUser model before creation
+        validated_data.pop('request_id', None)
+        validated_data.pop('code', None)
+
+        # Create the user
+        user = OviiUser.objects.create_user(
+            phone_number=otp_request.phone_number,
+            **validated_data
+        )
+
+        send_welcome_notification.delay(user.id)
+        otp_request.delete()
+
+        refresh = RefreshToken.for_user(user)
+        return {
+            '__debug_user_data__': UserDetailSerializer(user).data,  # Temporary debug line
+            'user': UserDetailSerializer(user).data,
+            'tokens': {
+                'refresh': str(refresh),
+                'access': str(refresh.access_token),
+            }
+        }
 
 class KYCDocumentSerializer(serializers.ModelSerializer):
     """Serializer for uploading and viewing KYC documents."""

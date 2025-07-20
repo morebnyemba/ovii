@@ -6,7 +6,10 @@ Description: URL patterns for the users app.
 
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import UserProfileView, UserViewSet, OTPRequestView, OTPVerificationView, SetTransactionPINView, KYCDocumentViewSet
+from .views import (
+    UserProfileView, UserViewSet, OTPRequestView, SetTransactionPINView,
+    KYCDocumentViewSet, UserLoginView, UserRegistrationView
+)
 from . import consumers
 
 # Create a router and register our viewsets with it.
@@ -17,7 +20,10 @@ router.register(r'kyc-documents', KYCDocumentViewSet, basename='kyc-document')
 urlpatterns = [
     # OTP Authentication Endpoints
     path('otp/request/', OTPRequestView.as_view(), name='otp-request'),
-    path('otp/verify/', OTPVerificationView.as_view(), name='otp-verify'),
+
+    # New, specific authentication endpoints
+    path('auth/register/', UserRegistrationView.as_view(), name='user-register'),
+    path('auth/login/', UserLoginView.as_view(), name='user-login'),
 
     # Authenticated User Endpoints
     path('me/', UserProfileView.as_view(), name='user-profile'),
