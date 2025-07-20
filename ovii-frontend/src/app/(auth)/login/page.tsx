@@ -1,85 +1,73 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
-import { FiPhone, FiLoader } from 'react-icons/fi';
-import { motion } from 'framer-motion';
+import { FiPhone, FiLoader, FiAlertCircle } from 'react-icons/fi';
+import { motion, AnimatePresence } from 'framer-motion';
 
-const OVII_INDIGO = '#1A1B4B';
-const OVII_GOLD   = '#FFC247';
-const OVII_MINT   = '#33D9B2';
-const OVII_CORAL  = '#FF6B6B';
-const OVII_WHITE  = '#FDFDFD';
+const COLORS = {
+  indigo: '#1A1B4B',
+  gold: '#FFC247',
+  mint: '#33D9B2',
+  coral: '#FF6B6B',
+  white: '#FDFDFD',
+  lightGray: '#F3F4F6',
+  darkIndigo: '#0F0F2D',
+};
 
 export default function LoginPage() {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [shake, setShake]   = useState(false);
+  const [shake, setShake] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const router = useRouter();
 
-  /* ------------------------------------------------------------------ */
-  /* Handlers with heavy console logging                                 */
-  /* ------------------------------------------------------------------ */
+  // Set mounted state for animations
+  useEffect(() => {
+    setIsMounted(true);
+    return () => setIsMounted(false);
+  }, []);
+
   const handleSendOTP = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.group('🔐 OTP Request');
     setError('');
-    console.log('Raw phoneNumber entered:', phoneNumber);
-
-    // --- Validation ----------------------------------------------------
+    
+    // Client-side validation
     const cleaned = phoneNumber.replace(/\D/g, '');
-    console.log('Digits only:', cleaned);
     if (!/^\+?\d{10,15}$/.test(cleaned)) {
-      triggerError('Enter a valid phone number, e.g. +263 712 345 678');
-      console.warn('❌ Validation failed');
-      console.groupEnd();
+      triggerError('Please enter a valid phone number (e.g. +263 712 345 678)');
       return;
     }
-    console.log('✅ Validation passed');
-
-    // --- Build payload -------------------------------------------------
-    // Key must be "phone_number" to match OTPRequestSerializer
-    const payload = { phone_number: '+' + cleaned };
-    console.log('Payload to send:', payload);
 
     setLoading(true);
 
     try {
-      console.log('📤 POST /users/otp/request/');
+      const payload = { phone_number: '+' + cleaned };
       const res = await api.post('/users/otp/request/', payload, {
         headers: { 'Content-Type': 'application/json' },
       });
-      console.log('📥 Response status:', res.status);
-      console.log('📥 Response data:', res.data);
 
       localStorage.setItem('phone_for_verification', '+' + cleaned);
-      console.log('✅ Redirecting to /verify-otp');
       router.push('/verify-otp');
     } catch (err: any) {
-      console.error('❌ Axios error:', err);
       const detail =
         err.response?.data?.phone_number?.[0] ||
         err.response?.data?.detail ||
-        'Couldn’t send OTP. Try again.';
+        'Failed to send OTP. Please try again later.';
       triggerError(detail);
     } finally {
       setLoading(false);
-      console.groupEnd();
     }
   };
 
   const triggerError = (msg: string) => {
-    console.warn('🚨 Triggering error:', msg);
     setError(msg);
     setShake(true);
-    setTimeout(() => setShake(false), 400);
+    setTimeout(() => setShake(false), 500);
   };
 
-  /* ------------------------------------------------------------------ */
-  /* Phone formatter (auto-spacing)                                      */
-  /* ------------------------------------------------------------------ */
   const handleChange = (v: string) => {
     const cleaned = v.replace(/\D/g, '');
     const match = cleaned.match(/^(\d{0,3})(\d{0,3})(\d{0,3})(\d{0,3})$/);
@@ -87,77 +75,137 @@ export default function LoginPage() {
       const [, p1, p2, p3, p4] = match;
       const parts = [p1, p2, p3, p4].filter(Boolean);
       const formatted = parts.length ? '+' + parts.join(' ') : '';
-      console.log('Phone formatter:', { raw: v, formatted });
       setPhoneNumber(formatted);
     }
   };
 
-  /* ------------------------------------------------------------------ */
-  /* Render                                                             */
-  /* ------------------------------------------------------------------ */
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#1A1B4B] to-[#33D9B2] p-4">
+    <motion.main
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+      className="flex min-h-screen items-center justify-center bg-gradient-to-br from-indigo-900 to-teal-400 p-4 md:p-8"
+      style={{
+        background: `linear-gradient(135deg, ${COLORS.darkIndigo} 0%, ${COLORS.mint} 100%)`,
+      }}
+    >
       <motion.div
-        animate={{ scale: shake ? [1, 0.97, 1.03, 1] : 1 }}
-        transition={{ duration: 0.3 }}
-        className="w-full max-w-sm rounded-2xl bg-[#FDFDFD] p-8 shadow-2xl"
+        initial={{ y: isMounted ? 20 : 0, opacity: isMounted ? 0 : 1 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.4, ease: 'easeOut' }}
+        className="w-full max-w-md"
       >
-        <h1 className="mb-2 text-center text-3xl font-bold" style={{ color: OVII_INDIGO }}>
-          Welcome to Ovii
-        </h1>
-        <p className="mb-6 text-center text-sm opacity-80" style={{ color: OVII_INDIGO }}>
-          Enter your phone number to continue.
-        </p>
-
-        <form onSubmit={handleSendOTP} className="space-y-6">
-          <div className="relative">
-            <FiPhone
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-xl"
-              style={{ color: OVII_INDIGO }}
-            />
-            <input
-              type="tel"
-              value={phoneNumber}
-              onChange={(e) => handleChange(e.target.value)}
-              placeholder="+263 712 345 678"
-              maxLength={16}
-              required
-              className="w-full rounded-md border border-gray-300 bg-transparent py-3 pl-10 pr-3 text-lg focus:outline-none focus:ring-2"
-              style={{ borderColor: OVII_MINT, color: OVII_INDIGO }}
-            />
+        <motion.div
+          animate={{ scale: shake ? [1, 0.98, 1.02, 1] : 1 }}
+          transition={{ duration: 0.4 }}
+          className="rounded-2xl bg-white p-6 shadow-2xl md:p-8"
+          style={{ backgroundColor: COLORS.white }}
+        >
+          <div className="mb-6 text-center">
+            <motion.h1
+              initial={{ y: -10, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.1 }}
+              className="text-3xl font-bold md:text-4xl"
+              style={{ color: COLORS.indigo }}
+            >
+              Welcome to Ovii
+            </motion.h1>
+            <motion.p
+              initial={{ y: -10, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.2 }}
+              className="mt-2 text-sm opacity-80 md:text-base"
+              style={{ color: COLORS.indigo }}
+            >
+              Enter your phone number to continue
+            </motion.p>
           </div>
 
-          {error && (
-            <motion.p
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-center text-sm"
-              style={{ color: OVII_CORAL }}
+          <form onSubmit={handleSendOTP} className="space-y-4">
+            <motion.div
+              initial={{ y: 10, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.3 }}
+              className="relative"
             >
-              {error}
-            </motion.p>
-          )}
+              <FiPhone
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-xl"
+                style={{ color: COLORS.indigo }}
+              />
+              <input
+                type="tel"
+                value={phoneNumber}
+                onChange={(e) => handleChange(e.target.value)}
+                placeholder="+263 712 345 678"
+                maxLength={16}
+                required
+                className="w-full rounded-lg border-2 bg-transparent py-3 pl-10 pr-3 text-lg focus:outline-none focus:ring-2 focus:ring-offset-2"
+                style={{
+                  borderColor: COLORS.mint,
+                  color: COLORS.indigo,
+                  backgroundColor: COLORS.lightGray,
+                  focusRingColor: COLORS.gold,
+                }}
+              />
+            </motion.div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="flex w-full items-center justify-center gap-2 rounded-md py-3 text-lg font-semibold transition-transform active:scale-95"
-            style={{
-              backgroundColor: OVII_GOLD,
-              color: OVII_INDIGO,
-            }}
+            <AnimatePresence>
+              {error && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden"
+                >
+                  <div className="flex items-center justify-center gap-2 rounded-lg bg-red-50 p-3">
+                    <FiAlertCircle className="text-red-500" />
+                    <p className="text-sm text-red-600">{error}</p>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <motion.div
+              initial={{ y: 10, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.4 }}
+            >
+              <button
+                type="submit"
+                disabled={loading}
+                className="flex w-full items-center justify-center gap-2 rounded-lg py-3 text-lg font-semibold shadow-md transition-all hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-80"
+                style={{
+                  backgroundColor: COLORS.gold,
+                  color: COLORS.indigo,
+                  focusRingColor: COLORS.mint,
+                }}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                {loading ? (
+                  <>
+                    <FiLoader className="animate-spin" />
+                    <span>Sending OTP...</span>
+                  </>
+                ) : (
+                  'Send OTP'
+                )}
+              </button>
+            </motion.div>
+          </form>
+
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            className="mt-6 text-center text-xs text-gray-500"
           >
-            {loading ? (
-              <>
-                <FiLoader className="animate-spin" />
-                Sending…
-              </>
-            ) : (
-              'Send OTP'
-            )}
-          </button>
-        </form>
+            By continuing, you agree to our Terms of Service and Privacy Policy
+          </motion.div>
+        </motion.div>
       </motion.div>
-    </main>
+    </motion.main>
   );
 }
