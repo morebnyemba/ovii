@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiPhone, FiLoader, FiAlertCircle, FiShield, FiCheckCircle, FiArrowLeft, FiZap } from 'react-icons/fi';
+import Cookies from 'js-cookie'; // Import js-cookie to manage auth tokens
 import api from '@/lib/api';
 import { useUserStore } from '@/lib/store/useUserStore';
 
@@ -69,41 +70,49 @@ export default function LoginPage() {
     setError('');
     const cleaned = phoneNumber.replace(/\D/g, '');
     if (!/^\+?\d{10,15}$/.test(cleaned)) {
-      triggerError('Please enter a valid phone number (e.g., +263712345678).');
-      return;
+        triggerError('Please enter a valid phone number (e.g., +263712345678).');
+        return;
     }
     setLoading(true);
     try {
-      const response = await api.post('/users/otp/request/', { phone_number: `+${cleaned}` });
-      setRequestId(response.data.request_id);
-      setOtpSent(true);
-      setCountdown(30);
+        const response = await api.post('/users/otp/request/', { phone_number: `+${cleaned}` });
+        setRequestId(response.data.request_id);
+        setOtpSent(true);
+        setCountdown(30);
     } catch (err: any) {
-      triggerError(getApiErrorMessage(err));
+        triggerError(getApiErrorMessage(err));
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
   };
 
   const handleVerifyOTP = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
     if (otp.length !== 6) {
-      triggerError('Please enter the 6-digit code.');
+      triggerError('Please enter the 6-digit code');
       return;
     }
-    setLoading(true);
-    try {
-      const response = await api.post('/users/auth/login/', { request_id: requestId, code: otp });
-      const { user, tokens } = response.data;
-      
-      login(user); // Update Zustand store
 
-      await fetch('/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ access: tokens.access, refresh: tokens.refresh }),
-      });
+    setLoading(true);
+
+    try {
+      const payload = {
+        request_id: requestId,
+        code: otp,
+      };
+      const response = await api.post('/users/auth/login/', payload);
+      const { user, tokens } = response.data;
+
+      // --- KEY CHANGE HERE ---
+      // 1. Set the access token in a cookie FIRST.
+      //    This makes the token immediately available for the API interceptor.
+      Cookies.set('access_token', tokens.access, { expires: 1, secure: process.env.NODE_ENV === 'production' });
+
+      // 2. NOW, call the login action. The subsequent API calls inside
+      //    it (fetchWallet, fetchTransactions) will be authenticated correctly.
+      login(user);
 
       setVerificationSuccess(true);
       setTimeout(() => router.push('/'), 1500);
@@ -130,9 +139,28 @@ export default function LoginPage() {
     }
   };
 
-  // ... (rest of the component remains the same, including the JSX)
-  // The provided JSX for LoginPage is well-structured and doesn't need changes.
-  // The key change was adding the `login(user)` call in `handleVerifyOTP`.
+  const handleChange = (v: string) => {
+    const cleaned = v.replace(/\D/g, '');
+    const match = cleaned.match(/^(\d{0,3})(\d{0,3})(\d{0,3})(\d{0,3})$/);
+    if (match) {
+        const [, p1, p2, p3, p4] = match;
+        const parts = [p1, p2, p3, p4].filter(Boolean);
+        const formatted = parts.length ? '+' + parts.join(' ') : '';
+        setPhoneNumber(formatted);
+    }
+  };
+
+  const handleOtpChange = (value: string) => {
+    if (/^\d{0,6}$/.test(value)) {
+        setOtp(value);
+    }
+  };
+
+  const resetOtpFlow = () => {
+    setOtpSent(false);
+    setOtp('');
+    setError('');
+  };
 
   return (
     <motion.main
@@ -227,7 +255,7 @@ export default function LoginPage() {
                       id="phone"
                       type="tel"
                       value={phoneNumber}
-                      onChange={(e) => setPhoneNumber(e.target.value)}
+                      onChange={(e) => handleChange(e.target.value)}
                       placeholder="+263 712 345 678"
                       maxLength={16}
                       required
@@ -304,7 +332,7 @@ export default function LoginPage() {
                   <div className="flex items-center justify-between">
                     <button
                       type="button"
-                      onClick={() => setOtpSent(false)}
+                      onClick={resetOtpFlow}
                       className="flex items-center gap-1 text-sm"
                       style={{ color: COLORS.indigo }}
                     >
@@ -338,7 +366,7 @@ export default function LoginPage() {
                         id="otp"
                         type="tel"
                         value={otp}
-                        onChange={(e) => setOtp(e.target.value)}
+                        onChange={(e) => handleOtpChange(e.target.value)}
                         placeholder="123456"
                         maxLength={6}
                         required
