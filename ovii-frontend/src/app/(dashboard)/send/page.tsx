@@ -45,16 +45,20 @@ export default function SendMoneyPage() {
 
     // TODO: Replace with actual API call via Zustand store
     // Simulating API call
-    setTimeout(() => {
-      // Simulate a random success or failure
-      if (Math.random() > 0.2) { // 80% success chance
-        setSuccess(true);
-      } else {
-        setError('Transaction failed. Please try again.');
+    setTimeout(() =>{
+      try {
+        // Simulate a random success or failure
+        if (Math.random() > 0.2) { // 80% success chance
+          setSuccess(true);
+        } else {
+          setError('Transaction failed. Please try again.');
+        }
+      } catch (e : any){
+        setError('An unexpected error occurred: ' + e.message);
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     }, 2000);
-  };
 
   const resetForm = () => {
     setRecipient('');
