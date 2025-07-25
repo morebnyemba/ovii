@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { FiTrendingUp, FiSend, FiPlusCircle, FiLoader, FiAlertTriangle, FiUser, FiUserPlus, FiDollarSign } from 'react-icons/fi';
+import { FiTrendingUp, FiSend, FiLoader, FiAlertTriangle, FiUser, FiUserPlus, FiDollarSign, FiArrowUpRight, FiArrowDownLeft } from 'react-icons/fi';
 import { useUserStore } from '@/lib/store/useUserStore';
 
 const COLORS = {
@@ -16,12 +16,35 @@ const COLORS = {
   darkIndigo: '#0F0F2D',
 };
 
+// Define a type for our transaction for better type-safety
+type Transaction = {
+    id: string;
+    type: 'sent' | 'received';
+    amount: string;
+    currency: string;
+    party: string;
+    date: string;
+};
+
 export default function DashboardPage() {
     const { user, wallet, fetchWallet, loading, error, isAuthenticated, _hasHydrated } = useUserStore();
+    // In a real app, this would likely be part of a dedicated store or hook
+    const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([]);
+    const [transactionsLoading, setTransactionsLoading] = useState(true);
 
     useEffect(() => {
         if (_hasHydrated && isAuthenticated) {
             fetchWallet();
+            // Simulate fetching recent transactions
+            // TODO: Replace with actual API call, e.g., api.get('/transactions/recent')
+            setTimeout(() => {
+                setRecentTransactions([
+                    { id: '1', type: 'sent', amount: '50.00', currency: 'USD', party: 'John Doe', date: '2024-05-20' },
+                    { id: '2', type: 'received', amount: '120.00', currency: 'USD', party: 'Jane Smith', date: '2024-05-19' },
+                    { id: '3', type: 'sent', amount: '15.50', currency: 'USD', party: 'Online Store', date: '2024-05-18' },
+                ]);
+                setTransactionsLoading(false);
+            }, 1500);
         }
     }, [_hasHydrated, isAuthenticated, fetchWallet]);
 
@@ -182,10 +205,46 @@ export default function DashboardPage() {
                         View All
                     </Link>
                 </div>
-                <div className="mt-4 text-center py-8" style={{ color: COLORS.darkIndigo }}>
-                    <FiTrendingUp className="mx-auto text-3xl opacity-30" />
-                    <p className="mt-2">Your recent transactions will appear here</p>
-                </div>
+                {transactionsLoading ? (
+                    <div className="mt-4 text-center py-8 flex items-center justify-center" style={{ color: COLORS.darkIndigo }}>
+                        <FiLoader className="animate-spin text-2xl mr-3" />
+                        <span>Loading recent activity...</span>
+                    </div>
+                ) : recentTransactions.length > 0 ? (
+                    <ul className="mt-4 space-y-3">
+                        {recentTransactions.map((tx, index) => (
+                            <motion.li
+                                key={tx.id}
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ duration: 0.3, delay: index * 0.1 }}
+                                className="flex items-center justify-between p-3 rounded-lg transition-colors hover:bg-lightGray"
+                            >
+                                <div className="flex items-center gap-4">
+                                    <div className={`flex items-center justify-center w-10 h-10 rounded-full ${tx.type === 'sent' ? 'bg-red-100' : 'bg-green-100'}`}>
+                                        {tx.type === 'sent' ? (
+                                            <FiArrowUpRight style={{ color: COLORS.coral }} />
+                                        ) : (
+                                            <FiArrowDownLeft style={{ color: COLORS.mint }} />
+                                        )}
+                                    </div>
+                                    <div>
+                                        <p className="font-semibold" style={{ color: COLORS.darkIndigo }}>{tx.type === 'sent' ? 'Sent to' : 'Received from'} {tx.party}</p>
+                                        <p className="text-sm text-gray-500">{new Date(tx.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
+                                    </div>
+                                </div>
+                                <p className={`font-bold ${tx.type === 'sent' ? 'text-red-500' : 'text-green-500'}`}>
+                                    {tx.type === 'sent' ? '-' : '+'} {tx.currency} {tx.amount}
+                                </p>
+                            </motion.li>
+                        ))}
+                    </ul>
+                ) : (
+                    <div className="mt-4 text-center py-8" style={{ color: COLORS.darkIndigo }}>
+                        <FiTrendingUp className="mx-auto text-3xl opacity-30" />
+                        <p className="mt-2">Your recent transactions will appear here</p>
+                    </div>
+                )}
             </Card>
         </div>
     );
