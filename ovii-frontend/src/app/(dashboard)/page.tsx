@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { FiTrendingUp, FiSend, FiLoader, FiAlertTriangle, FiUser, FiUserPlus, FiDollarSign, FiArrowUpRight, FiArrowDownLeft } from 'react-icons/fi';
-import { useUserStore } from '@/lib/store/useUserStore';
+import { useUserStore, Transaction } from '@/lib/store/useUserStore';
 
 const COLORS = {
   indigo: '#1A1B4B',
@@ -16,37 +16,19 @@ const COLORS = {
   darkIndigo: '#0F0F2D',
 };
 
-// Define a type for our transaction for better type-safety
-type Transaction = {
-    id: string;
-    type: 'sent' | 'received';
-    amount: string;
-    currency: string;
-    party: string;
-    date: string;
-};
-
 export default function DashboardPage() {
-    const { user, wallet, fetchWallet, loading, error, isAuthenticated, _hasHydrated } = useUserStore();
-    // In a real app, this would likely be part of a dedicated store or hook
-    const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([]);
-    const [transactionsLoading, setTransactionsLoading] = useState(true);
+    const { user, wallet, transactions, fetchWallet, fetchTransactions, loading, error, isAuthenticated, _hasHydrated } = useUserStore();
 
     useEffect(() => {
         if (_hasHydrated && isAuthenticated) {
             fetchWallet();
-            // Simulate fetching recent transactions
-            // TODO: Replace with actual API call, e.g., api.get('/transactions/recent')
-            setTimeout(() => {
-                setRecentTransactions([
-                    { id: '1', type: 'sent', amount: '50.00', currency: 'USD', party: 'John Doe', date: '2024-05-20' },
-                    { id: '2', type: 'received', amount: '120.00', currency: 'USD', party: 'Jane Smith', date: '2024-05-19' },
-                    { id: '3', type: 'sent', amount: '15.50', currency: 'USD', party: 'Online Store', date: '2024-05-18' },
-                ]);
-                setTransactionsLoading(false);
-            }, 1500);
+            // Fetch transactions if they haven't been loaded yet.
+            // The login action also triggers this, but this handles reloads.
+            if (transactions.length === 0) {
+                fetchTransactions();
+            }
         }
-    }, [_hasHydrated, isAuthenticated, fetchWallet]);
+    }, [_hasHydrated, isAuthenticated, fetchWallet, fetchTransactions, transactions.length]);
 
     const Card = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (
         <motion.div
@@ -205,14 +187,22 @@ export default function DashboardPage() {
                         View All
                     </Link>
                 </div>
-                {transactionsLoading ? (
+                {loading.transactions ? (
                     <div className="mt-4 text-center py-8 flex items-center justify-center" style={{ color: COLORS.darkIndigo }}>
                         <FiLoader className="animate-spin text-2xl mr-3" />
                         <span>Loading recent activity...</span>
                     </div>
-                ) : recentTransactions.length > 0 ? (
+                ) : error.transactions ? (
+                    <div className="mt-4 text-center py-8 flex flex-col items-center justify-center" style={{ color: COLORS.coral }}>
+                        <FiAlertTriangle className="text-3xl opacity-50" />
+                        <p className="mt-2 font-semibold">{error.transactions}</p>
+                        <button onClick={() => fetchTransactions()} className="mt-2 text-sm font-bold" style={{ color: COLORS.indigo }}>
+                            Try again
+                        </button>
+                    </div>
+                ) : transactions.length > 0 ? (
                     <ul className="mt-4 space-y-3">
-                        {recentTransactions.map((tx, index) => (
+                        {transactions.slice(0, 3).map((tx, index) => (
                             <motion.li
                                 key={tx.id}
                                 initial={{ opacity: 0, x: -20 }}
