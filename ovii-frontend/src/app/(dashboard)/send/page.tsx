@@ -18,7 +18,7 @@ const COLORS = {
 };
 
 export default function SendMoneyPage() {
-  const { wallet, loading: walletLoading } = useUserStore();
+  const { wallet, loading: walletLoading, sendMoney, error: storeError } = useUserStore();
   const [recipient, setRecipient] = useState('');
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
@@ -29,7 +29,6 @@ export default function SendMoneyPage() {
 
   const handleSendMoney = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
 
     // Basic validation
     if (!recipient || !amount || parseFloat(amount) <= 0) {
@@ -41,24 +40,12 @@ export default function SendMoneyPage() {
       return;
     }
 
-    setIsLoading(true);
+   const success = await sendMoney(recipient, parseFloat(amount), note);
 
-    // TODO: Replace with actual API call via Zustand store
-    // Simulating API call
-    setTimeout(() =>{
-      try {
-        // Simulate a random success or failure
-        if (Math.random() > 0.2) { // 80% success chance
-          setSuccess(true);
-        } else {
-          setError('Transaction failed. Please try again.');
-        }
-      } catch (e : any){
-        setError('An unexpected error occurred: ' + e.message);
-      } finally {
-        setIsLoading(false);
-      }
-    }, 2000);
+    if (success){
+      setSuccess(true);
+    }
+  }
 
   const resetForm = () => {
     setRecipient('');
@@ -158,7 +145,7 @@ export default function SendMoneyPage() {
                 <div className="relative"><FiEdit2 className="absolute left-3 top-1/2 -translate-y-1/2 text-lg" style={{ color: COLORS.indigo, opacity: 0.5 }} /><input id="note" type="text" value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g., For lunch" className="w-full rounded-lg border-2 bg-transparent py-3 pl-10 pr-3 focus:outline-none focus:ring-2 focus:ring-offset-2" style={{ borderColor: COLORS.mint, color: COLORS.indigo, backgroundColor: COLORS.white }} /></div>
               </div>
 
-              {error && (
+              {storeError.transactions && (
                 <div className="flex items-center gap-2 rounded-lg bg-red-50 p-3 text-sm text-red-600">
                   <FiAlertTriangle />
                   <span>{error}</span>
