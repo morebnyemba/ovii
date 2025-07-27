@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FiSend, FiLoader, FiCheckCircle, FiAlertTriangle, FiArrowLeft, FiUser, FiDollarSign, FiEdit2 } from 'react-icons/fi';
 import { useUserStore } from '@/lib/store/useUserStore';
 import Link from 'next/link';
+import { z } from 'zod';
 
 // Using the same color palette for consistency
 const COLORS = {
@@ -17,46 +18,73 @@ const COLORS = {
   darkIndigo: '#0F0F2D',
 };
 
+// Define the validation schema using Zod
+const sendMoneySchema = z.object({
+  recipient: z.string().min(1, { message: "Recipient is required." }),
+  amount: z.coerce // Coerce string from input to number for validation
+    .number({ invalid_type_error: "Please enter a valid amount." })
+    .positive({ message: "Amount must be greater than zero." }),
+  note: z.string().max(100, { message: "Note must be 100 characters or less." }).optional(),
+});
+
+// Type for our structured form errors
+type FormErrors = z.ZodFormattedError<z.infer<typeof sendMoneySchema>> | null;
+
 export default function SendMoneyPage() {
-  const { wallet, loading: walletLoading, sendMoney, error: storeError } = useUserStore();
+  const { wallet, loading, sendMoney, error: storeError } = useUserStore();
+  
+  // State for form fields
   const [recipient, setRecipient] = useState('');
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
 
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // Refactored state for UI feedback
+  const [formErrors, setFormErrors] = useState<FormErrors>(null);
+  const [apiError, setApiError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
   const handleSendMoney = async (e: React.FormEvent) => {
     e.preventDefault();
+    // Clear previous errors
+    setFormErrors(null);
+    setApiError(null);
 
-    // Basic validation
-    if (!recipient || !amount || parseFloat(amount) <= 0) {
-      setError('Please fill in a valid recipient and amount.');
+    const validationResult = sendMoneySchema.safeParse({ recipient, amount, note });
+
+    if (!validationResult.success) {
+      setFormErrors(validationResult.error.format());
       return;
     }
-    if (wallet && parseFloat(amount) > parseFloat(wallet.balance)) {
-      setError('Insufficient balance.');
+
+    const validatedAmount = validationResult.data.amount;
+
+    if (wallet && validatedAmount > parseFloat(wallet.balance)) {
+      setApiError('Insufficient balance.');
       return;
     }
 
-   const success = await sendMoney(recipient, parseFloat(amount), note);
+    const isSuccess = await sendMoney(
+      validationResult.data.recipient,
+      validatedAmount,
+      validationResult.data.note
+    );
 
-    if (success){
+    if (isSuccess) {
       setSuccess(true);
     }
-  }
+    // The error state in the store will be updated by the sendMoney action if it fails
+  };
 
   const resetForm = () => {
     setRecipient('');
     setAmount('');
     setNote('');
-    setError(null);
+    setFormErrors(null);
+    setApiError(null);
     setSuccess(false);
-    setIsLoading(false);
   };
 
-  if (walletLoading) {
+  if (loading.wallet) {
     return (
       <div className="flex items-center justify-center h-full">
         <FiLoader className="animate-spin text-4xl" style={{ color: COLORS.gold }} />
@@ -117,6 +145,7 @@ export default function SendMoneyPage() {
             </motion.div>
           ) : (
             <motion.form
+              noValidate
               key="form"
               onSubmit={handleSendMoney}
               initial={{ opacity: 0 }}
@@ -134,26 +163,38 @@ export default function SendMoneyPage() {
               {/* Recipient, Amount, and Note Inputs */}
               <div>
                 <label htmlFor="recipient" className="block text-sm font-medium mb-1" style={{ color: COLORS.indigo }}>Recipient's Phone or @OviiTag</label>
-                <div className="relative"><FiUser className="absolute left-3 top-1/2 -translate-y-1/2 text-lg" style={{ color: COLORS.indigo, opacity: 0.5 }} /><input id="recipient" type="text" value={recipient} onChange={(e) => setRecipient(e.target.value)} placeholder="e.g., +263712345678 or @moreblessing" required className="w-full rounded-lg border-2 bg-transparent py-3 pl-10 pr-3 focus:outline-none focus:ring-2 focus:ring-offset-2" style={{ borderColor: COLORS.mint, color: COLORS.indigo, backgroundColor: COLORS.white }} /></div>
+                <div className="relative">
+                  <FiUser className="absolute left-3 top-1/2 -translate-y-1/2 text-lg" style={{ color: COLORS.indigo, opacity: 0.5 }} />
+                  <input id="recipient" type="text" value={recipient} onChange={(e) => setRecipient(e.target.value)} placeholder="e.g., +263712345678 or @moreblessing" required className={`w-full rounded-lg border-2 bg-transparent py-3 pl-10 pr-3 focus:outline-none focus:ring-2 focus:ring-offset-2 ${formErrors?.recipient ? 'border-red-500' : 'border-mint'}`} style={{ color: COLORS.indigo, backgroundColor: COLORS.white }} />
+                </div>
+                {formErrors?.recipient && <p className="mt-1 text-xs text-red-600">{formErrors.recipient._errors[0]}</p>}
               </div>
               <div>
                 <label htmlFor="amount" className="block text-sm font-medium mb-1" style={{ color: COLORS.indigo }}>Amount</label>
-                <div className="relative"><FiDollarSign className="absolute left-3 top-1/2 -translate-y-1/2 text-lg" style={{ color: COLORS.indigo, opacity: 0.5 }} /><input id="amount" type="number" step="0.01" min="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" required className="w-full rounded-lg border-2 bg-transparent py-3 pl-10 pr-3 focus:outline-none focus:ring-2 focus:ring-offset-2" style={{ borderColor: COLORS.mint, color: COLORS.indigo, backgroundColor: COLORS.white }} /></div>
+                <div className="relative">
+                  <FiDollarSign className="absolute left-3 top-1/2 -translate-y-1/2 text-lg" style={{ color: COLORS.indigo, opacity: 0.5 }} />
+                  <input id="amount" type="number" step="0.01" min="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" required className={`w-full rounded-lg border-2 bg-transparent py-3 pl-10 pr-3 focus:outline-none focus:ring-2 focus:ring-offset-2 ${formErrors?.amount ? 'border-red-500' : 'border-mint'}`} style={{ color: COLORS.indigo, backgroundColor: COLORS.white }} />
+                </div>
+                {formErrors?.amount && <p className="mt-1 text-xs text-red-600">{formErrors.amount._errors[0]}</p>}
               </div>
               <div>
                 <label htmlFor="note" className="block text-sm font-medium mb-1" style={{ color: COLORS.indigo }}>Note (Optional)</label>
-                <div className="relative"><FiEdit2 className="absolute left-3 top-1/2 -translate-y-1/2 text-lg" style={{ color: COLORS.indigo, opacity: 0.5 }} /><input id="note" type="text" value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g., For lunch" className="w-full rounded-lg border-2 bg-transparent py-3 pl-10 pr-3 focus:outline-none focus:ring-2 focus:ring-offset-2" style={{ borderColor: COLORS.mint, color: COLORS.indigo, backgroundColor: COLORS.white }} /></div>
+                <div className="relative">
+                  <FiEdit2 className="absolute left-3 top-1/2 -translate-y-1/2 text-lg" style={{ color: COLORS.indigo, opacity: 0.5 }} />
+                  <input id="note" type="text" value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g., For lunch" className={`w-full rounded-lg border-2 bg-transparent py-3 pl-10 pr-3 focus:outline-none focus:ring-2 focus:ring-offset-2 ${formErrors?.note ? 'border-red-500' : 'border-mint'}`} style={{ color: COLORS.indigo, backgroundColor: COLORS.white }} />
+                </div>
+                {formErrors?.note && <p className="mt-1 text-xs text-red-600">{formErrors.note._errors[0]}</p>}
               </div>
 
-              {storeError.transactions && (
+              {(apiError || storeError.sendMoney) && (
                 <div className="flex items-center gap-2 rounded-lg bg-red-50 p-3 text-sm text-red-600">
                   <FiAlertTriangle />
-                  <span>{error}</span>
+                  <span>{apiError || storeError.sendMoney}</span>
                 </div>
               )}
 
-              <button type="submit" disabled={isLoading || !wallet} className="w-full flex items-center justify-center gap-2 font-bold py-4 px-6 rounded-full shadow-md transition-all hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed" style={{ backgroundColor: COLORS.gold, color: COLORS.indigo }}>
-                {isLoading ? (
+              <button type="submit" disabled={loading.transactions || !wallet} className="w-full flex items-center justify-center gap-2 font-bold py-4 px-6 rounded-full shadow-md transition-all hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed" style={{ backgroundColor: COLORS.gold, color: COLORS.indigo }}>
+                {loading.transactions ? (
                   <><FiLoader className="animate-spin" /><span>Sending...</span></>
                 ) : (
                   <><FiSend /><span>Send Now</span></>
