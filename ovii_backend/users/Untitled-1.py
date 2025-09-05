@@ -1,6 +1,6 @@
 """
 Author: Moreblessing Nyemba +263787211325
-Date: 2025-07-21
+Date: 2024-05-21
 Description: Custom middleware for Django Channels to handle JWT authentication.
 """
 
@@ -21,11 +21,10 @@ def get_user(user_id):
     except User.DoesNotExist:
         return AnonymousUser()
 
-
 class JwtAuthMiddleware:
     """
     Custom middleware for Django Channels that authenticates users via a JWT
-    passed in the WebSocket connection's query string.
+    passed in the query string of the WebSocket connection.
     """
     def __init__(self, app):
         self.app = app

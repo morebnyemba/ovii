@@ -10,7 +10,6 @@ from .views import (
     UserProfileView, UserViewSet, OTPRequestView, SetTransactionPINView,
     KYCDocumentViewSet, UserLoginView, UserRegistrationView
 )
-from . import consumers
 
 # Create a router and register our viewsets with it.
 router = DefaultRouter()
@@ -31,9 +30,4 @@ urlpatterns = [
 
     # Include the admin management URLs from the router.
     path('', include(router.urls)),
-]
-
-websocket_urlpatterns = [
-    # Endpoint for the notification WebSocket. e.g., /ws/users/notifications/
-    path('ws/users/notifications/', consumers.NotificationConsumer.as_asgi()),
 ]

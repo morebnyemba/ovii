@@ -1,11 +1,13 @@
 'use client';
 
 import React from 'react';
+import { Toaster } from 'react-hot-toast';
 import Link from 'next/link';
 import { Wallet, Landmark, History, User, LogOut, Menu, X } from 'lucide-react';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUserStore } from '@/lib/store/useUserStore';
+import { WebSocketProvider } from '@/components/providers/WebSocketProvider';
 
 // Ovii brand colors
 const COLORS = {
@@ -90,61 +92,73 @@ export default function DashboardLayout({
   );
 
   return (
-    <div className="relative md:flex h-screen" style={{ backgroundColor: COLORS.lightGray }}>
-      {/* Mobile Sidebar Overlay */}
-      <div 
-        className={`fixed inset-0 z-30 md:hidden transition-opacity duration-300 ${isSidebarOpen ? 'bg-black/60 opacity-100' : 'opacity-0 pointer-events-none'}`}
-        onClick={() => setSidebarOpen(false)}
-      ></div>
-
-      {/* Mobile Sidebar */}
-      <aside 
-        className={`fixed top-0 left-0 h-full w-64 flex flex-col z-40 transition-transform duration-300 ease-in-out md:hidden`}
-        style={{ 
-          backgroundColor: COLORS.indigo,
-          transform: isSidebarOpen ? 'translateX(0)' : 'translateX(-100%)' 
+    <WebSocketProvider>
+      {/* The Toaster component renders notifications anywhere in the app */}
+      <Toaster
+        position="top-center"
+        reverseOrder={false}
+        toastOptions={{
+          success: {
+            duration: 5000,
+          },
         }}
-      >
-        <SidebarContent />
-      </aside>
-
-      {/* Desktop Sidebar */}
-      <aside 
-        className="w-64 flex-col hidden md:flex"
-        style={{ backgroundColor: COLORS.indigo }}
-      >
-        <SidebarContent />
-      </aside>
-
-      {/* Main Content Area */}
-      <main className="flex-1 flex flex-col overflow-hidden">
-        {/* Mobile Header */}
-        <header 
-          className="p-4 shadow-md md:hidden flex justify-between items-center"
-          style={{ backgroundColor: COLORS.white }}
-        >
-          <div 
-            className="text-xl font-bold"
-            style={{ color: COLORS.indigo }}
-          >
-            Ovii
-          </div>
-          <button 
-            onClick={() => setSidebarOpen(!isSidebarOpen)}
-            style={{ color: COLORS.indigo }}
-          >
-            {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
-        </header>
-
-        {/* Content Container */}
+      />
+      <div className="relative md:flex h-screen" style={{ backgroundColor: COLORS.lightGray }}>
+        {/* Mobile Sidebar Overlay */}
         <div 
-          className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto"
-          style={{ backgroundColor: COLORS.white }}
+          className={`fixed inset-0 z-30 md:hidden transition-opacity duration-300 ${isSidebarOpen ? 'bg-black/60 opacity-100' : 'opacity-0 pointer-events-none'}`}
+          onClick={() => setSidebarOpen(false)}
+        ></div>
+
+        {/* Mobile Sidebar */}
+        <aside 
+          className={`fixed top-0 left-0 h-full w-64 flex flex-col z-40 transition-transform duration-300 ease-in-out md:hidden`}
+          style={{ 
+            backgroundColor: COLORS.indigo,
+            transform: isSidebarOpen ? 'translateX(0)' : 'translateX(-100%)' 
+          }}
         >
-          {children}
-        </div>
-      </main>
-    </div>
+          <SidebarContent />
+        </aside>
+
+        {/* Desktop Sidebar */}
+        <aside 
+          className="w-64 flex-col hidden md:flex"
+          style={{ backgroundColor: COLORS.indigo }}
+        >
+          <SidebarContent />
+        </aside>
+
+        {/* Main Content Area */}
+        <main className="flex-1 flex flex-col overflow-hidden">
+          {/* Mobile Header */}
+          <header 
+            className="p-4 shadow-md md:hidden flex justify-between items-center"
+            style={{ backgroundColor: COLORS.white }}
+          >
+            <div 
+              className="text-xl font-bold"
+              style={{ color: COLORS.indigo }}
+            >
+              Ovii
+            </div>
+            <button 
+              onClick={() => setSidebarOpen(!isSidebarOpen)}
+              style={{ color: COLORS.indigo }}
+            >
+              {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+          </header>
+
+          {/* Content Container */}
+          <div 
+            className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto"
+            style={{ backgroundColor: COLORS.white }}
+          >
+            {children}
+          </div>
+        </main>
+      </div>
+    </WebSocketProvider>
   );
 }

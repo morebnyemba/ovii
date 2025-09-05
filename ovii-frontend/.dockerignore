@@ -1,0 +1,14 @@
+.DS_Store
+.dockerignore
+.env
+.env*.local
+.git
+.gitignore
+.next
+.swc
+.vscode
+node_modules
+npm-debug.log*
+README.md
+yarn-debug.log*
+yarn-error.log*

@@ -1,0 +1,102 @@
+version: '3.8'
+
+volumes:
+  postgres_data:
+  static_volume:
+  media_volume:
+  certbot_data:
+  certbot_webroot:
+
+services:
+  # --- Backend Services ---
+  db:
+    image: postgres:15-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASS}
+
+  redis:
+    image: redis:7-alpine
+
+  backend:
+    build:
+      context: ./ovii-backend
+    # Start the Daphne ASGI server instead of Gunicorn
+    command: daphne -b 0.0.0.0 -p 8000 ovii.asgi:application
+    volumes:
+      - static_volume:/app/static
+      - media_volume:/app/media
+    env_file:
+      - ./ovii-backend/.env
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - db
+      - redis
+
+  celery_worker:
+    build:
+      context: ./ovii-backend
+    # Replace 'ovii' with your Django project name
+    command: celery -A ovii worker -l info
+    env_file:
+      - ./ovii-backend/.env
+    depends_on:
+      - db
+      - redis
+
+  celery_beat:
+    build:
+      context: ./ovii-backend
+    # Replace 'ovii' with your Django project name
+    command: celery -A ovii beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    env_file:
+      - ./ovii-backend/.env
+    depends_on:
+      - db
+      - redis
+  
+  # --- Frontend Service ---
+  frontend:
+    build:
+      context: ./ovii-frontend
+      args:
+        # This URL points to the dedicated API subdomain.
+        - NEXT_PUBLIC_WEBSOCKET_URL=wss://api.ovii.it.com/ws/wallet/
+    depends_on:
+      - backend
+
+  # --- Nginx Reverse Proxy ---
+  nginx:
+    build:
+      context: ./nginx
+    # Note: For better performance, you can configure Nginx to serve static/media
+    # files directly from these volumes instead of proxying to Django.
+    volumes:
+      - ./nginx/options-ssl-nginx.conf:/etc/letsencrypt/options-ssl-nginx.conf:ro
+      - ./nginx/ssl-dhparams.pem:/etc/letsencrypt/ssl-dhparams.pem:ro
+      - certbot_data:/etc/letsencrypt
+      - certbot_webroot:/var/www/certbot
+      - static_volume:/app/static
+      - media_volume:/app/media
+    ports:
+      - "80:80"
+      - "443:443"
+    # This command starts Nginx and sets up a loop to reload it every 12 hours.
+    # This is necessary to apply renewed SSL certificates from Certbot.
+    command: /bin/sh -c "while :; do sleep 12h & wait $${!}; nginx -s reload; done & nginx -g 'daemon off;'"
+    depends_on:
+      - backend
+      - frontend
+
+  certbot:
+    image: certbot/certbot
+    volumes:
+      - certbot_data:/etc/letsencrypt
+      - certbot_webroot:/var/www/certbot

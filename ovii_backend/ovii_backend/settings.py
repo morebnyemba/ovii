@@ -25,6 +25,7 @@ ALLOWED_HOSTS = ["*"] if DEBUG else []   # tighten this in prod!
 # 3. APPS
 # ------------------------------------------------------------------
 DJANGO_APPS = [
+    "daphne",
     "jazzmin",
     "django.contrib.admin",
     "django.contrib.auth",
