@@ -17,9 +17,18 @@ load_dotenv()  # loads variables from .env
 # ------------------------------------------------------------------
 # 2. CORE SETTINGS
 # ------------------------------------------------------------------
-SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "django-insecure-x1hv@le&dft+59o624lfp24h(h*c@zc-rv$o53#o3a9@^pc8_#")
 DEBUG = os.getenv("DJANGO_DEBUG", "True").lower() == "true"
-ALLOWED_HOSTS = ["*"] if DEBUG else []   # tighten this in prod!
+
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
+if not SECRET_KEY and DEBUG is False:
+    raise ValueError("No DJANGO_SECRET_KEY set for production environment!")
+elif not SECRET_KEY:
+    SECRET_KEY = "django-insecure-x1hv@le&dft+59o624lfp24h(h*c@zc-rv$o53#o3a9@^pc8_#"
+
+# ALLOWED_HOSTS should be a list of strings representing the host/domain names
+# that this Django site can serve. This is a security measure to prevent
+# HTTP Host header attacks.
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
 
 # ------------------------------------------------------------------
 # 3. APPS
@@ -67,13 +76,21 @@ MIDDLEWARE = [
 # ------------------------------------------------------------------
 # 5. CORS – Next.js dev server
 # ------------------------------------------------------------------
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",      # Next.js default
-    "http://127.0.0.1:3000",      # common alias
-]
+if DEBUG:
+    CORS_ALLOWED_ORIGINS = [
+        "http://localhost:3000",      # Next.js default
+        "http://127.0.0.1:3000",      # common alias
+    ]
+else:
+    # In production, you should restrict this to your frontend's domain
+    CORS_ALLOWED_ORIGINS = os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
 
 # Allow cookies / Authorization header
 CORS_ALLOW_CREDENTIALS = True
+
+# In production, it's more secure to explicitly set the allowed origins
+# rather than allowing all.
+CORS_ALLOW_ALL_ORIGINS = False
 
 # Make sure we allow the headers Next.js will send
 from corsheaders.defaults import default_headers
@@ -81,6 +98,19 @@ CORS_ALLOW_HEADERS = list(default_headers) + [
     "authorization",
     "content-type",
     "x-csrftoken",
+]
+
+# ------------------------------------------------------------------
+# 5.1. Production Security Settings
+# ------------------------------------------------------------------
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 31536000  # 1 year
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    SECURE_BROWSER_XSS_FILTER = True
 ]
 
 # ------------------------------------------------------------------
