@@ -111,6 +111,10 @@ if not DEBUG:
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
     SECURE_BROWSER_XSS_FILTER = True
+    # A list of trusted origins for unsafe requests (e.g. POST).
+    # For 'https' schemes, the header must be a match.
+    CSRF_TRUSTED_ORIGINS = os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",")
+
 
 # ------------------------------------------------------------------
 # 6. URL / WSGI / ASGI
