@@ -111,7 +111,6 @@ if not DEBUG:
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
     SECURE_BROWSER_XSS_FILTER = True
-]
 
 # ------------------------------------------------------------------
 # 6. URL / WSGI / ASGI
