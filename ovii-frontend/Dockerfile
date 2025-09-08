@@ -24,6 +24,10 @@ COPY --from=deps /app/node_modules ./node_modules
 # Copy all other source files, including next.config.mjs and tsconfig.json.
 COPY . .
 
+# --- DEBUGGING STEP ---
+# List all files recursively to verify that everything was copied correctly with the right casing.
+RUN ls -R
+
 # Get the build-time argument for the WebSocket URL.
 ARG NEXT_PUBLIC_WEBSOCKET_URL
 ENV NEXT_PUBLIC_WEBSOCKET_URL=${NEXT_PUBLIC_WEBSOCKET_URL}
