@@ -25,7 +25,7 @@ services:
   backend:
     build:
       context: ./ovii_backend
-    command: sh -c "chown -R appuser:appgroup /home/app/web/logs /home/app/web/mediafiles && daphne -b 0.0.0.0 -p 8000 ovii_backend.asgi:application"
+    command: daphne -b 0.0.0.0 -p 8000 ovii_backend.asgi:application
     volumes:
       - static_volume:/home/app/web/staticfiles
       - logs_volume:/home/app/web/logs
@@ -43,7 +43,7 @@ services:
   celery_worker:
     build:
       context: ./ovii_backend
-    command: sh -c "chown -R appuser:appgroup /home/app/web/logs /home/app/web/mediafiles && celery -A ovii_backend worker -l info"
+    command: celery -A ovii_backend worker -l info
     env_file:
       - ./.env
     depends_on:
@@ -53,7 +53,7 @@ services:
   celery_beat:
     build:
       context: ./ovii_backend
-    command: sh -c "chown -R appuser:appgroup /home/app/web/logs /home/app/web/mediafiles && celery -A ovii_backend beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler"
+    command: celery -A ovii_backend beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
     env_file:
       - ./.env
     depends_on:
