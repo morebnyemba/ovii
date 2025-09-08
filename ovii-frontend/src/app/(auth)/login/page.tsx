@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiPhone, FiLoader, FiAlertCircle, FiShield, FiCheckCircle, FiArrowLeft, FiZap } from 'react-icons/fi';
 import Cookies from 'js-cookie'; // Import js-cookie to manage auth tokens
-import api from '@/lib/api';
-import { useUserStore } from '@/lib/store/useUserStore';
+import api from '../../lib/api';
+import { useUserStore } from '../../lib/store/useUserStore';
 
 const COLORS = {
   indigo: '#1A1B4B',

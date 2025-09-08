@@ -24,4 +24,4 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
 # This image is for debugging only, so we don't need a CMD.
-# If the build succeeds, the image will be created but won't be used by docker-compose to run a container.
+# If the build succeeds, the image will be created but won't be used by docker-compose to run a container.qqqqqqqqqqqqq 
