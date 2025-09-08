@@ -18,10 +18,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     # build-essential is needed for compiling some Python packages with C extensions
     build-essential \
     # libpq-dev provides header files for PostgreSQL
-    # libpq-dev provides header files for PostgreSQL \
     libpq-dev \
-    # su-exec is a lightweight tool to drop root privileges
-    su-exec \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy only the requirements file to leverage Docker's layer caching
@@ -39,9 +36,6 @@ FROM python:3.11-slim-bullseye as final
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
-# Create a non-root user and group for better security
-RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
-
 # Copy the virtual environment from the builder stage
 COPY --from=builder /opt/venv /opt/venv
 
@@ -51,19 +45,6 @@ ENV PATH="/opt/venv/bin:${PATH}"
 # Create and set the working directory
 WORKDIR /home/app/web
 
-# Copy the application code and set the correct ownership
-# Copy the entrypoint script first and make it executable.
-# This script will run as root to set permissions before starting the app.
-COPY ./entrypoint.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/entrypoint.sh
-
-# Copy the rest of the application code and set ownership.
-COPY --chown=appuser:appgroup . .
-
-# Switch to the non-root user
-USER appuser
-
-# The command to run the application is specified in docker-compose.yml,
-# so no CMD is needed here.
-# and will be executed by the entrypoint script.
-ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+# Copy the application code.
+# The user is root, so no chown is needed.
+COPY . .
