@@ -1,6 +1,7 @@
 volumes:
   postgres_data:
   static_volume:
+  logs_volume:
   media_volume:
   certbot_data:
   certbot_webroot:
@@ -27,6 +28,7 @@ services:
     command: daphne -b 0.0.0.0 -p 8000 ovii_backend.asgi:application
     volumes:
       - static_volume:/home/app/web/staticfiles
+      - logs_volume:/home/app/web/logs
       - media_volume:/home/app/web/mediafiles
     env_file:
       - ./.env
