@@ -20,15 +20,11 @@ FROM base AS builder
 # Copy dependencies from the 'deps' stage.
 COPY --from=deps /app/node_modules ./node_modules
 
-# Copy source code and configuration files. Being explicit can sometimes avoid
-# subtle issues with the build context or .dockerignore files.
-COPY public ./public
-COPY src ./src
-COPY next.config.mjs .
-COPY package.json .
-COPY postcss.config.mjs .
-COPY tailwind.config.ts .
-COPY tsconfig.json .
+# Copy all other source files.
+# This is more resilient to filename variations (e.g., .js vs .mjs, casing)
+# and optional config files than listing every single file to be copied.
+# The .dockerignore file will prevent node_modules, .next, etc., from being copied.
+COPY . .
 
 # Get the build-time argument for the WebSocket URL.
 ARG NEXT_PUBLIC_WEBSOCKET_URL
