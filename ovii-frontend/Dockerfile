@@ -2,11 +2,10 @@
 FROM node:18-alpine AS deps
 WORKDIR /app
 
-# Copy dependency definitions
-COPY package.json yarn.lock ./
-
 # Install dependencies
-RUN yarn install --frozen-lockfile
+COPY package.json package-lock.json ./
+# Use `npm ci` for faster, more reliable installs in CI/CD environments
+RUN npm ci
 
 # ---- Builder Stage ----
 FROM node:18-alpine AS builder
@@ -15,7 +14,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 # Build the Next.js application
-RUN yarn build
+RUN npm run build
 
 # ---- Production Stage ----
 FROM node:18-alpine AS runner
@@ -28,4 +27,4 @@ COPY --from=builder /app/package.json ./package.json
 
 EXPOSE 3000
 
-CMD ["yarn", "start"]
+CMD ["npm", "start"]
