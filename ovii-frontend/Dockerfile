@@ -26,6 +26,14 @@ COPY --from=deps /app/node_modules ./node_modules
 # The .dockerignore file will prevent node_modules, .next, etc., from being copied.
 COPY . .
 
+# --- EXPLICIT DEBUGGING STEP ---
+# Let's check for the exact files the build is failing on.
+# This will tell us if they exist and what their casing is.
+RUN echo "--- Checking for tsconfig.json ---" && ls -l tsconfig.json
+RUN echo "--- Checking for src/lib/api.ts (or .js) ---" && ls -l src/lib/api.* || echo "--- >>> src/lib/api.* NOT FOUND <<< ---"
+RUN echo "--- Checking for src/lib/store/useUserStore.ts (or .js) ---" && ls -l src/lib/store/useUserStore.* || echo "--- >>> src/lib/store/useUserStore.* NOT FOUND <<< ---"
+RUN echo "--- Finished debugging file paths ---"
+
 # Get the build-time argument for the WebSocket URL.
 ARG NEXT_PUBLIC_WEBSOCKET_URL
 ENV NEXT_PUBLIC_WEBSOCKET_URL=${NEXT_PUBLIC_WEBSOCKET_URL}
