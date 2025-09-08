@@ -3,7 +3,7 @@
 # ---- Base Stage ----
 # Using a Debian-based image like 'slim-bullseye' instead of 'alpine' can improve
 # compatibility with some native Node.js modules and build tools.
-FROM node:18-slim-bullseye AS base
+FROM node:18-bullseye-slim AS base
 WORKDIR /app
 
 # ---- Dependencies Stage ----
