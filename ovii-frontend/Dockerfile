@@ -1,50 +1,54 @@
 # ovii-frontend/Dockerfile
 
 # ---- Base Stage ----
-# Use a specific, lightweight Node.js version for reproducibility and smaller image sizes.
-FROM node:18-alpine AS base
+# Using a Debian-based image like 'slim-bullseye' instead of 'alpine' can improve
+# compatibility with some native Node.js modules and build tools.
+FROM node:18-slim-bullseye AS base
 WORKDIR /app
 
 # ---- Dependencies Stage ----
 # Install dependencies in a separate layer to leverage Docker's caching mechanism.
 # This layer is only rebuilt when package.json or package-lock.json changes.
 FROM base AS deps
-WORKDIR /app
-
 COPY package.json package-lock.json* ./
 RUN npm ci
 
 # ---- Builder Stage ----
 # Build the Next.js application.
 FROM base AS builder
-WORKDIR /app
 
 # Copy dependencies from the 'deps' stage.
 COPY --from=deps /app/node_modules ./node_modules
-# Copy all other source files, including next.config.mjs and tsconfig.json.
-COPY . .
 
-# --- DEBUGGING STEP ---
-# List all files recursively to verify that everything was copied correctly with the right casing.
-RUN ls -R
+# Copy source code and configuration files. Being explicit can sometimes avoid
+# subtle issues with the build context or .dockerignore files.
+COPY public ./public
+COPY src ./src
+COPY next.config.mjs .
+COPY package.json .
+COPY postcss.config.mjs .
+COPY tailwind.config.ts .
+COPY tsconfig.json .
 
 # Get the build-time argument for the WebSocket URL.
 ARG NEXT_PUBLIC_WEBSOCKET_URL
 ENV NEXT_PUBLIC_WEBSOCKET_URL=${NEXT_PUBLIC_WEBSOCKET_URL}
 
 # Build the Next.js application. This will use the `output: 'standalone'` configuration.
+# The NEXT_TELEMETRY_DISABLED=1 flag is added to reduce build log noise.
+ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
 # ---- Production/Runner Stage ----
 # Create the final, minimal production image.
 FROM base AS runner
-WORKDIR /app
 
 ENV NODE_ENV=production
 EXPOSE 3000
 
 RUN addgroup --system --gid 1001 nextjs && adduser --system --uid 1001 nextjs
 
+# Copy only the necessary artifacts from the builder stage for a small, secure image.
 COPY --from=builder --chown=nextjs:nextjs /app/public ./public
 COPY --from=builder --chown=nextjs:nextjs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nextjs /app/.next/static ./.next/static
