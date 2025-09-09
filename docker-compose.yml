@@ -77,6 +77,7 @@ services:
     volumes:      
       - certbot_data:/etc/letsencrypt
       - certbot_webroot:/var/www/certbot
+      - ./nginx/ssl_conf:/etc/nginx/ssl:ro
       - static_volume:/home/app/web/staticfiles
       - media_volume:/home/app/web/mediafiles
     ports:
