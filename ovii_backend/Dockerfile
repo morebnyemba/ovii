@@ -46,6 +46,9 @@ ENV PATH="/opt/venv/bin:${PATH}"
 # Create and set the working directory
 WORKDIR /home/app/web
 
+# Create the logs directory so the RotatingFileHandler can write to it.
+RUN mkdir -p logs
+
 # Copy the application code.
 # The user is root, so no chown is needed.
 COPY . .
