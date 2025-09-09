@@ -26,7 +26,8 @@ COPY requirements.txt .
 
 # Install Python dependencies into the virtual environment
 # This is faster and more isolated than using the --user flag.
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir psycopg2-binary
 
 
 # --- Stage 2: Final Application Image ---
