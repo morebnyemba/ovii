@@ -74,9 +74,7 @@ services:
   nginx:
     build:
       context: ./nginx
-    volumes:
-      - ./nginx/options-ssl-nginx.conf:/etc/letsencrypt/options-ssl-nginx.conf:ro
-      - ./nginx/ssl-dhparams.pem:/etc/letsencrypt/ssl-dhparams.pem:ro
+    volumes:      
       - certbot_data:/etc/letsencrypt
       - certbot_webroot:/var/www/certbot
       - static_volume:/home/app/web/staticfiles
