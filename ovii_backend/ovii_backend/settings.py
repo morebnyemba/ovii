@@ -49,6 +49,7 @@ THIRD_PARTY_APPS = [
     "rest_framework_simplejwt",
     "channels",
     "phonenumber_field",
+    "django_celery_beat",
     "corsheaders",
 ]
 

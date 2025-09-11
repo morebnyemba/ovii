@@ -33,7 +33,7 @@ db.sqlite3
 # Virtualenv
 venv/
 env/
-.env
+
 
 # IDE / Editor
 .idea/
