@@ -63,8 +63,8 @@ services:
     build:
       context: ./ovii-frontend
       args:
-        # This URL points to the main domain since HTTPS/subdomains are disabled for now.
-        - NEXT_PUBLIC_WEBSOCKET_URL=ws://ovii.it.com/ws/wallet/
+        # This URL points to the dedicated API subdomain.
+        - NEXT_PUBLIC_WEBSOCKET_URL=ws://api.ovii.it.com/ws/wallet/
     depends_on:
       - backend
 
