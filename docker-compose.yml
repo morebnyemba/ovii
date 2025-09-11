@@ -3,8 +3,6 @@ volumes:
   static_volume:
   logs_volume:
   media_volume:
-  certbot_data:
-  certbot_webroot:
 
 services:
   # --- Backend Services ---
@@ -65,8 +63,8 @@ services:
     build:
       context: ./ovii-frontend
       args:
-        # This URL points to the dedicated API subdomain.
-        - NEXT_PUBLIC_WEBSOCKET_URL=wss://api.ovii.it.com/ws/wallet/
+        # This URL points to the main domain since HTTPS/subdomains are disabled for now.
+        - NEXT_PUBLIC_WEBSOCKET_URL=ws://ovii.it.com/ws/wallet/
     depends_on:
       - backend
 
@@ -74,24 +72,12 @@ services:
   nginx:
     build:
       context: ./nginx
-    volumes:      
-      - certbot_data:/etc/letsencrypt
-      - certbot_webroot:/var/www/certbot
-      - ./nginx/ssl_conf:/etc/nginx/ssl:ro
+    volumes:
       - static_volume:/home/app/web/staticfiles
       - media_volume:/home/app/web/mediafiles
     ports:
       - "80:80"
-      - "443:443"
-    # This command starts Nginx and sets up a loop to reload it every 12 hours.
-    # This is necessary to apply renewed SSL certificates from Certbot.
-    command: /bin/sh -c "while :; do sleep 12h & wait $${!}; nginx -s reload; done & nginx -g 'daemon off;'"
+    command: nginx -g 'daemon off;'
     depends_on:
       - backend
       - frontend
-
-  certbot:
-    image: certbot/certbot
-    volumes:
-      - certbot_data:/etc/letsencrypt
-      - certbot_webroot:/var/www/certbot

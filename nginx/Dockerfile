@@ -4,6 +4,3 @@ FROM nginx:1.25-alpine
 RUN rm /etc/nginx/conf.d/default.conf
 # Copy our custom configuration
 COPY nginx.conf /etc/nginx/nginx.conf
-
-# Copy static SSL configuration files
-COPY ssl /etc/nginx/ssl
