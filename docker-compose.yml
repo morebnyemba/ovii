@@ -16,6 +16,11 @@ services:
       - POSTGRES_DB=${DATABASE_NAME}
       - POSTGRES_USER=${DATABASE_USER}
       - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${DATABASE_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7-alpine
@@ -23,7 +28,7 @@ services:
   backend:
     build:
       context: ./ovii_backend
-    command: sh -c "python manage.py migrate && daphne -b 0.0.0.0 -p 8000 ovii_backend.asgi:application"
+    command: daphne -b 0.0.0.0 -p 8000 ovii_backend.asgi:application
     volumes:
       - static_volume:/home/app/web/staticfiles
       - logs_volume:/home/app/web/logs
@@ -31,8 +36,22 @@ services:
     env_file:
       - ./.env
     depends_on:
-      - db
+      - migrate
       - redis
+
+  migrate:
+    build:
+      context: ./ovii_backend
+    command: daphne -b 0.0.0.0 -p 8000 ovii_backend.asgi:application
+    volumes:
+      - static_volume:/home/app/web/staticfiles
+      - logs_volume:/home/app/web/logs
+      - media_volume:/home/app/web/mediafiles
+    env_file:
+      - ./.env
+    depends_on:
+      db:
+        condition: service_healthy
 
   celery_worker:
     build:
@@ -41,7 +60,8 @@ services:
     env_file:
       - ./.env
     depends_on:
-      - backend
+      - migrate
+      - redis
 
   celery_beat:
     build:
@@ -50,7 +70,8 @@ services:
     env_file:
       - ./.env
     depends_on:
-      - backend
+      - migrate
+      - redis
   
   # --- Frontend Service ---
   frontend:
