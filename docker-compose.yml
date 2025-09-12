@@ -17,7 +17,7 @@ services:
       - POSTGRES_USER=${DATABASE_USER}
       - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${DATABASE_NAME}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -42,11 +42,7 @@ services:
   migrate:
     build:
       context: ./ovii_backend
-    command: daphne -b 0.0.0.0 -p 8000 ovii_backend.asgi:application
-    volumes:
-      - static_volume:/home/app/web/staticfiles
-      - logs_volume:/home/app/web/logs
-      - media_volume:/home/app/web/mediafiles
+    command: python manage.py migrate
     env_file:
       - ./.env
     depends_on:
