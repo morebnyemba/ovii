@@ -1,5 +1,5 @@
 # ovii_backend/Dockerfile
-
+# --- Stage 1: Builder ---
 # --- Stage 1: Builder ---
 # This stage installs dependencies into a virtual environment to keep the final image slim.
 FROM python:3.11-slim-bullseye as builder
@@ -24,18 +24,21 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Copy only the requirements file to leverage Docker's layer caching
 COPY requirements.txt .
 
-# Install Python dependencies into the virtual environment
-# This is faster and more isolated than using the --user flag.
-RUN pip install --no-cache-dir -r requirements.txt && \
-    pip install --no-cache-dir psycopg2-binary
+# Install Python dependencies into the virtual environment.
+# It's recommended to include psycopg2-binary in your requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 
 # --- Stage 2: Final Application Image ---
 # This stage creates the final, smaller image with the application and its dependencies.
 FROM python:3.11-slim-bullseye as final
 
+# Set environment variables
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
+
+# Create a non-root user and group for security
+RUN addgroup --system app && adduser --system --group app
 
 # Copy the virtual environment from the builder stage
 COPY --from=builder /opt/venv /opt/venv
@@ -43,12 +46,15 @@ COPY --from=builder /opt/venv /opt/venv
 # Set the PATH to use the virtual environment in the final image
 ENV PATH="/opt/venv/bin:${PATH}"
 
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends libpq5 && rm -rf /var/lib/apt/lists/*
+
 # Create and set the working directory
 WORKDIR /home/app/web
 
-# Create the logs directory so the RotatingFileHandler can write to it.
-RUN mkdir -p logs
-
 # Copy the application code.
-# The user is root, so no chown is needed.
-COPY . .
+# Use a .dockerignore file to exclude unnecessary files.
+COPY --chown=app:app . .
+
+# Switch to the non-root user
+USER app

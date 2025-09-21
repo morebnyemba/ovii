@@ -1,8 +1,11 @@
+version: "3.8"
+
 volumes:
   postgres_data:
   static_volume:
   logs_volume:
   media_volume:
+  celery_beat_schedule:
 
 services:
   # --- Backend Services ---
@@ -16,6 +19,7 @@ services:
       - POSTGRES_DB=${DATABASE_NAME}
       - POSTGRES_USER=${DATABASE_USER}
       - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
+    restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
@@ -24,60 +28,91 @@ services:
 
   redis:
     image: redis:7-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   backend:
     build:
       context: ./ovii_backend
+    image: ovii_backend_image # Name the image after building
     command: daphne -b 0.0.0.0 -p 8000 ovii_backend.asgi:application
     volumes:
       - static_volume:/home/app/web/staticfiles
       - logs_volume:/home/app/web/logs
       - media_volume:/home/app/web/mediafiles
+      # Mount the code for development; remove for production if code is baked into the image
+      - ./ovii_backend:/home/app/web 
     env_file:
       - ./.env
+    restart: unless-stopped
     depends_on:
-      - migrate
-      - redis
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"] # A simple healthcheck endpoint should be created
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
   migrate:
-    build:
-      context: ./ovii_backend
+    image: ovii_backend_image # Reuse the built image
     command: python manage.py migrate
     env_file:
       - ./.env
+    restart: on-failure
     depends_on:
       db:
         condition: service_healthy
 
   celery_worker:
-    build:
-      context: ./ovii_backend
+    image: ovii_backend_image # Reuse the built image
     command: celery -A ovii_backend worker -l info
     env_file:
       - ./.env
+    restart: unless-stopped
     depends_on:
-      - migrate
-      - redis
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
 
   celery_beat:
-    build:
-      context: ./ovii_backend
-    command: celery -A ovii_backend beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    image: ovii_backend_image # Reuse the built image
+    command: >
+      sh -c "rm -f /home/app/web/celerybeat.pid && 
+             celery -A ovii_backend beat -l info 
+             --scheduler django_celery_beat.schedulers:DatabaseScheduler 
+             --pidfile=/home/app/web/celerybeat.pid"
+    volumes:
+      - celery_beat_schedule:/home/app/web # Persist schedule file
     env_file:
       - ./.env
+    restart: unless-stopped
     depends_on:
-      - migrate
-      - redis
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
   
   # --- Frontend Service ---
   frontend:
     build:
       context: ./ovii-frontend
+      dockerfile: Dockerfile # Explicitly name the Dockerfile
       args:
         # This URL points to the dedicated API subdomain.
         - NEXT_PUBLIC_WEBSOCKET_URL=ws://api.ovii.it.com/ws/wallet/
+    restart: unless-stopped
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
 
   # --- Nginx Reverse Proxy ---
   nginx:
@@ -88,6 +123,7 @@ services:
       - media_volume:/home/app/web/mediafiles
     ports:
       - "80:80"
+    restart: unless-stopped
     command: nginx -g 'daemon off;'
     depends_on:
       - backend
