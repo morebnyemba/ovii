@@ -2,7 +2,7 @@
 # --- Stage 1: Builder ---
 # --- Stage 1: Builder ---
 # This stage installs dependencies into a virtual environment to keep the final image slim.
-FROM python:3.11-slim-bullseye as builder
+FROM python:3.11-slim-bullseye AS builder
 
 # Set environment variables to improve container-friendliness
 ENV PYTHONDONTWRITEBYTECODE 1
@@ -31,7 +31,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # --- Stage 2: Final Application Image ---
 # This stage creates the final, smaller image with the application and its dependencies.
-FROM python:3.11-slim-bullseye as final
+FROM python:3.11-slim-bullseye AS final
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE 1
