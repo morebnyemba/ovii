@@ -46,10 +46,14 @@ COPY --from=builder /opt/venv /opt/venv
 ENV PATH="/opt/venv/bin:${PATH}"
 
 # Install runtime dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends libpq5 && apt-get clean && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends libpq5 su-exec && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Create and set the working directory
 WORKDIR /home/app/web
+
+# Copy the entrypoint script and make it executable
+COPY ./entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
 
 # Copy the application code.
 # Use a .dockerignore file to exclude unnecessary files.
@@ -59,5 +63,4 @@ COPY . .
 USER app
 
 # Set the entrypoint script to be executed when the container starts.
-# This script will fix permissions and then run the CMD.
-ENTRYPOINT []
+ENTRYPOINT ["entrypoint.sh"]
