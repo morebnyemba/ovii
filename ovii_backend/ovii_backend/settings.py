@@ -162,11 +162,11 @@ USE_TZ = True
 # 10. STATIC & MEDIA
 # ------------------------------------------------------------------
 STATIC_URL = "/static/"
-STATIC_ROOT = BASE_DIR / "staticfiles"
+STATIC_ROOT = BASE_DIR.parent / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 
 MEDIA_URL = "/media/"
-MEDIA_ROOT = BASE_DIR.parent / "media"
+MEDIA_ROOT = BASE_DIR.parent / "mediafiles"
 
 # ------------------------------------------------------------------
 # 11. TEMPLATES
@@ -248,7 +248,7 @@ LOGGING = {
         'file': {
             'level': 'INFO',
             'class': 'logging.handlers.RotatingFileHandler',
-            'filename': BASE_DIR / 'logs' / 'ovii.log',
+            'filename': BASE_DIR.parent / 'logs' / 'ovii.log',
             'maxBytes': 1024 * 1024 * 5,  # 5 MB
             'backupCount': 5,
             'formatter': 'verbose',
