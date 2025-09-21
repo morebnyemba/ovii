@@ -62,6 +62,9 @@ services:
   migrate:
     build:
       context: ./ovii_backend
+    volumes:
+      - ./ovii_backend:/home/app/web
+      - logs_volume:/home/app/web/logs
     command: python manage.py migrate
     env_file:
       - ./.env
@@ -73,6 +76,9 @@ services:
   celery_worker:
     build:
       context: ./ovii_backend
+    volumes:
+      - ./ovii_backend:/home/app/web
+      - logs_volume:/home/app/web/logs
     command: celery -A ovii_backend worker -l info
     env_file:
       - ./.env
@@ -87,12 +93,16 @@ services:
     build:
       context: ./ovii_backend
     command: >
-      sh -c "rm -f /home/app/web/celerybeat.pid && 
+      sh -c "mkdir -p /var/run/celery &&
+             rm -f /var/run/celery/celerybeat.pid && 
              celery -A ovii_backend beat -l info 
              --scheduler django_celery_beat.schedulers:DatabaseScheduler 
-             --pidfile=/home/app/web/celerybeat.pid"
+             --schedule=/var/run/celery/celerybeat-schedule
+             --pidfile=/var/run/celery/celerybeat.pid"
     volumes:
-      - celery_beat_schedule:/home/app/web # Persist schedule file
+      - ./ovii_backend:/home/app/web
+      - logs_volume:/home/app/web/logs
+      - celery_beat_schedule:/var/run/celery # Persists schedule and pid files
     env_file:
       - ./.env
     restart: unless-stopped
