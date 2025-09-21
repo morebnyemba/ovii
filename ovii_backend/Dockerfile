@@ -26,8 +26,7 @@ COPY requirements.txt .
 
 # Install Python dependencies into the virtual environment.
 # It's recommended to include psycopg2-binary in your requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
-
+RUN pip install --no-cache-dir -r requirements.txt psycopg2-binary
 
 # --- Stage 2: Final Application Image ---
 # This stage creates the final, smaller image with the application and its dependencies.
@@ -47,20 +46,18 @@ COPY --from=builder /opt/venv /opt/venv
 ENV PATH="/opt/venv/bin:${PATH}"
 
 # Install runtime dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends libpq5 && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends libpq5 && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Create and set the working directory
 WORKDIR /home/app/web
 
 # Copy the application code.
 # Use a .dockerignore file to exclude unnecessary files.
-COPY --chown=app:app . .
-
-# Create directories for volumes and set permissions before switching user.
-# This ensures the non-root 'app' user can write to these directories.
-RUN mkdir -p /home/app/web/staticfiles /home/app/web/mediafiles && \
-    chown -R app:app /home/app/web/staticfiles && \
-    chown -R app:app /home/app/web/mediafiles
+COPY . .
 
 # Switch to the non-root user
 USER app
+
+# Set the entrypoint script to be executed when the container starts.
+# This script will fix permissions and then run the CMD.
+ENTRYPOINT []
