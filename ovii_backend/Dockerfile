@@ -56,5 +56,12 @@ WORKDIR /home/app/web
 # Use a .dockerignore file to exclude unnecessary files.
 COPY --chown=app:app . .
 
+# Create directories for volumes and set permissions before switching user.
+# This ensures the non-root 'app' user can write to these directories.
+RUN mkdir -p /home/app/web/logs /home/app/web/staticfiles /home/app/web/mediafiles && \
+    chown -R app:app /home/app/web/logs && \
+    chown -R app:app /home/app/web/staticfiles && \
+    chown -R app:app /home/app/web/mediafiles
+
 # Switch to the non-root user
 USER app
