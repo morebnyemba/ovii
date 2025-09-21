@@ -5,18 +5,11 @@
 FROM node:18-alpine AS deps
 WORKDIR /app
 
-# Copy package.json and lock file
-COPY package.json yarn.lock* package-lock.json* ./
+# Copy package.json and the npm lock file
+COPY package.json package-lock.json* ./
 
 # Install dependencies
-RUN \
-  if [ -f yarn.lock ]; then \
-    yarn --frozen-lockfile; \
-  elif [ -f package-lock.json ]; then \
-    npm ci; \
-  else \
-    echo "Lockfile not found." && exit 1; \
-  fi
+RUN npm ci
 
 # --- Stage 2: Code Builder ---
 FROM node:18-alpine AS builder
