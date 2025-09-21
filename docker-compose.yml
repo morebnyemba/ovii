@@ -1,7 +1,6 @@
 volumes:
   postgres_data:
   static_volume:
-  logs_volume:
   media_volume:
   celery_beat_schedule:
 
@@ -40,7 +39,6 @@ services:
     command: daphne -b 0.0.0.0 -p 8000 ovii_backend.asgi:application
     volumes:
       - static_volume:/home/app/web/staticfiles
-      - logs_volume:/home/app/web/logs
       - media_volume:/home/app/web/mediafiles
       # Mount the code for development; remove for production if code is baked into the image
       - ./ovii_backend:/home/app/web 
@@ -64,7 +62,6 @@ services:
       context: ./ovii_backend
     volumes:
       - ./ovii_backend:/home/app/web
-      - logs_volume:/home/app/web/logs
     command: python manage.py migrate
     env_file:
       - ./.env
@@ -78,7 +75,6 @@ services:
       context: ./ovii_backend
     volumes:
       - ./ovii_backend:/home/app/web
-      - logs_volume:/home/app/web/logs
     command: celery -A ovii_backend worker -l info
     env_file:
       - ./.env
@@ -101,7 +97,6 @@ services:
              --pidfile=/var/run/celery/celerybeat.pid"
     volumes:
       - ./ovii_backend:/home/app/web
-      - logs_volume:/home/app/web/logs
       - celery_beat_schedule:/var/run/celery # Persists schedule and pid files
     env_file:
       - ./.env
