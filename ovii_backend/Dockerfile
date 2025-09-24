@@ -46,7 +46,8 @@ COPY --from=builder /opt/venv /opt/venv
 ENV PATH="/opt/venv/bin:${PATH}"
 
 # Install runtime dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends libpq5 su-exec && apt-get clean && rm -rf /var/lib/apt/lists/*
+# su-exec is not available in Debian; use gosu if similar functionality is needed.
+RUN apt-get update && apt-get install -y --no-install-recommends libpq5 && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Create and set the working directory
 WORKDIR /home/app/web
