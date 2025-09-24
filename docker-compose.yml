@@ -46,8 +46,6 @@ services:
       - ./.env
     restart: unless-stopped
     depends_on:
-      migrate:
-        condition: service_completed_successfully
       redis:
         condition: service_healthy
     healthcheck:
@@ -57,18 +55,6 @@ services:
       retries: 3
       start_period: 30s
 
-  migrate:
-    build:
-      context: ./ovii_backend
-    volumes:
-      - ./ovii_backend:/home/app/web
-    command: python manage.py migrate
-    env_file:
-      - ./.env
-    restart: on-failure
-    depends_on:
-      db:
-        condition: service_healthy
 
   celery_worker:
     build:
@@ -80,8 +66,6 @@ services:
       - ./.env
     restart: unless-stopped
     depends_on:
-      migrate:
-        condition: service_completed_successfully
       redis:
         condition: service_healthy
 
@@ -102,8 +86,6 @@ services:
       - ./.env
     restart: unless-stopped
     depends_on:
-      migrate:
-        condition: service_completed_successfully
       redis:
         condition: service_healthy
   
