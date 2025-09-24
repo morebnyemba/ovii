@@ -1,10 +1,7 @@
 #!/bin/sh
 
-# This script ensures that the directories used for volumes are owned by the 'app' user.
-# It runs as root when the container starts, before the main application command is executed.
+# This script ensures that the directories used for volumes exist.
+mkdir -p /home/app/web/staticfiles /home/app/web/mediafiles
 
-chown -R app:app /home/app/web/staticfiles /home/app/web/mediafiles
-
-# Drop privileges and execute the command passed to the container (e.g., from docker-compose.yml)
-# This ensures the application itself runs as the non-root 'app' user.
-exec su-exec app "$@"
+# Execute the command passed to the container (e.g., from docker-compose.yml)
+exec "$@"

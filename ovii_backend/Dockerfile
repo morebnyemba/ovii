@@ -60,8 +60,6 @@ RUN chmod +x /usr/local/bin/entrypoint.sh
 # Use a .dockerignore file to exclude unnecessary files.
 COPY . .
 
-# Switch to the non-root user
-USER app
 
 # Set the entrypoint script to be executed when the container starts.
 ENTRYPOINT ["entrypoint.sh"]
