@@ -46,7 +46,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='oviiuser',
             name='phone_number',
-            field=models.CharField(default=django.utils.timezone.now, max_length=20, unique=True, verbose_name='phone number'),
+            field=models.CharField(default=django.utils.timezone.now, max_length=128, unique=True, verbose_name='phone number'),
             preserve_default=False,
         ),
         migrations.CreateModel(
