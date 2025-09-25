@@ -19,3 +19,4 @@ daphne
 django-celery-beat
 Pillow
 pytz
+whitenoise
