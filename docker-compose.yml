@@ -93,8 +93,7 @@ services:
         - NEXT_PUBLIC_WEBSOCKET_URL=ws://api.ovii.it.com/ws/wallet/
     restart: unless-stopped
     depends_on:
-      backend:
-        condition: service_healthy
+      - backend
 
   # --- Nginx Reverse Proxy ---
   nginx:
