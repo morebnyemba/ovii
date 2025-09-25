@@ -164,7 +164,7 @@ USE_TZ = True
 # 10. STATIC & MEDIA
 # ------------------------------------------------------------------
 STATIC_URL = "/static/"
-STATIC_ROOT = BASE_DIR.parent / "staticfiles"
+STATIC_ROOT = "/home/app/web/staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 
 MEDIA_URL = "/media/"
