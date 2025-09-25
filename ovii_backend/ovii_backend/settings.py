@@ -76,7 +76,7 @@ MIDDLEWARE = [
 ]
 
 # ------------------------------------------------------------------
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
 # 5. CORS – Next.js dev server
 # ------------------------------------------------------------------
 if DEBUG:
