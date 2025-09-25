@@ -1,3 +1,10 @@
+# CSRF trusted origins for cross-domain requests
+CSRF_TRUSTED_ORIGINS = [
+    "http://ovii.it.com",
+    "https://ovii.it.com",
+    "http://api.ovii.it.com",
+    "https://api.ovii.it.com"
+]
 """
 Django settings for ovii_backend project.
 
