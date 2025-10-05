@@ -26,7 +26,7 @@ from users import views as user_views
 
 
 urlpatterns = [
-    path('/', admin.site.urls),
+    path('', admin.site.urls),
     path('api/users/', include('users.urls')),
     path('api/wallets/', include('wallets.urls')),
     path('api/agents/', include('agents.urls')), # This line was missing in my previous response's context
