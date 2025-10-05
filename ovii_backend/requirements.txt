@@ -20,3 +20,4 @@ django-celery-beat
 Pillow
 pytz
 whitenoise
+requests
