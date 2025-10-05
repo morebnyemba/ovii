@@ -1,0 +1,28 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls %}
+
+{% block content %}
+<div>
+    <h1>{% trans "Top-up Wallet(s)" %}</h1>
+
+    <p>{% blocktrans %}You are about to add funds to the following wallet(s):{% endblocktrans %}</p>
+
+    <ul>
+    {% for wallet in wallets %}
+        <li>{{ wallet.user.get_full_name|default:wallet.user.phone_number }} (Current Balance: ${{ wallet.balance }})</li>
+    {% endfor %}
+    </ul>
+
+    <form action="{% url 'admin:wallet-top-up' %}" method="POST">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <input type="hidden" name="wallet_ids" value="{{ wallet_ids }}">
+        <input type="hidden" name="action" value="top_up_wallets_action">
+
+        <div style="margin-top: 20px;">
+            <input type="submit" value="{% trans 'Confirm Top-up' %}" class="default">
+            <a href="." class="button cancel-link">{% trans "Cancel" %}</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

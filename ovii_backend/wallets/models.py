@@ -59,22 +59,30 @@ class Transaction(models.Model):
         COMPLETED = 'COMPLETED', _('Completed')
         FAILED = 'FAILED', _('Failed')
 
-    # The wallet from which the funds are being sent.
-    # PROTECT prevents deletion of a wallet if it has associated transactions.
-    source_wallet = models.ForeignKey(
+    class TransactionType(models.TextChoices):
+        """Defines the type of transaction."""
+        TRANSFER = 'TRANSFER', _('Transfer')
+        DEPOSIT = 'DEPOSIT', _('Deposit')
+        WITHDRAWAL = 'WITHDRAWAL', _('Withdrawal')
+        PAYMENT = 'PAYMENT', _('Payment')
+
+    # The primary wallet involved in the transaction (e.g., the sender).
+    wallet = models.ForeignKey(
         Wallet,
         on_delete=models.PROTECT,
-        related_name='sent_transactions'
+        related_name='transactions'
     )
 
-    # The wallet that is receiving the funds.
-    destination_wallet = models.ForeignKey(
+    # The other wallet in the transaction (e.g., the receiver). Can be null for deposits/withdrawals.
+    related_wallet = models.ForeignKey(
         Wallet,
         on_delete=models.PROTECT,
-        related_name='received_transactions'
+        related_name='related_transactions',
+        null=True,
+        blank=True
     )
 
-    # The amount of money being transferred in the transaction.
+    # The amount of money in the transaction.
     amount = models.DecimalField(_('amount'), max_digits=12, decimal_places=2)
 
     # The current status of the transaction.
@@ -85,11 +93,18 @@ class Transaction(models.Model):
         default=Status.PENDING
     )
 
+    # The type of transaction.
+    transaction_type = models.CharField(
+        _('transaction type'), max_length=20, choices=TransactionType.choices, default=TransactionType.TRANSFER
+    )
+
     # Timestamp for when the transaction was initiated.
     timestamp = models.DateTimeField(_('timestamp'), auto_now_add=True)
 
-    # TODO (Phase 3): Add a transaction_type field (e.g., P2P, Merchant Payment, Withdrawal).
+    description = models.CharField(_('description'), max_length=255, blank=True)
 
     def __str__(self):
         """Returns a string representation of the transaction."""
-        return f"From {self.source_wallet.user} to {self.destination_wallet.user} - {self.amount}"
+        if self.related_wallet:
+            return f"{self.get_transaction_type_display()}: {self.wallet.user} to {self.related_wallet.user} - {self.amount}"
+        return f"{self.get_transaction_type_display()}: {self.wallet.user} - {self.amount}"

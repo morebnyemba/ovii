@@ -10,6 +10,7 @@ from phonenumber_field.serializerfields import PhoneNumberField
 
 from .models import Wallet, Transaction
 from users.models import OviiUser
+from agents.models import Agent
 
 
 class WalletSerializer(serializers.ModelSerializer):
@@ -31,12 +32,22 @@ class TransactionSerializer(serializers.ModelSerializer):
     Read-only serializer for the Transaction model.
     Displays transaction history with user-friendly phone numbers.
     """
-    source_user = serializers.CharField(source='source_wallet.user.phone_number', read_only=True)
-    destination_user = serializers.CharField(source='destination_wallet.user.phone_number', read_only=True)
+    sender = serializers.CharField(source='wallet.user.phone_number', read_only=True)
+    receiver = serializers.CharField(source='related_wallet.user.phone_number', read_only=True, allow_null=True)
+    transaction_type = serializers.CharField(source='get_transaction_type_display', read_only=True)
 
     class Meta:
         model = Transaction
-        fields = ['id', 'source_user', 'destination_user', 'amount', 'status', 'timestamp']
+        fields = [
+            'id',
+            'sender',
+            'receiver',
+            'amount',
+            'status',
+            'transaction_type',
+            'description',
+            'timestamp'
+        ]
         read_only_fields = fields
 
 
@@ -48,6 +59,7 @@ class TransactionCreateSerializer(serializers.Serializer):
     destination_phone_number = PhoneNumberField()
     amount = serializers.DecimalField(max_digits=12, decimal_places=2)
     pin = serializers.CharField(write_only=True, style={'input_type': 'password'}, min_length=4, max_length=4)
+    description = serializers.CharField(max_length=255, required=False, allow_blank=True)
 
     def validate_amount(self, value):
         """Check that the amount is positive."""
@@ -84,3 +96,117 @@ class TransactionCreateSerializer(serializers.Serializer):
             raise serializers.ValidationError({"pin": "Incorrect transaction PIN."})
 
         return data
+
+
+class CustomerCashOutRequestSerializer(serializers.Serializer):
+    """
+    Serializer for a customer to request a cash-out from an agent.
+    Validates the agent's code, amount, and the customer's PIN.
+    """
+    agent_code = serializers.CharField(max_length=20)
+    amount = serializers.DecimalField(max_digits=12, decimal_places=2)
+    pin = serializers.CharField(write_only=True, style={'input_type': 'password'}, min_length=4, max_length=4)
+
+    def validate_amount(self, value):
+        """Check that the amount is positive."""
+        if value <= Decimal('0.00'):
+            raise serializers.ValidationError("Amount must be a positive number.")
+        return value
+
+    def validate(self, data):
+        """
+        Validate the entire transaction data, including agent and customer's PIN.
+        """
+        customer_user = self.context['request'].user
+        agent_code = data['agent_code']
+        pin = data['pin']
+
+        # Check if the agent exists, is approved, and has a wallet
+        try:
+            agent = Agent.objects.select_related('user__wallet').get(agent_code__iexact=agent_code, is_approved=True)
+            if not hasattr(agent.user, 'wallet'):
+                raise Wallet.DoesNotExist()
+            data['agent_wallet'] = agent.user.wallet
+        except (Agent.DoesNotExist, Wallet.DoesNotExist):
+            raise serializers.ValidationError({"agent_code": "An approved agent with this code could not be found."})
+
+        # Validate the customer's transaction PIN
+        if not customer_user.has_set_pin:
+            raise serializers.ValidationError({"pin": "You must set your transaction PIN before performing this action."})
+        if not customer_user.check_pin(pin):
+            raise serializers.ValidationError({"pin": "Incorrect transaction PIN."})
+
+        return data
+
+
+class AgentCashInSerializer(serializers.Serializer):
+    """
+    Serializer for an agent to perform a cash-in (deposit) for a customer.
+    Validates the customer's phone number, amount, and the agent's PIN.
+    """
+    customer_phone_number = PhoneNumberField()
+    amount = serializers.DecimalField(max_digits=12, decimal_places=2)
+    pin = serializers.CharField(write_only=True, style={'input_type': 'password'}, min_length=4, max_length=4)
+
+    def validate_amount(self, value):
+        """Check that the amount is positive."""
+        if value <= Decimal('0.00'):
+            raise serializers.ValidationError("Amount must be a positive number.")
+        return value
+
+    def validate(self, data):
+        """
+        Validate the entire transaction data, including customer and agent's PIN.
+        """
+        agent_user = self.context['request'].user
+        customer_phone_number = data['customer_phone_number']
+        pin = data['pin']
+
+        # Check if the customer user exists and has a wallet
+        try:
+            customer_user = OviiUser.objects.get(phone_number=customer_phone_number, role=OviiUser.Role.CUSTOMER)
+            if not hasattr(customer_user, 'wallet'):
+                raise Wallet.DoesNotExist()
+            data['customer_wallet'] = getattr(customer_user, 'wallet')
+        except (OviiUser.DoesNotExist, Wallet.DoesNotExist):
+            raise serializers.ValidationError({"customer_phone_number": "A customer with this phone number does not have a wallet."})
+
+        # Prevent agents from depositing to themselves
+        if agent_user == customer_user:
+            raise serializers.ValidationError({"customer_phone_number": "You cannot perform a cash-in for yourself."})
+
+        # Validate the agent's transaction PIN
+        if not agent_user.has_set_pin:
+            raise serializers.ValidationError({"pin": "You must set your transaction PIN before performing this action."})
+        if not agent_user.check_pin(pin):
+            raise serializers.ValidationError({"pin": "Incorrect transaction PIN."})
+
+        return data
+
+
+class MerchantPaymentRequestSerializer(serializers.Serializer):
+    """
+    Serializer for a merchant to request a payment from a customer.
+    Validates the customer's phone number and the amount.
+    """
+    customer_phone_number = PhoneNumberField()
+    amount = serializers.DecimalField(max_digits=12, decimal_places=2)
+    description = serializers.CharField(max_length=100, required=False, allow_blank=True)
+    # A unique ID from the merchant's system to prevent duplicate requests.
+    external_reference_id = serializers.CharField(max_length=100, required=False, allow_blank=True)
+
+    def validate_amount(self, value):
+        """Check that the amount is positive."""
+        if value <= Decimal('0.00'):
+            raise serializers.ValidationError("Amount must be a positive number.")
+        return value
+
+    def validate_customer_phone_number(self, value):
+        """Check that the customer exists and has a wallet."""
+        try:
+            customer_user = OviiUser.objects.get(phone_number=value, role=OviiUser.Role.CUSTOMER)
+            if not hasattr(customer_user, 'wallet'):
+                raise serializers.ValidationError("This customer does not have an active wallet.")
+        except OviiUser.DoesNotExist:
+            raise serializers.ValidationError("A customer with this phone number was not found.")
+        return value

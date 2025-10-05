@@ -87,6 +87,12 @@ class OviiUser(AbstractUser):
         OTHER = 'OTHER', _('Other')
         PREFER_NOT_TO_SAY = 'PREFER_NOT_TO_SAY', _('Prefer not to say')
 
+    class Role(models.TextChoices):
+        """Defines the role of the user in the system."""
+        CUSTOMER = 'CUSTOMER', _('Customer')
+        AGENT = 'AGENT', _('Agent')
+        MERCHANT = 'MERCHANT', _('Merchant')
+
     """
     Custom User model for the Ovii application.
 
@@ -157,6 +163,9 @@ class OviiUser(AbstractUser):
         choices=VerificationLevels.choices,
         default=VerificationLevels.LEVEL_0
     )
+
+    # User's role in the system
+    role = models.CharField(_('role'), max_length=20, choices=Role.choices, default=Role.CUSTOMER)
 
     # Assign the custom manager to the `objects` attribute.
     objects = OviiUserManager()

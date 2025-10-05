@@ -1,81 +1,96 @@
 """
 Author: Moreblessing Nyemba +263787211325
-Date: 2024-05-20
-Description: Defines service-layer functions for the wallets app.
+Date: 2024-05-21
+Description: Service layer for handling wallet transactions securely.
 """
-
 from decimal import Decimal
 from django.db import transaction
 from django.db.models import Sum
 from django.utils import timezone
 from django.conf import settings
+
 from .models import Wallet, Transaction
+from .signals import transaction_completed
 
 
-class InsufficientFundsError(Exception):
-    """Custom exception raised when a wallet has insufficient funds."""
+class TransactionError(Exception):
+    """Custom exception for transaction failures."""
     pass
+
 
 class TransactionLimitExceededError(Exception):
     """Custom exception raised when a user exceeds their daily transaction limit."""
     pass
 
 
-@transaction.atomic
-def perform_wallet_transfer(source_wallet: Wallet, destination_wallet: Wallet, amount: Decimal) -> Transaction:
+def create_transaction(
+    sender_wallet: Wallet,
+    receiver_wallet: Wallet,
+    amount: Decimal,
+    transaction_type: str = Transaction.TransactionType.TRANSFER,
+    description: str = ""
+) -> Transaction:
     """
-    Performs a fund transfer between two wallets within a database transaction.
+    Executes a transaction between two wallets securely.
 
-    This function ensures atomicity: the entire operation will be rolled back
-    if any part of it fails.
+    This function uses a database transaction and row-level locking (`select_for_update`)
+    to ensure atomicity and prevent race conditions like double-spending.
 
     Args:
-        source_wallet: The Wallet instance to debit.
-        destination_wallet: The Wallet instance to credit.
-        amount: The Decimal amount to transfer.
+        sender_wallet: The Wallet instance of the sender.
+        receiver_wallet: The Wallet instance of the receiver.
+        amount: The Decimal amount to be transferred.
+        transaction_type: The type of transaction.
+        description: An optional description for the transaction.
 
     Returns:
-        The created and completed Transaction object.
+        The created Transaction instance.
 
     Raises:
-        InsufficientFundsError: If the source wallet's balance is less than the amount.
+        TransactionError: If the transaction cannot be completed.
+        TransactionLimitExceededError: If the sender exceeds their daily limit.
     """
-    # --- Limit Enforcement ---
-    user = source_wallet.user
-    daily_limit = settings.TRANSACTION_LIMITS.get(user.verification_level, Decimal('0.00'))
+    if sender_wallet.id == receiver_wallet.id:
+        raise TransactionError("Sender and receiver wallets cannot be the same.")
 
-    # Calculate total amount sent by the user in the last 24 hours.
-    today_start = timezone.now() - timezone.timedelta(days=1)
-    amount_sent_today = source_wallet.sent_transactions.filter(
-        timestamp__gte=today_start,
-        status=Transaction.Status.COMPLETED
-    ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+    with transaction.atomic():
+        # --- Limit Enforcement ---
+        sender_user = sender_wallet.user
+        daily_limit = settings.TRANSACTION_LIMITS.get(sender_user.verification_level, Decimal('0.00'))
+        
+        # Calculate total amount sent by the user in the last 24 hours.
+        today_start = timezone.now() - timezone.timedelta(days=1)
+        amount_sent_today = sender_wallet.transactions.filter(
+            timestamp__gte=today_start,
+            status=Transaction.Status.COMPLETED
+        ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
 
-    if amount_sent_today + amount > daily_limit:
-        raise TransactionLimitExceededError(f"You have exceeded your daily transaction limit of ${daily_limit}.")
+        if amount_sent_today + amount > daily_limit:
+            raise TransactionLimitExceededError(f"You have exceeded your daily transaction limit of ${daily_limit}.")
 
-    # Lock the rows for update to prevent race conditions
-    source_wallet = Wallet.objects.select_for_update().get(pk=source_wallet.pk)
-    destination_wallet = Wallet.objects.select_for_update().get(pk=destination_wallet.pk)
+        # Lock the wallet rows for the duration of the transaction to prevent race conditions.
+        sender_wallet_locked = Wallet.objects.select_for_update().get(pk=sender_wallet.pk)
+        receiver_wallet_locked = Wallet.objects.select_for_update().get(pk=receiver_wallet.pk)
 
-    # --- Balance Check (after locking) ---
-    # This check is now safe from race conditions.
-    if source_wallet.balance < amount:
-        raise InsufficientFundsError("Insufficient funds in the source wallet.")
+        if sender_wallet_locked.balance < amount:
+            raise TransactionError("Insufficient funds.")
 
-    # Perform the transfer
-    source_wallet.balance -= amount
-    destination_wallet.balance += amount
+        sender_wallet_locked.balance -= amount
+        receiver_wallet_locked.balance += amount
 
-    source_wallet.save(update_fields=['balance', 'updated_at'])
-    destination_wallet.save(update_fields=['balance', 'updated_at'])
+        sender_wallet_locked.save(update_fields=['balance', 'updated_at'])
+        receiver_wallet_locked.save(update_fields=['balance', 'updated_at'])
 
-    # Create the transaction record
-    transaction_record = Transaction.objects.create(
-        source_wallet=source_wallet,
-        destination_wallet=destination_wallet,
-        amount=amount,
-        status=Transaction.Status.COMPLETED
-    )
+        new_transaction = Transaction.objects.create(
+            wallet=sender_wallet,
+            transaction_type=transaction_type,
+            amount=amount,
+            description=description,
+            related_wallet=receiver_wallet,
+            status=Transaction.Status.COMPLETED
+        )
 
-    return transaction_record
+    # Send a signal after the transaction is successfully committed.
+    transaction_completed.send(sender=Transaction, transaction=new_transaction)
+
+    return new_transaction

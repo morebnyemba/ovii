@@ -62,7 +62,9 @@ THIRD_PARTY_APPS = [
 
 LOCAL_APPS = [
     "users.apps.UsersConfig",
-    "wallets.apps.WalletsConfig",
+    "wallets.apps.WalletsConfig", # Ensure this points to the new AppConfig
+    "agents.apps.AgentsConfig",
+    "merchants.apps.MerchantsConfig",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
