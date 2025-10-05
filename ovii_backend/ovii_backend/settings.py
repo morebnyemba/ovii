@@ -176,7 +176,9 @@ USE_TZ = True
 # 10. STATIC & MEDIA
 # ------------------------------------------------------------------
 STATIC_URL = "/static/"
-STATIC_ROOT = "/home/app/web/staticfiles"
+# This defines the directory where `collectstatic` will gather all static files.
+# Using BASE_DIR makes it more portable, but your absolute path is also correct for a fixed deployment environment.
+STATIC_ROOT = os.getenv("STATIC_ROOT", BASE_DIR / "staticfiles")
 STATICFILES_DIRS = [BASE_DIR / "static"]
 
 MEDIA_URL = "/media/"
