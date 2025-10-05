@@ -1,10 +1,3 @@
-# CSRF trusted origins for cross-domain requests
-CSRF_TRUSTED_ORIGINS = [
-    "http://ovii.it.com",
-    "https://ovii.it.com",
-    "http://api.ovii.it.com",
-    "https://api.ovii.it.com"
-]
 """
 Django settings for ovii_backend project.
 
@@ -125,6 +118,10 @@ if not DEBUG:
     # A list of trusted origins for unsafe requests (e.g. POST).
     # For 'https' schemes, the header must be a match.
     CSRF_TRUSTED_ORIGINS = os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",")
+    # This tells Django to trust the X-Forwarded-Proto header from our proxy (Nginx)
+    # to determine if a request is secure. This is critical for CSRF checks.
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 
 
 
