@@ -44,5 +44,4 @@ urlpatterns.insert(0, path('admin/dashboard/chart-data/', user_views.dashboard_c
 
 # Serve media files during development
 if settings.DEBUG:
-    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
