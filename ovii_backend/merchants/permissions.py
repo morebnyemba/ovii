@@ -4,6 +4,7 @@ Date: 2024-05-21
 Description: Defines custom permissions for the merchants app.
 """
 from rest_framework.permissions import BasePermission
+from users.models import OviiUser
 from .models import Merchant
 
 
@@ -29,3 +30,18 @@ class IsApprovedMerchantAPI(BasePermission):
             return True
         except Merchant.DoesNotExist:
             return False
+
+
+class IsApprovedMerchant(BasePermission):
+    """
+    Custom permission to only allow authenticated and approved merchants to access a view.
+    This is for dashboard-like functionality, not for API-key based machine-to-machine auth.
+    """
+    message = 'You must be an approved merchant to perform this action.'
+
+    def has_permission(self, request, view):
+        user = request.user
+        return bool(
+            user and user.is_authenticated and user.role == OviiUser.Role.MERCHANT and
+            hasattr(user, 'merchant_profile') and user.merchant_profile.is_approved
+        )

@@ -18,7 +18,9 @@ class Merchant(models.Model):
     business_name = models.CharField(_('business name'), max_length=255)
     api_key = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     webhook_url = models.URLField(_('webhook URL'), blank=True, help_text=_("URL to send payment notifications to."))
+    return_url = models.URLField(_('return URL'), blank=True, help_text=_("URL to redirect customers to after a payment."))
     is_approved = models.BooleanField(default=False, help_text=_("Designates whether the merchant is approved and can accept payments."))
+    is_active = models.BooleanField(default=True, help_text=_("Designates whether the merchant's integration is currently active."))
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

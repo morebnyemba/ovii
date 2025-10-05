@@ -5,13 +5,15 @@ Description: Defines API views for the merchants app.
 """
 
 from rest_framework import generics, status
+from rest_framework.views import APIView
 from rest_framework.response import Response
 
 from wallets.models import Transaction
 from wallets.serializers import MerchantPaymentRequestSerializer
 from users.models import OviiUser
 from users.tasks import send_realtime_notification
-from .permissions import IsApprovedMerchantAPI
+from .permissions import IsApprovedMerchantAPI, IsApprovedMerchant
+from .serializers import MerchantProfileSerializer, MerchantProfileUpdateSerializer
 
 
 class MerchantPaymentRequestView(generics.CreateAPIView):
@@ -55,3 +57,34 @@ class MerchantPaymentRequestView(generics.CreateAPIView):
             "status": pending_transaction.status
         }
         return Response(response_data, status=status.HTTP_202_ACCEPTED)
+
+
+class MerchantProfileView(generics.RetrieveUpdateAPIView):
+    """
+    API view for an authenticated merchant to retrieve and update their profile.
+    """
+    permission_classes = [IsApprovedMerchant]
+
+    def get_object(self):
+        # The request.user is the OviiUser instance. The profile is linked to it.
+        return self.request.user.merchant_profile
+
+    def get_serializer_class(self):
+        if self.request.method in ['PUT', 'PATCH']:
+            return MerchantProfileUpdateSerializer
+        return MerchantProfileSerializer
+
+
+class RegenerateAPIKeyView(APIView):
+    """
+    API view for a merchant to regenerate their API key.
+    """
+    permission_classes = [IsApprovedMerchant]
+
+    def post(self, request, *args, **kwargs):
+        merchant = request.user.merchant_profile
+        merchant.regenerate_api_key()
+        return Response(
+            {"message": "API key has been regenerated successfully.", "api_key": merchant.api_key},
+            status=status.HTTP_200_OK
+        )

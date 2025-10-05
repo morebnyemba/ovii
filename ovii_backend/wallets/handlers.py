@@ -19,17 +19,30 @@ def handle_transaction_completed(sender, **kwargs):
     if not transaction:
         return
 
+    tx_type = transaction.transaction_type
     sender_user = transaction.wallet.user
     receiver_user = transaction.related_wallet.user if transaction.related_wallet else None
     amount = transaction.amount
     currency = transaction.wallet.currency
 
-    # Send notification to sender
-    if receiver_user:
-        send_realtime_notification.delay(sender_user.id, f"You have sent {amount} {currency} to {receiver_user.get_full_name() or receiver_user.phone_number}.")
-    # Send notification to receiver
-    if receiver_user:
-        send_realtime_notification.delay(receiver_user.id, f"You have received {amount} {currency} from {sender_user.get_full_name() or sender_user.phone_number}.")
+    # --- User-facing WebSocket Notifications ---
+    if tx_type == Transaction.TransactionType.TRANSFER and receiver_user:
+        sender_msg = f"You sent {amount} {currency} to {receiver_user.get_full_name() or receiver_user.phone_number}."
+        receiver_msg = f"You received {amount} {currency} from {sender_user.get_full_name() or sender_user.phone_number}."
+        send_realtime_notification.delay(sender_user.id, sender_msg)
+        send_realtime_notification.delay(receiver_user.id, receiver_msg)
+
+    elif tx_type == Transaction.TransactionType.DEPOSIT and receiver_user: # Agent Cash-in
+        agent_msg = f"You deposited {amount} {currency} into {receiver_user.get_full_name() or receiver_user.phone_number}'s wallet."
+        customer_msg = f"An agent deposited {amount} {currency} into your wallet."
+        send_realtime_notification.delay(sender_user.id, agent_msg) # Notification to Agent
+        send_realtime_notification.delay(receiver_user.id, customer_msg) # Notification to Customer
+
+    elif tx_type == Transaction.TransactionType.WITHDRAWAL and receiver_user: # Customer Cash-out
+        customer_msg = f"You cashed out {amount} {currency} with agent {receiver_user.agent_profile.agent_code}."
+        agent_msg = f"You received a cash-out payment of {amount} {currency} from {sender_user.get_full_name() or sender_user.phone_number}."
+        send_realtime_notification.delay(sender_user.id, customer_msg) # Notification to Customer
+        send_realtime_notification.delay(receiver_user.id, agent_msg) # Notification to Agent
 
     # --- Webhook for Merchant Payments ---
     # If the transaction is a payment and the receiver is a merchant, trigger a webhook.

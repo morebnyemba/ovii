@@ -65,6 +65,7 @@ LOCAL_APPS = [
     "wallets.apps.WalletsConfig", # Ensure this points to the new AppConfig
     "agents.apps.AgentsConfig",
     "merchants.apps.MerchantsConfig",
+    "integrations.apps.IntegrationsConfig",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -325,3 +326,20 @@ JAZZMIN_UI_TWEAKS = {
     "navbar": "navbar-dark navbar-indigo",
     "sidebar_nav_flat_style": True,
 }
+
+# ------------------------------------------------------------------
+# 17. SYSTEM ACCOUNTS
+# ------------------------------------------------------------------
+# Phone number of the system wallet used for holding funds during payouts.
+SYSTEM_PAYOUT_WALLET_PHONE = os.getenv("SYSTEM_PAYOUT_WALLET_PHONE", "+10000000000")
+
+# ------------------------------------------------------------------
+# 18. PAYNOW INTEGRATION SETTINGS
+# ------------------------------------------------------------------
+PAYNOW_INTEGRATION_ID = os.getenv("PAYNOW_INTEGRATION_ID")
+PAYNOW_INTEGRATION_KEY = os.getenv("PAYNOW_INTEGRATION_KEY")
+PAYNOW_API_URL = os.getenv("PAYNOW_API_URL", "https://www.paynow.co.zw/interface")
+# The URL on your server that Paynow will post status updates to.
+PAYNOW_RESULT_URL = os.getenv("PAYNOW_RESULT_URL")
+# The URL to redirect the user to after they complete payment on the Paynow page.
+PAYNOW_RETURN_URL = os.getenv("PAYNOW_RETURN_URL")
