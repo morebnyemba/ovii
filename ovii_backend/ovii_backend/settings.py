@@ -85,8 +85,6 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-# ------------------------------------------------------------------
-STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
 # 5. CORS – Next.js dev server
 # ------------------------------------------------------------------
 if DEBUG:
@@ -127,6 +125,10 @@ if not DEBUG:
     # A list of trusted origins for unsafe requests (e.g. POST).
     # For 'https' schemes, the header must be a match.
     CSRF_TRUSTED_ORIGINS = os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",")
+
+    # Use WhiteNoise's storage backend in production
+    # This backend automatically compresses files and adds unique names for caching
+    STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 
 # ------------------------------------------------------------------
