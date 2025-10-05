@@ -27,6 +27,14 @@ export default function MerchantDashboardPage() {
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [showApiKey, setShowApiKey] = useState(false);
 
+  // Set local state from SWR data when it loads
+  useState(() => {
+    if (profile) {
+      setWebhookUrl(profile.webhook_url || '');
+      setReturnUrl(profile.return_url || '');
+    }
+  }, [profile]);
+
   const handleSaveChanges = async () => {
     setIsSaving(true);
     try {

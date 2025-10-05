@@ -144,6 +144,13 @@ class SetTransactionPINView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated, IsMobileVerifiedOrHigher]
 
     def post(self, request, *args, **kwargs):
+        user = request.user
+        if user.has_set_pin:
+            return Response(
+                {"detail": "Transaction PIN has already been set."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         serializer = self.get_serializer(data=request.data)
         try:
             serializer.is_valid(raise_exception=True)

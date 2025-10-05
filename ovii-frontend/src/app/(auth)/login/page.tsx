@@ -74,7 +74,7 @@ export default function LoginPage() {
     }
     setLoading(true);
     try {
-        const response = await api.post('/users/otp/request/', { phone_number: `+${cleaned}` });
+        const response = await api.post('/users/otp/request/', { phone_number: phoneNumber });
         setRequestId(response.data.request_id);
         setOtpSent(true);
         setCountdown(30);
