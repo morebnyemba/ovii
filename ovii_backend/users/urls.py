@@ -7,8 +7,8 @@ Description: URL patterns for the users app.
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
-    UserProfileView, UserViewSet, OTPRequestView, SetTransactionPINView,
-    KYCDocumentViewSet, UserLoginView, UserRegistrationView
+    UserProfileView, UserViewSet, OTPRequestView, SetTransactionPINView, KYCDocumentViewSet,
+    UserLoginView, UserRegistrationStartView, UserRegistrationVerifyView
 )
 
 # Create a router and register our viewsets with it.
@@ -20,8 +20,9 @@ urlpatterns = [
     # OTP Authentication Endpoints
     path('otp/request/', OTPRequestView.as_view(), name='otp-request'),
 
-    # New, specific authentication endpoints
-    path('auth/register/', UserRegistrationView.as_view(), name='user-register'),
+    # New, two-step registration flow
+    path('register/start/', UserRegistrationStartView.as_view(), name='user-register-start'),
+    path('auth/register/', UserRegistrationVerifyView.as_view(), name='user-register-verify'),
     path('auth/login/', UserLoginView.as_view(), name='user-login'),
 
     # Authenticated User Endpoints

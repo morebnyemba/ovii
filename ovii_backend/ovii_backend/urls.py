@@ -29,8 +29,8 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/users/', include('users.urls')),
     path('api/wallets/', include('wallets.urls')),
-    path('api/agents/', include('agents.urls')),
-    path('api/merchants/', include('merchants.urls')),
+    path('api/agents/', include('agents.urls')), # This line was missing in my previous response's context
+    path('api/merchants/', include('merchants.urls')), # This line was also missing
     path('api/integrations/', include('integrations.urls')),
     # JWT Token Endpoints
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),

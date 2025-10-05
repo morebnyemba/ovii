@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiUser, FiPhone, FiLoader, FiAlertCircle, FiShield, FiCheckCircle, FiArrowLeft, FiZap, FiMail } from 'react-icons/fi';
+import { FiPhone, FiLoader, FiAlertCircle, FiShield, FiCheckCircle, FiArrowLeft, FiZap, FiMail } from 'react-icons/fi';
 import api from '@/lib/api';
 import { useUserStore } from '@/lib/store/useUserStore';
 
@@ -83,7 +83,7 @@ export default function RegisterPage() {
         phone_number: phoneNumber,
         email: email || undefined,
       };
-      const response = await api.post('/users/register/', payload);
+      const response = await api.post('/users/register/start/', payload);
       setRequestId(response.data.request_id);
       setStep(2);
       setCountdown(30);
@@ -110,14 +110,14 @@ export default function RegisterPage() {
         request_id: requestId,
         code: otp,
       };
-      const response = await api.post('/users/verify/', payload);
+      const response = await api.post('/users/auth/register/', payload);
       const { user, tokens } = response.data;
 
       setTokens(tokens.access, tokens.refresh);
       login(user);
 
       setVerificationSuccess(true);
-      setTimeout(() => router.push('/'), 1500);
+      setTimeout(() => router.push('/set-pin'), 1500);
     } catch (err: any) {
       triggerError(getApiErrorMessage(err));
     } finally {

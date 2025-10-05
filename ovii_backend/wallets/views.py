@@ -2,6 +2,7 @@ from django.db.models import Q
 from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from .models import Transaction
 from .serializers import (WalletSerializer, TransactionSerializer, TransactionCreateSerializer, ApproveMerchantPaymentSerializer)
 from .permissions import IsMobileVerifiedOrHigher
@@ -64,7 +65,7 @@ class CreateTransactionView(generics.CreateAPIView):
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
-class ApproveMerchantPaymentView(generics.APIView):
+class ApproveMerchantPaymentView(APIView):
     """
     API view for a customer to approve a pending merchant payment.
     """

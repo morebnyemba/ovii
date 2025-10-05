@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { FiTrendingUp, FiSend, FiAlertTriangle, FiUser, FiUserPlus, FiDollarSign, FiArrowUpRight, FiArrowDownLeft } from 'react-icons/fi';
 import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
-import { useUserStore, Transaction } from '@/lib/store/useUserStore';
+import { useUserStore } from '@/lib/store/useUserStore';
 
 const COLORS = {
   indigo: '#1A1B4B',

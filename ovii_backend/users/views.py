@@ -21,7 +21,7 @@ from .models import OviiUser, KYCDocument, VerificationLevels
 from wallets.models import Transaction
 from .serializers import (
     UserDetailSerializer, OTPRequestSerializer,
-    UserLoginSerializer, UserRegistrationSerializer,
+    UserLoginSerializer, UserRegistrationVerifySerializer, InitialRegistrationSerializer,
     SetTransactionPINSerializer, KYCDocumentSerializer,
     AdminUserManagementSerializer, UserProfileUpdateSerializer
 )
@@ -85,11 +85,11 @@ class UserLoginView(generics.GenericAPIView):
             return Response({"detail": "An unexpected server error occurred."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-class UserRegistrationView(generics.CreateAPIView):
+class UserRegistrationStartView(generics.CreateAPIView):
     """
-    API view for user registration with OTP.
+    API view for the first step of user registration.
     """
-    serializer_class = UserRegistrationSerializer
+    serializer_class = InitialRegistrationSerializer
     permission_classes = [AllowAny]
 
     def create(self, request, *args, **kwargs):
@@ -99,11 +99,35 @@ class UserRegistrationView(generics.CreateAPIView):
         serializer = self.get_serializer(data=request.data)
         try:
             serializer.is_valid(raise_exception=True)
-            response_data = serializer.save() # The serializer's create method now handles saving the user.
+            response_data = serializer.save()
+            logger.info(f"New user registration started for phone: {serializer.validated_data['phone_number']}")
+            return Response(response_data, status=status.HTTP_201_CREATED)
+        except ValidationError as e:
+            logger.warning(f"Initial registration failed for data: {request.data}. Error: {e.detail}")
+            raise
+        except Exception as e:
+            logger.error(f"An unexpected error occurred during initial registration. Error: {e}", exc_info=True)
+            return Response({"detail": "An unexpected server error occurred."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class UserRegistrationVerifyView(generics.CreateAPIView):
+    """
+    API view for the second step of user registration (OTP verification).
+    """
+    serializer_class = UserRegistrationVerifySerializer
+    permission_classes = [AllowAny]
+
+    def create(self, request, *args, **kwargs):
+        """
+        Handles OTP verification, activates the user, and returns tokens.
+        """
+        serializer = self.get_serializer(data=request.data)
+        try:
+            serializer.is_valid(raise_exception=True)
+            response_data = serializer.save()
             user_id = response_data.get('user', {}).get('id')
             logger.info(f"New user registration successful. User ID: {user_id}")
-            headers = self.get_success_headers(serializer.data)
-            return Response(response_data, status=status.HTTP_201_CREATED, headers=headers)
+            return Response(response_data, status=status.HTTP_201_CREATED)
         except ValidationError as e:
             logger.warning(f"User registration failed for data: {request.data}. Error: {e.detail}")
             raise

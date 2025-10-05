@@ -8,21 +8,15 @@ from .models import Merchant
 
 
 class MerchantProfileSerializer(serializers.ModelSerializer):
-    """
-    Serializer for a merchant to view their own profile and integration details.
-    The API key is read-only and exposed here for the merchant to copy.
-    """
+    """Serializer to display a merchant's profile details."""
     class Meta:
         model = Merchant
-        fields = ['business_name', 'api_key', 'webhook_url', 'return_url', 'is_active', 'is_approved']
-        read_only_fields = ['business_name', 'api_key', 'is_approved']
+        fields = ['business_name', 'api_key', 'webhook_url', 'return_url', 'is_approved', 'created_at']
+        read_only_fields = ['business_name', 'api_key', 'is_approved', 'created_at']
 
 
 class MerchantProfileUpdateSerializer(serializers.ModelSerializer):
-    """
-    Serializer for a merchant to update their integration settings.
-    """
+    """Serializer for a merchant to update their integration URLs."""
     class Meta:
         model = Merchant
-        # Merchants can only update these specific fields.
-        fields = ['webhook_url', 'return_url', 'is_active']
+        fields = ['webhook_url', 'return_url']

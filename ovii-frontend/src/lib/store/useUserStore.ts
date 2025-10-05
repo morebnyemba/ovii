@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import Cookies from 'js-cookie';
 import api from '@/lib/api';
 
 // --- Enums to Match Your Django Model Choices ---
@@ -55,19 +56,19 @@ export interface Wallet {
 
 export interface Transaction {
   id: number;
-  source_user: string;
-  destination_user: string;
+  sender: string;
+  receiver: string | null;
   amount: string;
   status: TransactionStatus;
+  transaction_type: string;
+  description: string;
   timestamp: string;
-  // Added from previous implementation for better display
-  type: 'sent' | 'received';
-  party: string;
-  date: string;
 }
 
 // --- The Main Zustand Store State Definition ---
 interface UserState {
+  accessToken: string | null;
+  refreshToken: string | null;
   user: User | null;
   wallet: Wallet | null;
   transactions: Transaction[];
@@ -76,17 +77,20 @@ interface UserState {
   loading: {
     wallet: boolean;
     transactions: boolean;
+    sendMoney: boolean;
   };
   error: {
     wallet: string | null;
     transactions: string | null;
     sendMoney: string | null;
   };
+  setTokens: (access: string, refresh: string) => void;
   login: (userData: User) => void;
+  updateUser: (userData: Partial<User>) => void;
   logout: () => void;
   fetchWallet: () => Promise<void>;
   fetchTransactions: (page?: number) => Promise<void>;
-  sendMoney: (recipient: string, amount: number, note?: string) => Promise<boolean>;
+  sendMoney: (recipient: string, amount: number, pin: string, note?: string) => Promise<boolean>;
   setHasHydrated: (state: boolean) => void;
 }
 
@@ -94,16 +98,24 @@ interface UserState {
 export const useUserStore = create<UserState>()(
   persist(
     (set, get) => ({
+      accessToken: null,
+      refreshToken: null,
       user: null,
       wallet: null,
       transactions: [],
       isAuthenticated: false,
       _hasHydrated: false,
-      loading: { wallet: false, transactions: false },
+      loading: { wallet: false, transactions: false, sendMoney: false },
       error: { wallet: null, transactions: null, sendMoney: null },
 
       setHasHydrated: (state) => {
         set({ _hasHydrated: state });
+      },
+
+      setTokens: (access, refresh) => {
+        set({ accessToken: access, refreshToken: refresh, isAuthenticated: true });
+        // Also set the cookie for the API interceptor and server-side contexts
+        Cookies.set('access_token', access, { expires: 1, secure: process.env.NODE_ENV === 'production' });
       },
 
       login: (userData) => {
@@ -116,14 +128,23 @@ export const useUserStore = create<UserState>()(
         get().fetchTransactions();
       },
 
+      updateUser: (userData) => {
+        set((state) => ({
+          user: state.user ? { ...state.user, ...userData } : null,
+        }));
+      },
+
       logout: () => {
         set({
+          accessToken: null,
+          refreshToken: null,
           user: null,
           wallet: null,
           transactions: [],
           isAuthenticated: false,
           error: { wallet: null, transactions: null, sendMoney: null },
         });
+        Cookies.remove('access_token');
       },
 
       fetchWallet: async () => {
@@ -169,19 +190,22 @@ export const useUserStore = create<UserState>()(
         }
       },
 
-      sendMoney: async (recipient: string, amount: number, note?: string) => {
+      sendMoney: async (recipient: string, amount: number, pin: string, note?: string) => {
         set((state) => ({
-          loading: { ...state.loading, transactions: true }, // Use transaction loading state
+          loading: { ...state.loading, sendMoney: true },
           error: { ...state.error, sendMoney: null },
         }));
         try {
-          const response = await api.post('/wallets/send/', {
-            recipient,
+          // Correct endpoint is /wallets/transfer/ and it requires a PIN
+          const response = await api.post('/wallets/transfer/', {
+            destination_phone_number: recipient,
             amount,
-            note,
+            pin,
+            description: note,
           });
 
-          if (response.status === 200) {
+          // Successful creation returns 201
+          if (response.status === 201) {
             // Refresh wallet and transactions after successful send
             await get().fetchWallet();
             await get().fetchTransactions();
@@ -193,15 +217,15 @@ export const useUserStore = create<UserState>()(
           }));
           return false; // Indicate failure
         } catch (error: any) {
-          const errorMessage = error.response?.data?.detail || error.message || 'An unexpected error occurred.';
+          const errorMessage = error.response?.data?.detail || error.message || 'An unexpected error occurred. Please try again.';
           console.error('Send Money Error:', error);
           set((state) => ({
-            error: { ...state.error, sendMoney: `Failed to send money: ${errorMessage}` },
+            error: { ...state.error, sendMoney: errorMessage },
           }));
           return false; // Indicate failure
         } finally {
           set((state) => ({
-            loading: { ...state.loading, transactions: false },
+            loading: { ...state.loading, sendMoney: false },
           }));
         }
       },

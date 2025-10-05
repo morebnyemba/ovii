@@ -104,9 +104,8 @@ export default function LoginPage() {
       const response = await api.post('/users/auth/login/', payload);
       const { user, tokens } = response.data;
 
-      // 1. Set tokens in the global store. This also sets the cookie.
-      setTokens(tokens.access, tokens.refresh);
-      // 2. Set the user data in the store, which triggers data fetching.
+      // Set tokens before user data to ensure subsequent API calls are authenticated
+      if (tokens) setTokens(tokens.access, tokens.refresh);
       login(user);
 
       setVerificationSuccess(true);

@@ -205,8 +205,8 @@ export default function SendMoneyPage() {
                 </div>
               )}
 
-              <button type="submit" disabled={loading.transactions || !wallet} className="w-full flex items-center justify-center gap-2 font-bold py-4 px-6 rounded-full shadow-md transition-all hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed" style={{ backgroundColor: COLORS.gold, color: COLORS.indigo }}>
-                {loading.transactions ? (
+              <button type="submit" disabled={loading.sendMoney || !wallet} className="w-full flex items-center justify-center gap-2 font-bold py-4 px-6 rounded-full shadow-md transition-all hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed" style={{ backgroundColor: COLORS.gold, color: COLORS.indigo }}>
+                {loading.sendMoney ? (
                   <><FiLoader className="animate-spin" /><span>Sending...</span></>
                 ) : (
                   <><FiSend /><span>Send Now</span></>

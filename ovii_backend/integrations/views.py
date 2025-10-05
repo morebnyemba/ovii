@@ -19,7 +19,7 @@ from users.models import OviiUser
 from users.tasks import send_realtime_notification
 from .services import EcoCashClient, PaynowClient
 from .tasks import process_ecocash_withdrawal
-from .serializers import PaynowTopUpRequestSerializer
+from .serializers import PaynowTopUpRequestSerializer # This import will now work correctly
 
 class EcoCashWithdrawalSerializer(serializers.Serializer):
     amount = serializers.DecimalField(max_digits=12, decimal_places=2, min_value=Decimal('1.00'))
