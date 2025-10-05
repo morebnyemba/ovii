@@ -3,8 +3,7 @@ from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from .models import Transaction
-from .serializers import (WalletSerializer, TransactionSerializer, TransactionCreateSerializer,
-                          AgentCashInSerializer, CustomerCashOutRequestSerializer)
+from .serializers import (WalletSerializer, TransactionSerializer, TransactionCreateSerializer, ApproveMerchantPaymentSerializer)
 from .permissions import IsMobileVerifiedOrHigher
 from .services import create_transaction, TransactionError, TransactionLimitExceededError
 
@@ -61,5 +60,44 @@ class CreateTransactionView(generics.CreateAPIView):
             )
             response_serializer = TransactionSerializer(transaction)
             return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+        except (TransactionError, TransactionLimitExceededError) as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ApproveMerchantPaymentView(generics.APIView):
+    """
+    API view for a customer to approve a pending merchant payment.
+    """
+    serializer_class = ApproveMerchantPaymentSerializer
+    permission_classes = [IsAuthenticated, IsMobileVerifiedOrHigher]
+
+    def post(self, request, transaction_id, *args, **kwargs):
+        try:
+            pending_tx = Transaction.objects.get(
+                id=transaction_id,
+                wallet=request.user.wallet, # Ensure the user owns this transaction
+                status=Transaction.Status.PENDING,
+                transaction_type=Transaction.TransactionType.PAYMENT
+            )
+        except Transaction.DoesNotExist:
+            return Response({"detail": "Pending payment not found or you do not have permission to approve it."}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            # The create_transaction service will handle the fund transfer and send notifications.
+            # We mark the original pending transaction as failed to avoid confusion.
+            completed_tx = create_transaction(
+                sender_wallet=pending_tx.wallet,
+                receiver_wallet=pending_tx.related_wallet,
+                amount=pending_tx.amount,
+                transaction_type=Transaction.TransactionType.PAYMENT,
+                description=pending_tx.description
+            )
+            pending_tx.status = Transaction.Status.FAILED # Mark original request as obsolete
+            pending_tx.description = f"Superseded by transaction {completed_tx.id}"
+            pending_tx.save()
+            return Response({"detail": "Payment approved and completed successfully."}, status=status.HTTP_200_OK)
         except (TransactionError, TransactionLimitExceededError) as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)

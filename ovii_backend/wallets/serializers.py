@@ -210,3 +210,26 @@ class MerchantPaymentRequestSerializer(serializers.Serializer):
         except OviiUser.DoesNotExist:
             raise serializers.ValidationError("A customer with this phone number was not found.")
         return value
+
+
+class ApproveMerchantPaymentSerializer(serializers.Serializer):
+    """
+    Serializer for a customer to approve a pending merchant payment.
+    Validates the customer's PIN.
+    """
+    pin = serializers.CharField(write_only=True, style={'input_type': 'password'}, min_length=4, max_length=4)
+
+    def validate(self, data):
+        """
+        Validate the customer's transaction PIN.
+        """
+        customer_user = self.context['request'].user
+        pin = data['pin']
+
+        # Validate the customer's transaction PIN
+        if not customer_user.has_set_pin:
+            raise serializers.ValidationError({"pin": "You must set your transaction PIN before approving payments."})
+        if not customer_user.check_pin(pin):
+            raise serializers.ValidationError({"pin": "Incorrect transaction PIN."})
+
+        return data

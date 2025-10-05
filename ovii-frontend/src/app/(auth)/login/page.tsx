@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiPhone, FiLoader, FiAlertCircle, FiShield, FiCheckCircle, FiArrowLeft, FiZap } from 'react-icons/fi';
-import Cookies from 'js-cookie'; // Import js-cookie to manage auth tokens
 import api from '@/lib/api';
 import { useUserStore } from '@/lib/store/useUserStore';
 
@@ -31,7 +30,7 @@ export default function LoginPage() {
   const [resendLoading, setResendLoading] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const router = useRouter();
-  const { login } = useUserStore();
+  const { login, setTokens } = useUserStore();
 
   useEffect(() => {
     setIsMounted(true);
@@ -105,13 +104,9 @@ export default function LoginPage() {
       const response = await api.post('/users/auth/login/', payload);
       const { user, tokens } = response.data;
 
-      // --- KEY CHANGE HERE ---
-      // 1. Set the access token in a cookie FIRST.
-      //    This makes the token immediately available for the API interceptor.
-      Cookies.set('access_token', tokens.access, { expires: 1, secure: process.env.NODE_ENV === 'production' });
-
-      // 2. NOW, call the login action. The subsequent API calls inside
-      //    it (fetchWallet, fetchTransactions) will be authenticated correctly.
+      // 1. Set tokens in the global store. This also sets the cookie.
+      setTokens(tokens.access, tokens.refresh);
+      // 2. Set the user data in the store, which triggers data fetching.
       login(user);
 
       setVerificationSuccess(true);

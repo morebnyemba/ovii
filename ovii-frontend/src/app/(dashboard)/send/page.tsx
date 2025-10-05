@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiSend, FiLoader, FiCheckCircle, FiAlertTriangle, FiArrowLeft, FiUser, FiDollarSign, FiEdit2 } from 'react-icons/fi';
+import { FiSend, FiLoader, FiCheckCircle, FiAlertTriangle, FiArrowLeft, FiUser, FiDollarSign, FiEdit2, FiLock } from 'react-icons/fi';
 import { useUserStore } from '@/lib/store/useUserStore';
 import Link from 'next/link';
 import { z } from 'zod';
@@ -24,6 +24,7 @@ const sendMoneySchema = z.object({
   amount: z.coerce // Coerce string from input to number for validation
     .number({ invalid_type_error: "Please enter a valid amount." })
     .positive({ message: "Amount must be greater than zero." }),
+  pin: z.string().length(4, { message: "PIN must be 4 digits." }).regex(/^\d{4}$/, { message: "PIN must be numeric." }),
   note: z.string().max(100, { message: "Note must be 100 characters or less." }).optional(),
 });
 
@@ -37,6 +38,7 @@ export default function SendMoneyPage() {
   const [recipient, setRecipient] = useState('');
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
+  const [pin, setPin] = useState('');
 
   // Refactored state for UI feedback
   const [formErrors, setFormErrors] = useState<FormErrors>(null);
@@ -49,7 +51,7 @@ export default function SendMoneyPage() {
     setFormErrors(null);
     setApiError(null);
 
-    const validationResult = sendMoneySchema.safeParse({ recipient, amount, note });
+    const validationResult = sendMoneySchema.safeParse({ recipient, amount, pin, note });
 
     if (!validationResult.success) {
       setFormErrors(validationResult.error.format());
@@ -66,7 +68,8 @@ export default function SendMoneyPage() {
     const isSuccess = await sendMoney(
       validationResult.data.recipient,
       validatedAmount,
-      validationResult.data.note
+      validationResult.data.pin,
+      validationResult.data.note,
     );
 
     if (isSuccess) {
@@ -79,6 +82,7 @@ export default function SendMoneyPage() {
     setRecipient('');
     setAmount('');
     setNote('');
+    setPin('');
     setFormErrors(null);
     setApiError(null);
     setSuccess(false);
@@ -176,6 +180,14 @@ export default function SendMoneyPage() {
                   <input id="amount" type="number" step="0.01" min="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" required className={`w-full rounded-lg border-2 bg-transparent py-3 pl-10 pr-3 focus:outline-none focus:ring-2 focus:ring-offset-2 ${formErrors?.amount ? 'border-red-500' : 'border-mint'}`} style={{ color: COLORS.indigo, backgroundColor: COLORS.white }} />
                 </div>
                 {formErrors?.amount && <p className="mt-1 text-xs text-red-600">{formErrors.amount._errors[0]}</p>}
+              </div>
+              <div>
+                <label htmlFor="pin" className="block text-sm font-medium mb-1" style={{ color: COLORS.indigo }}>Transaction PIN</label>
+                <div className="relative">
+                  <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-lg" style={{ color: COLORS.indigo, opacity: 0.5 }} />
+                  <input id="pin" type="password" value={pin} onChange={(e) => setPin(e.target.value)} placeholder="****" required maxLength={4} className={`w-full rounded-lg border-2 bg-transparent py-3 pl-10 pr-3 focus:outline-none focus:ring-2 focus:ring-offset-2 ${formErrors?.pin ? 'border-red-500' : 'border-mint'}`} style={{ color: COLORS.indigo, backgroundColor: COLORS.white }} />
+                </div>
+                {formErrors?.pin && <p className="mt-1 text-xs text-red-600">{formErrors.pin._errors[0]}</p>}
               </div>
               <div>
                 <label htmlFor="note" className="block text-sm font-medium mb-1" style={{ color: COLORS.indigo }}>Note (Optional)</label>
