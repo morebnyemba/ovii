@@ -18,25 +18,32 @@ import api from '@/lib/api';
 import { useUserStore } from '@/lib/store/useUserStore';
 
 const COLORS = {
-  primary: {
-    50: '#f0f9ff',
-    100: '#e0f2fe',
-    500: '#0ea5e9',
-    600: '#0284c7',
-    700: '#0369a1',
-    900: '#0c4a6e',
-  },
-  accent: {
-    500: '#f59e0b',
-    600: '#d97706',
-  },
-  success: '#10b981',
-  error: '#ef4444',
-  background: '#0f172a',
-  surface: '#1e293b',
-  text: {
-    primary: '#f8fafc',
-    secondary: '#cbd5e1',
+  indigo: '#1A1B4B',
+  gold: '#FFC247',
+  mint: '#33D9B2',
+  coral: '#FF6B6B',
+  white: '#FDFDFD',
+  lightGray: '#F3F4F6',
+  darkIndigo: '#0F0F2D',
+  
+  // Adding shades for gradients and effects
+  shades: {
+    indigo: {
+      light: '#2A2B6B',
+      dark: '#0A0B2B',
+    },
+    gold: {
+      light: '#FFD247',
+      dark: '#E6AE30',
+    },
+    mint: {
+      light: '#44E9C2',
+      dark: '#22C9A2',
+    },
+    coral: {
+      light: '#FF7B7B',
+      dark: '#E65B5B',
+    }
   }
 };
 
@@ -197,7 +204,7 @@ export default function LoginPage() {
       transition={{ duration: 0.8 }}
       className="flex min-h-screen items-center justify-center p-4 md:p-8 relative overflow-hidden"
       style={{
-        background: `linear-gradient(135deg, ${COLORS.background} 0%, ${COLORS.primary[900]} 100%)`,
+        background: `linear-gradient(135deg, ${COLORS.darkIndigo} 0%, ${COLORS.indigo} 50%, ${COLORS.mint} 100%)`,
       }}
     >
       {/* Animated Background Particles */}
@@ -205,12 +212,13 @@ export default function LoginPage() {
         {particles.map((particle) => (
           <motion.div
             key={particle.id}
-            className="absolute rounded-full bg-white/10"
+            className="absolute rounded-full"
             style={{
               width: particle.size,
               height: particle.size,
               left: `${particle.x}%`,
               top: `${particle.y}%`,
+              backgroundColor: 'rgba(255, 255, 255, 0.1)',
             }}
             animate={{
               y: [0, -30, 0],
@@ -230,11 +238,11 @@ export default function LoginPage() {
       <div className="absolute inset-0">
         <div 
           className="absolute top-1/4 -left-10 w-72 h-72 rounded-full blur-3xl opacity-20"
-          style={{ backgroundColor: COLORS.primary[500] }}
+          style={{ backgroundColor: COLORS.mint }}
         />
         <div 
           className="absolute bottom-1/4 -right-10 w-72 h-72 rounded-full blur-3xl opacity-20"
-          style={{ backgroundColor: COLORS.accent[500] }}
+          style={{ backgroundColor: COLORS.gold }}
         />
       </div>
 
@@ -249,8 +257,8 @@ export default function LoginPage() {
           transition={{ duration: 0.4 }}
           className="rounded-3xl backdrop-blur-xl border border-white/10 p-8 shadow-2xl"
           style={{ 
-            backgroundColor: 'rgba(30, 41, 59, 0.8)',
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+            backgroundColor: 'rgba(253, 253, 253, 0.95)',
+            boxShadow: '0 25px 50px -12px rgba(26, 27, 75, 0.5)',
           }}
         >
           {/* Header Section */}
@@ -262,15 +270,18 @@ export default function LoginPage() {
               className="flex justify-center mb-6"
             >
               <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-2xl blur opacity-75 animate-pulse"></div>
+                <div 
+                  className="absolute inset-0 rounded-2xl blur opacity-75 animate-pulse"
+                  style={{ backgroundColor: COLORS.mint }}
+                ></div>
                 <div 
                   className="relative flex h-20 w-20 items-center justify-center rounded-2xl text-white shadow-lg"
-                  style={{ backgroundColor: COLORS.surface }}
-        >
+                  style={{ backgroundColor: COLORS.indigo }}
+                >
                   {verificationSuccess ? (
-                    <FiCheckCircle className="text-3xl" style={{ color: COLORS.success }} />
+                    <FiCheckCircle className="text-3xl" style={{ color: COLORS.mint }} />
                   ) : (
-                    <FiZap className="text-3xl" style={{ color: COLORS.accent[500] }} />
+                    <FiZap className="text-3xl" style={{ color: COLORS.gold }} />
                   )}
                 </div>
               </div>
@@ -280,7 +291,8 @@ export default function LoginPage() {
               initial={{ y: -10, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.2 }}
-              className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent mb-3"
+              className="text-3xl font-bold mb-3"
+              style={{ color: COLORS.indigo }}
             >
               {verificationSuccess ? 'Verified!' : 'Welcome to Ovii'}
             </motion.h1>
@@ -290,7 +302,7 @@ export default function LoginPage() {
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.3 }}
               className="text-lg opacity-80"
-              style={{ color: COLORS.text.secondary }}
+              style={{ color: COLORS.indigo }}
             >
               {verificationSuccess 
                 ? 'Your account is now secure' 
@@ -317,15 +329,18 @@ export default function LoginPage() {
                   transition={{ delay: 0.4 }}
                   className="space-y-3"
                 >
-                  <label htmlFor="phone" className="block text-sm font-medium" style={{ color: COLORS.text.primary }}>
+                  <label htmlFor="phone" className="block text-sm font-medium" style={{ color: COLORS.indigo }}>
                     Mobile Number
                   </label>
                   <div className="relative group">
-                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl blur opacity-25 group-hover:opacity-50 transition duration-300"></div>
+                    <div 
+                      className="absolute inset-0 rounded-xl blur opacity-25 group-hover:opacity-50 transition duration-300"
+                      style={{ backgroundColor: COLORS.mint }}
+                    ></div>
                     <div className="relative">
                       <FiPhone
                         className="absolute left-4 top-1/2 -translate-y-1/2 text-xl z-10"
-                        style={{ color: COLORS.primary[500] }}
+                        style={{ color: COLORS.indigo }}
                       />
                       <input
                         id="phone"
@@ -335,15 +350,16 @@ export default function LoginPage() {
                         placeholder="+263 712 345 678"
                         maxLength={16}
                         required
-                        className="w-full rounded-xl border-0 bg-white/5 py-4 pl-12 pr-4 text-lg focus:outline-none focus:ring-2 backdrop-blur-sm transition duration-300"
+                        className="w-full rounded-xl border-2 py-4 pl-12 pr-4 text-lg focus:outline-none focus:ring-2 backdrop-blur-sm transition duration-300"
                         style={{
-                          color: COLORS.text.primary,
-                          border: '1px solid rgba(255, 255, 255, 0.1)',
+                          color: COLORS.indigo,
+                          backgroundColor: COLORS.lightGray,
+                          borderColor: COLORS.mint,
                         }}
                       />
                     </div>
                   </div>
-                  <p className="text-sm" style={{ color: COLORS.text.secondary }}>
+                  <p className="text-sm" style={{ color: COLORS.indigo, opacity: 0.7 }}>
                     We'll send a 6-digit verification code to this number
                   </p>
                 </motion.div>
@@ -359,10 +375,10 @@ export default function LoginPage() {
                     >
                       <div 
                         className="flex items-center gap-3 rounded-xl p-4"
-                        style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)' }}
+                        style={{ backgroundColor: 'rgba(255, 107, 107, 0.1)' }}
                       >
-                        <FiAlertCircle className="flex-shrink-0" style={{ color: COLORS.error }} />
-                        <p className="text-sm" style={{ color: COLORS.error }}>{error}</p>
+                        <FiAlertCircle className="flex-shrink-0" style={{ color: COLORS.coral }} />
+                        <p className="text-sm" style={{ color: COLORS.coral }}>{error}</p>
                       </div>
                     </motion.div>
                   )}
@@ -376,9 +392,16 @@ export default function LoginPage() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="group relative w-full overflow-hidden rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 py-4 text-lg font-semibold text-white shadow-lg transition-all hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-900 disabled:opacity-80 disabled:cursor-not-allowed"
+                    className="group relative w-full overflow-hidden rounded-xl py-4 text-lg font-semibold text-white shadow-lg transition-all hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-80 disabled:cursor-not-allowed"
+                    style={{
+                      backgroundColor: COLORS.gold,
+                      color: COLORS.indigo,
+                    }}
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-cyan-600 opacity-0 transition-opacity group-hover:opacity-100"></div>
+                    <div 
+                      className="absolute inset-0 opacity-0 transition-opacity group-hover:opacity-100"
+                      style={{ backgroundColor: COLORS.shades.gold.dark }}
+                    ></div>
                     <div className="relative flex items-center justify-center gap-3">
                       {loading ? (
                         <>
@@ -414,15 +437,15 @@ export default function LoginPage() {
                     <button
                       type="button"
                       onClick={resetOtpFlow}
-                      className="flex items-center gap-2 text-sm transition-colors hover:text-blue-400"
-                      style={{ color: COLORS.text.secondary }}
+                      className="flex items-center gap-2 text-sm transition-colors"
+                      style={{ color: COLORS.indigo, opacity: 0.8 }}
                     >
                       <FiArrowLeft />
                       Change number
                     </button>
                     {countdown > 0 ? (
-                      <span className="text-sm" style={{ color: COLORS.text.secondary }}>
-                        Resend in <span style={{ color: COLORS.accent[500] }}>{countdown}s</span>
+                      <span className="text-sm" style={{ color: COLORS.indigo, opacity: 0.7 }}>
+                        Resend in <span style={{ color: COLORS.gold }}>{countdown}s</span>
                       </span>
                     ) : (
                       <button
@@ -430,7 +453,7 @@ export default function LoginPage() {
                         onClick={handleResendOTP}
                         disabled={resendLoading}
                         className="flex items-center gap-2 text-sm transition-colors disabled:opacity-50"
-                        style={{ color: COLORS.primary[500] }}
+                        style={{ color: COLORS.mint }}
                       >
                         {resendLoading && <FiLoader className="animate-spin" />}
                         {resendLoading ? 'Sending...' : 'Resend code'}
@@ -439,11 +462,14 @@ export default function LoginPage() {
                   </div>
 
                   <div className="space-y-3">
-                    <label htmlFor="otp" className="block text-sm font-medium" style={{ color: COLORS.text.primary }}>
+                    <label htmlFor="otp" className="block text-sm font-medium" style={{ color: COLORS.indigo }}>
                       Verification Code
                     </label>
                     <div className="relative group">
-                      <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl blur opacity-25 group-hover:opacity-50 transition duration-300"></div>
+                      <div 
+                        className="absolute inset-0 rounded-xl blur opacity-25 group-hover:opacity-50 transition duration-300"
+                        style={{ backgroundColor: COLORS.mint }}
+                      ></div>
                       <div className="relative flex items-center">
                         <input
                           id="otp"
@@ -453,10 +479,11 @@ export default function LoginPage() {
                           placeholder="••••••"
                           maxLength={6}
                           required
-                          className="w-full rounded-xl border-0 bg-white/5 py-4 px-4 text-center text-2xl tracking-widest focus:outline-none focus:ring-2 backdrop-blur-sm"
+                          className="w-full rounded-xl border-2 py-4 px-4 text-center text-2xl tracking-widest focus:outline-none focus:ring-2 backdrop-blur-sm"
                           style={{
-                            color: COLORS.text.primary,
-                            border: '1px solid rgba(255, 255, 255, 0.1)',
+                            color: COLORS.indigo,
+                            backgroundColor: COLORS.lightGray,
+                            borderColor: COLORS.mint,
                             letterSpacing: '0.5em',
                           }}
                         />
@@ -464,13 +491,13 @@ export default function LoginPage() {
                           type="button"
                           onClick={() => setShowOtp(!showOtp)}
                           className="absolute right-4 text-lg transition-colors"
-                          style={{ color: COLORS.text.secondary }}
+                          style={{ color: COLORS.indigo, opacity: 0.7 }}
                         >
                           {showOtp ? <FiEyeOff /> : <FiEye />}
                         </button>
                       </div>
                     </div>
-                    <p className="text-sm" style={{ color: COLORS.text.secondary }}>
+                    <p className="text-sm" style={{ color: COLORS.indigo, opacity: 0.7 }}>
                       Enter the 6-digit code sent to your phone
                     </p>
                   </div>
@@ -487,10 +514,10 @@ export default function LoginPage() {
                     >
                       <div 
                         className="flex items-center gap-3 rounded-xl p-4"
-                        style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)' }}
+                        style={{ backgroundColor: 'rgba(255, 107, 107, 0.1)' }}
                       >
-                        <FiAlertCircle className="flex-shrink-0" style={{ color: COLORS.error }} />
-                        <p className="text-sm" style={{ color: COLORS.error }}>{error}</p>
+                        <FiAlertCircle className="flex-shrink-0" style={{ color: COLORS.coral }} />
+                        <p className="text-sm" style={{ color: COLORS.coral }}>{error}</p>
                       </div>
                     </motion.div>
                   )}
@@ -504,9 +531,16 @@ export default function LoginPage() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="group relative w-full overflow-hidden rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 py-4 text-lg font-semibold text-white shadow-lg transition-all hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-slate-900 disabled:opacity-80 disabled:cursor-not-allowed"
+                    className="group relative w-full overflow-hidden rounded-xl py-4 text-lg font-semibold text-white shadow-lg transition-all hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-80 disabled:cursor-not-allowed"
+                    style={{
+                      backgroundColor: COLORS.mint,
+                      color: COLORS.indigo,
+                    }}
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-green-600 to-emerald-600 opacity-0 transition-opacity group-hover:opacity-100"></div>
+                    <div 
+                      className="absolute inset-0 opacity-0 transition-opacity group-hover:opacity-100"
+                      style={{ backgroundColor: COLORS.shades.mint.dark }}
+                    ></div>
                     <div className="relative flex items-center justify-center gap-3">
                       {loading ? (
                         <>
@@ -538,34 +572,41 @@ export default function LoginPage() {
                   className="mb-6"
                 >
                   <div className="relative inline-block">
-                    <div className="absolute inset-0 bg-green-500 rounded-full blur-xl opacity-50 animate-ping"></div>
+                    <div 
+                      className="absolute inset-0 rounded-full blur-xl opacity-50 animate-ping"
+                      style={{ backgroundColor: COLORS.mint }}
+                    ></div>
                     <FiCheckCircle 
                       className="relative text-6xl z-10" 
-                      style={{ color: COLORS.success }} 
+                      style={{ color: COLORS.mint }} 
                     />
                   </div>
                 </motion.div>
                 <motion.p 
                   className="text-xl mb-2 font-semibold"
-                  style={{ color: COLORS.text.primary }}
+                  style={{ color: COLORS.indigo }}
                 >
                   Verification Successful!
                 </motion.p>
                 <motion.p 
                   className="text-lg opacity-80"
-                  style={{ color: COLORS.text.secondary }}
+                  style={{ color: COLORS.indigo }}
                 >
                   Redirecting to your dashboard...
                 </motion.p>
                 <motion.div 
-                  className="mt-6 w-full bg-white/10 rounded-full h-2 overflow-hidden"
+                  className="mt-6 w-full rounded-full h-2 overflow-hidden"
+                  style={{ backgroundColor: COLORS.lightGray }}
                   initial={{ width: 0 }}
                   animate={{ width: '100%' }}
                   transition={{ duration: 1.5, ease: 'linear' }}
                 >
                   <div 
-                    className="h-full bg-gradient-to-r from-green-500 to-emerald-500 rounded-full"
-                    style={{ width: '100%' }}
+                    className="h-full rounded-full"
+                    style={{ 
+                      backgroundColor: COLORS.mint,
+                      width: '100%' 
+                    }}
                   />
                 </motion.div>
               </motion.div>
@@ -578,17 +619,18 @@ export default function LoginPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.7 }}
-              className="mt-8 border-t border-white/10 pt-6"
+              className="mt-8 border-t pt-6"
+              style={{ borderColor: COLORS.lightGray }}
             >
-              <div className="flex items-center justify-center gap-3 text-sm" style={{ color: COLORS.text.secondary }}>
-                <FiShield style={{ color: COLORS.primary[500] }} />
+              <div className="flex items-center justify-center gap-3 text-sm" style={{ color: COLORS.indigo, opacity: 0.7 }}>
+                <FiShield style={{ color: COLORS.mint }} />
                 <span>Bank-grade security encryption</span>
               </div>
-              <p className="mt-3 text-center text-xs" style={{ color: COLORS.text.secondary }}>
+              <p className="mt-3 text-center text-xs" style={{ color: COLORS.indigo, opacity: 0.7 }}>
                 By continuing, you agree to our{' '}
-                <a href="#" className="underline transition-colors hover:text-blue-400">Terms</a>{' '}
+                <a href="#" className="underline transition-colors" style={{ color: COLORS.mint }}>Terms</a>{' '}
                 and{' '}
-                <a href="#" className="underline transition-colors hover:text-blue-400">Privacy Policy</a>
+                <a href="#" className="underline transition-colors" style={{ color: COLORS.mint }}>Privacy Policy</a>
               </p>
             </motion.div>
           )}
