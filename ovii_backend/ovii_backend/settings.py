@@ -87,7 +87,9 @@ if DEBUG:
     ]
 else:
     # In production, you should restrict this to your frontend's domain
-    CORS_ALLOWED_ORIGINS = os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
+    # We provide a sensible default and allow it to be overridden.
+    allowed_origins_str = os.getenv("CORS_ALLOWED_ORIGINS", "https://ovii.it.com")
+    CORS_ALLOWED_ORIGINS = [origin.strip() for origin in allowed_origins_str.split(',') if origin.strip()]
 
 # Allow cookies / Authorization header
 CORS_ALLOW_CREDENTIALS = True
@@ -117,7 +119,8 @@ if not DEBUG:
     SECURE_BROWSER_XSS_FILTER = True
     # A list of trusted origins for unsafe requests (e.g. POST).
     # For 'https' schemes, the header must be a match.
-    CSRF_TRUSTED_ORIGINS = os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",")
+    trusted_origins_str = os.getenv("CSRF_TRUSTED_ORIGINS", "https://ovii.it.com")
+    CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in trusted_origins_str.split(',') if origin.strip()]
     # This tells Django to trust the X-Forwarded-Proto header from our proxy (Nginx)
     # to determine if a request is secure. This is critical for CSRF checks.
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')

@@ -21,3 +21,4 @@ Pillow
 pytz
 whitenoise
 requests
+twisted[http2,tls]
