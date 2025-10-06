@@ -6,7 +6,7 @@ export function middleware(request: NextRequest) {
   const accessToken = request.cookies.get('access_token')?.value;
 
   // Define the paths that are considered public (don't require authentication)
-  const publicPaths = ['','/login', '/verify-otp'];
+  const publicPaths = ['','register','set-pin','/login', '/verify-otp'];
 
   // Check if the current path is a public path
   const isPublicPath = publicPaths.some(path => request.nextUrl.pathname.startsWith(path));
