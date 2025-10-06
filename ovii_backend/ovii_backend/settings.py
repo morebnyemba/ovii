@@ -125,6 +125,10 @@ if not DEBUG:
     # to determine if a request is secure. This is critical for CSRF checks.
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
+    # Set cookie domain to allow sharing across subdomains (e.g., ovii.it.com and api.ovii.it.com)
+    # The leading dot is important.
+    SESSION_COOKIE_DOMAIN = ".ovii.it.com"
+    CSRF_COOKIE_DOMAIN = ".ovii.it.com"
 
 
 
