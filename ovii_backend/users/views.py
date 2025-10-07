@@ -30,6 +30,21 @@ from .serializers import (
 logger = logging.getLogger(__name__)
 
 
+class ApiRootView(APIView):
+    """
+    A simple view for the API root that provides a welcome message.
+    This confirms the API is running and can link to documentation.
+    """
+    permission_classes = [AllowAny]
+
+    def get(self, request, *args, **kwargs):
+        return Response({
+            "message": "Welcome to the Ovii API!",
+            "version": "1.0.0",
+            "docs": "/api/docs/",  # Example link to API documentation
+        })
+
+
 class OTPRequestView(generics.CreateAPIView):
     """
     API view for requesting an OTP.

@@ -23,24 +23,24 @@ from rest_framework_simplejwt.views import (
     TokenRefreshView,
 )
 from users import views as user_views
+from users.views_utils import CSRFTokenView
 
 
 urlpatterns = [
-    path('/admin', admin.site.urls),
+    path('', user_views.ApiRootView.as_view(), name='api-root'),
+    path('admin/', admin.site.urls),
     path('api/users/', include('users.urls')),
     path('api/wallets/', include('wallets.urls')),
-    path('api/agents/', include('agents.urls')), # This line was missing in my previous response's context
-    path('api/merchants/', include('merchants.urls')), # This line was also missing
+    path('api/agents/', include('agents.urls')),
+    path('api/merchants/', include('merchants.urls')),
     path('api/integrations/', include('integrations.urls')),
     # JWT Token Endpoints
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
-    
-
+    path('api/csrf-token/', CSRFTokenView.as_view(), name='csrf-token'),
+    # Custom admin URLs
+    path('admin/dashboard/chart-data/', user_views.dashboard_chart_data, name='admin_chart_data'),
 ]
-
-# Custom admin URLs
-urlpatterns.insert(0, path('admin/dashboard/chart-data/', user_views.dashboard_chart_data, name='admin_chart_data'))
 
 # Serve media files during development
 if settings.DEBUG:
