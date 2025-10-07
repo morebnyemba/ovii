@@ -101,10 +101,24 @@ class Transaction(models.Model):
     # Timestamp for when the transaction was initiated.
     timestamp = models.DateTimeField(_('timestamp'), auto_now_add=True)
 
+    # --- Denormalized fields for historical accuracy and query performance ---
+    # Store the identifier of the sender and receiver at the time of the transaction.
+    # This is crucial because a user might change their phone number, but the transaction
+    # record should remain unchanged.
+    sender_identifier = models.CharField(max_length=50, editable=False, help_text=_("Identifier of the sender (e.g., phone number)"))
+    receiver_identifier = models.CharField(max_length=50, editable=False, null=True, blank=True, help_text=_("Identifier of the receiver (e.g., phone number)"))
+
     description = models.CharField(_('description'), max_length=255, blank=True)
 
     def __str__(self):
         """Returns a string representation of the transaction."""
         if self.related_wallet:
-            return f"{self.get_transaction_type_display()}: {self.wallet.user} to {self.related_wallet.user} - {self.amount}"
-        return f"{self.get_transaction_type_display()}: {self.wallet.user} - {self.amount}"
+            return f"{self.get_transaction_type_display()}: {self.sender_identifier} to {self.receiver_identifier} - {self.amount}"
+        return f"{self.get_transaction_type_display()}: {self.sender_identifier} - {self.amount}"
+
+    def save(self, *args, **kwargs):
+        # Automatically populate the identifier fields before saving.
+        self.sender_identifier = str(self.wallet.user.phone_number)
+        if self.related_wallet:
+            self.receiver_identifier = str(self.related_wallet.user.phone_number)
+        super().save(*args, **kwargs)

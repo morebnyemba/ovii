@@ -173,7 +173,7 @@ class SetTransactionPINView(generics.GenericAPIView):
             serializer.is_valid(raise_exception=True)
             user.set_pin(serializer.validated_data['pin'])
             user.has_set_pin = True
-            user.save(update_fields=['pin', 'has_set_pin'])
+            user.save(update_fields=['transaction_pin', 'has_set_pin'])
 
             # After setting the PIN, issue a new token with the updated 'has_set_pin' claim.
             refresh = RefreshToken.for_user(user)

@@ -177,8 +177,6 @@ class OviiUser(AbstractUser):
     def set_pin(self, raw_pin):
         """Hashes and sets the user's transaction PIN."""
         self.transaction_pin = make_password(raw_pin)
-        self.has_set_pin = True
-        self.save(update_fields=['transaction_pin', 'has_set_pin'])
 
     def check_pin(self, raw_pin):
         """Checks a raw PIN against the stored hash."""

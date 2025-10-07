@@ -32,8 +32,8 @@ class TransactionSerializer(serializers.ModelSerializer):
     Read-only serializer for the Transaction model.
     Displays transaction history with user-friendly phone numbers.
     """
-    sender = serializers.CharField(source='wallet.user.phone_number', read_only=True)
-    receiver = serializers.CharField(source='related_wallet.user.phone_number', read_only=True, allow_null=True)
+    sender = serializers.CharField(source='sender_identifier', read_only=True)
+    receiver = serializers.CharField(source='receiver_identifier', read_only=True, allow_null=True)
     transaction_type = serializers.CharField(source='get_transaction_type_display', read_only=True)
 
     class Meta:
