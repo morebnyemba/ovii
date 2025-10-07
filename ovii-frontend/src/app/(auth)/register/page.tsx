@@ -18,6 +18,7 @@ import {
 } from 'react-icons/fi';
 import api from '@/lib/api';
 import { useUserStore } from '@/lib/store/useUserStore';
+import { useCsrf } from '@/hooks/useCsrf';
 
 const COLORS = {
   indigo: '#1A1B4B',
@@ -71,6 +72,9 @@ export default function RegisterPage() {
 
   const router = useRouter();
   const { login, setTokens } = useUserStore();
+
+  // Ensure the CSRF token is fetched and set in the browser on component mount.
+  useCsrf();
 
   useEffect(() => {
     setIsMounted(true);
