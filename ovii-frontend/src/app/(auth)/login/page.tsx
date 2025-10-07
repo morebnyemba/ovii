@@ -16,6 +16,7 @@ import {
 } from 'react-icons/fi';
 import api from '@/lib/api';
 import { useUserStore } from '@/lib/store/useUserStore';
+import { useCsrf } from '@/hooks/useCsrf';
 
 const COLORS = {
   indigo: '#1A1B4B',
@@ -63,7 +64,10 @@ export default function LoginPage() {
   const [particles, setParticles] = useState<Array<{id: number; x: number; y: number; size: number; duration: number}>>([]);
   
   const router = useRouter();
-  const { login, setTokens } = useUserStore();
+  const { login } = useUserStore();
+
+  // Ensure the CSRF token is fetched and set in the browser on component mount.
+  useCsrf();
 
   useEffect(() => {
     setIsMounted(true);
@@ -146,11 +150,11 @@ export default function LoginPage() {
       const response = await api.post('/users/auth/login/', payload);
       const { user, tokens } = response.data;
 
-      if (tokens) setTokens(tokens.access, tokens.refresh);
-      login(user);
+      // Use the new atomic login action from the store
+      login(user, tokens.access, tokens.refresh);
 
       setVerificationSuccess(true);
-      setTimeout(() => router.push('/'), 1500);
+      setTimeout(() => router.push('/dashboard'), 1500);
     } catch (err: any) {
       triggerError(getApiErrorMessage(err));
     } finally {
