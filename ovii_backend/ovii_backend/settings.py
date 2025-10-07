@@ -130,6 +130,14 @@ if not DEBUG:
     SESSION_COOKIE_DOMAIN = ".ovii.it.com"
     CSRF_COOKIE_DOMAIN = ".ovii.it.com"
 
+    # Tells the browser to send the CSRF cookie with cross-site API requests.
+    CSRF_COOKIE_SAMESITE = 'None'
+
+    # 'SameSite=None' requires the Secure flag, meaning your site MUST use HTTPS.
+    CSRF_COOKIE_SECURE = True
+
+    SESSION_COOKIE_SAMESITE = 'None'
+    SESSION_COOKIE_SECURE = True
 
 
 
