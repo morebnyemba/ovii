@@ -8,7 +8,7 @@ from rest_framework import serializers
 from django.utils import timezone
 from phonenumber_field.serializerfields import PhoneNumberField
 from rest_framework_simplejwt.tokens import RefreshToken
-from .models import OviiUser, OTPRequest, KYCDocument
+from .models import OviiUser, OTPRequest, KYCDocument, VerificationLevels
 from .tasks import generate_and_log_otp, create_user_wallet
 
 class UserDetailSerializer(serializers.ModelSerializer):
@@ -173,6 +173,9 @@ class UserLoginSerializer(BaseOTPVerificationSerializer):
         otp_request.delete()
 
         refresh = RefreshToken.for_user(user)
+        # Add custom claims to the access token
+        refresh.access_token['has_set_pin'] = user.has_set_pin
+
         return {
             'user': UserDetailSerializer(user).data,
             'tokens': {
@@ -204,7 +207,7 @@ class UserRegistrationVerifySerializer(BaseOTPVerificationSerializer):
 
         user.is_active = True
         # Set the user's verification level to Mobile Verified
-        user.verification_level = OviiUser.VerificationLevels.LEVEL_1
+        user.verification_level = VerificationLevels.LEVEL_1
         user.save(update_fields=['is_active', 'verification_level'])
 
         # Asynchronously create the wallet and send a welcome notification.
@@ -212,6 +215,9 @@ class UserRegistrationVerifySerializer(BaseOTPVerificationSerializer):
         otp_request.delete()
 
         refresh = RefreshToken.for_user(user)
+        # Add custom claims to the access token
+        refresh.access_token['has_set_pin'] = user.has_set_pin
+
         return {
             '__debug_user_data__': UserDetailSerializer(user).data,  # Temporary debug line
             'user': UserDetailSerializer(user).data,

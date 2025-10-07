@@ -31,8 +31,8 @@ class NotificationConsumer(AsyncWebsocketConsumer):
             await self.accept()
 
     async def disconnect(self, close_code):
-        # Leave the user's private group
-        if not self.user.is_anonymous:
+        # Only attempt to leave the group if the user was authenticated and joined one.
+        if hasattr(self, 'room_group_name'):
             await self.channel_layer.group_discard(
                 self.room_group_name,
                 self.channel_name
