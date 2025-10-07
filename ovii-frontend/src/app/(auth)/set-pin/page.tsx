@@ -30,7 +30,7 @@ export default function SetPinPage() {
   const [success, setSuccess] = useState(false);
 
   const router = useRouter();
-  const { user, fetchUser } = useUserStore();
+  const { user, login } = useUserStore();
 
   useEffect(() => {
     setIsMounted(true);
@@ -78,10 +78,14 @@ export default function SetPinPage() {
     setLoading(true);
 
     try {
-      await api.post('/users/me/set-pin/', { pin, pin_confirmation: pinConfirmation });
+      const response = await api.post('/users/me/set-pin/', { pin, pin_confirmation: pinConfirmation });
+      const { tokens } = response.data;
 
-      await fetchUser();
-
+      // The user object in the store is still valid, we just need to update the tokens
+      // and re-persist the state with the new `has_set_pin` claim in the token.
+      if (user && tokens) {
+        login(user, tokens.access, tokens.refresh);
+      }
       setSuccess(true);
       setTimeout(() => router.push('/dashboard'), 1500);
     } catch (err: any) {

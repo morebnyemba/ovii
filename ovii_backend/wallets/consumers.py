@@ -14,11 +14,11 @@ class WalletConsumer(AsyncWebsocketConsumer):
             return
 
         # Create a unique group name for each user
-        self.group_name = f'user_{self.user.id}_wallet'
+        self.room_group_name = f'user_{self.user.id}_wallet'
 
         # Join the user-specific group
         await self.channel_layer.group_add(
-            self.group_name,
+            self.room_group_name,
             self.channel_name
         )
 
@@ -29,11 +29,13 @@ class WalletConsumer(AsyncWebsocketConsumer):
         """
         Called when the websocket disconnects.
         """
-        await self.channel_layer.group_discard(
-            self.group_name,
-            self.channel_name
-        )
-        print(f"User {self.user.id} disconnected from wallet socket.")
+        # Only attempt to leave the group if the user was authenticated and joined one.
+        if hasattr(self, 'room_group_name'):
+            await self.channel_layer.group_discard(
+                self.room_group_name,
+                self.channel_name
+            )
+            print(f"User {self.user.id} disconnected from wallet socket.")
 
     async def wallet_update(self, event):
         """

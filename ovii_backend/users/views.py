@@ -15,6 +15,7 @@ from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
+from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.throttling import AnonRateThrottle
 from wallets.permissions import IsMobileVerifiedOrHigher
 
@@ -170,9 +171,22 @@ class SetTransactionPINView(generics.GenericAPIView):
         serializer = self.get_serializer(data=request.data)
         try:
             serializer.is_valid(raise_exception=True)
-            request.user.set_pin(serializer.validated_data['pin'])
+            user.set_pin(serializer.validated_data['pin'])
+            user.has_set_pin = True
+            user.save(update_fields=['pin', 'has_set_pin'])
+
+            # After setting the PIN, issue a new token with the updated 'has_set_pin' claim.
+            refresh = RefreshToken.for_user(user)
+            refresh.access_token['has_set_pin'] = user.has_set_pin
+
             logger.info(f"Transaction PIN set successfully for user: {request.user.id}")
-            return Response({"detail": "Transaction PIN set successfully."}, status=status.HTTP_200_OK)
+            return Response({
+                "detail": "PIN set successfully.",
+                "tokens": {
+                    'refresh': str(refresh),
+                    'access': str(refresh.access_token),
+                }
+            }, status=status.HTTP_200_OK)
         except ValidationError as e:
             logger.warning(f"PIN set failed for user {request.user.id}. Error: {e.detail}")
             raise
