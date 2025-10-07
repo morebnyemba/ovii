@@ -23,7 +23,7 @@ from rest_framework_simplejwt.views import (
     TokenRefreshView,
 )
 from users import views as user_views
-from users.views_utils import CSRFTokenView
+from ovii_backend.views_utils import CSRFTokenView
 
 
 urlpatterns = [
