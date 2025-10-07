@@ -89,13 +89,14 @@ export default function DashboardPage() {
     }
   };
 
-  const Card = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (
+  const Card = ({ children, className = '', ...props }: { children: React.ReactNode; className?: string, [key: string]: any }) => (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
       className={`bg-white p-6 rounded-2xl shadow-lg ${className}`}
       style={{ boxShadow: '0 4px 20px rgba(26, 27, 75, 0.1)' }}
+      {...props}
     >
       {children}
     </motion.div>
@@ -322,20 +323,20 @@ export default function DashboardPage() {
                 className="flex items-center justify-between p-3 rounded-lg transition-colors hover:bg-lightGray"
               >
                 <div className="flex items-center gap-4">
-                  <div className={`flex items-center justify-center w-10 h-10 rounded-full ${tx.type === 'sent' ? 'bg-red-100' : 'bg-green-100'}`}>
-                    {tx.type === 'sent' ? (
+                  <div className={`flex items-center justify-center w-10 h-10 rounded-full ${tx.transaction_type === 'TRANSFER' ? 'bg-red-100' : 'bg-green-100'}`}>
+                    {tx.transaction_type === 'TRANSFER' ? (
                       <FiArrowUpRight style={{ color: COLORS.coral }} />
                     ) : (
                       <FiArrowDownLeft style={{ color: COLORS.mint }} />
                     )}
                   </div>
                   <div>
-                    <p className="font-semibold" style={{ color: COLORS.darkIndigo }}>{tx.type === 'sent' ? 'Sent to' : 'Received from'} {tx.party}</p>
-                    <p className="text-sm text-gray-500">{new Date(tx.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
+                    <p className="font-semibold" style={{ color: COLORS.darkIndigo }}>{tx.transaction_type === 'TRANSFER' ? 'Sent to' : 'Received from'} {tx.receiver || 'Unknown'}</p>
+                    <p className="text-sm text-gray-500">{new Date(tx.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
                   </div>
                 </div>
-                <p className={`font-bold ${tx.type === 'sent' ? 'text-red-500' : 'text-green-500'}`}>
-                  {tx.type === 'sent' ? '-' : '+'} {tx.currency} {tx.amount}
+                <p className={`font-bold ${tx.transaction_type === 'TRANSFER' ? 'text-red-500' : 'text-green-500'}`}>
+                  {tx.transaction_type === 'TRANSFER' ? '-' : '+'} {wallet.currency} {tx.amount}
                 </p>
               </motion.li>
             ))}
@@ -360,3 +361,4 @@ export default function DashboardPage() {
     </div>
   );
 }
+

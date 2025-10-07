@@ -84,11 +84,10 @@ interface UserState {
     transactions: string | null;
     sendMoney: string | null;
   };
-  setTokens: (access: string, refresh: string) => void;
-  login: (userData: User) => void;
-  updateUser: (userData: Partial<User>) => void;
+  login: (userData: User, access: string, refresh: string) => void;
   logout: () => void;
   fetchWallet: () => Promise<void>;
+  fetchUser: () => Promise<void>;
   fetchTransactions: (page?: number) => Promise<void>;
   sendMoney: (recipient: string, amount: number, pin: string, note?: string) => Promise<boolean>;
   setHasHydrated: (state: boolean) => void;
@@ -112,26 +111,20 @@ export const useUserStore = create<UserState>()(
         set({ _hasHydrated: state });
       },
 
-      setTokens: (access, refresh) => {
-        set({ accessToken: access, refreshToken: refresh, isAuthenticated: true });
-        // Also set the cookie for the API interceptor and server-side contexts
-        Cookies.set('access_token', access, { expires: 1, secure: process.env.NODE_ENV === 'production' });
-      },
-
-      login: (userData) => {
+      login: (userData, access, refresh) => {
         set({
           user: userData,
           isAuthenticated: true,
+          accessToken: access,
+          refreshToken: refresh,
           error: { wallet: null, transactions: null, sendMoney: null },
         });
+        // Set cookies for the API interceptor and server-side contexts
+        Cookies.set('access_token', access, { expires: 1, secure: process.env.NODE_ENV === 'production' });
+        Cookies.set('refresh_token', refresh, { expires: 7, secure: process.env.NODE_ENV === 'production' });
+        // Now that state and cookies are set, fetch user-specific data
         get().fetchWallet();
         get().fetchTransactions();
-      },
-
-      updateUser: (userData) => {
-        set((state) => ({
-          user: state.user ? { ...state.user, ...userData } : null,
-        }));
       },
 
       logout: () => {
@@ -145,6 +138,20 @@ export const useUserStore = create<UserState>()(
           error: { wallet: null, transactions: null, sendMoney: null },
         });
         Cookies.remove('access_token');
+        Cookies.remove('refresh_token');
+      },
+
+      fetchUser: async () => {
+        if (!get().isAuthenticated) return;
+        try {
+          const response = await api.get('/users/me/');
+          set({ user: response.data });
+          console.log('User profile refreshed.');
+        } catch (err) {
+          console.error('Failed to refresh user profile:', err);
+          // If fetching the user fails, it might mean the token is invalid, so we log them out.
+          get().logout();
+        }
       },
 
       fetchWallet: async () => {

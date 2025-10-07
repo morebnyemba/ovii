@@ -30,7 +30,7 @@ export default function DashboardLayout({
   const { logout, user } = useUserStore();
 
   const navItems = [
-    { name: 'Wallet', href: '/', icon: Wallet },
+    { name: 'Wallet', href: '/dashboard', icon: Wallet },
     { name: 'Send Money', href: '/send', icon: Landmark },
     { name: 'Transaction History', href: '/history', icon: History },
     { name: 'Profile', href: '/profile', icon: User },

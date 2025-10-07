@@ -9,7 +9,7 @@ from django.utils import timezone
 from phonenumber_field.serializerfields import PhoneNumberField
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import OviiUser, OTPRequest, KYCDocument
-from .tasks import generate_and_log_otp, send_welcome_notification
+from .tasks import generate_and_log_otp, create_user_wallet
 
 class UserDetailSerializer(serializers.ModelSerializer):
     """
@@ -203,9 +203,12 @@ class UserRegistrationVerifySerializer(BaseOTPVerificationSerializer):
         otp_request = validated_data['otp_request']
 
         user.is_active = True
-        user.save(update_fields=['is_active'])
+        # Set the user's verification level to Mobile Verified
+        user.verification_level = OviiUser.VerificationLevels.LEVEL_1
+        user.save(update_fields=['is_active', 'verification_level'])
 
-        send_welcome_notification.delay(user.id)
+        # Asynchronously create the wallet and send a welcome notification.
+        create_user_wallet.delay(user.id)
         otp_request.delete()
 
         refresh = RefreshToken.for_user(user)

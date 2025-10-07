@@ -18,6 +18,7 @@ import {
 } from 'react-icons/fi';
 import api from '@/lib/api';
 import { useUserStore } from '@/lib/store/useUserStore';
+import { useCsrf } from '@/hooks/useCsrf';
 
 const COLORS = {
   indigo: '#1A1B4B',
@@ -70,7 +71,10 @@ export default function RegisterPage() {
   const [particles, setParticles] = useState<Array<{id: number; x: number; y: number; size: number; duration: number}>>([]);
 
   const router = useRouter();
-  const { login, setTokens } = useUserStore();
+  const { login } = useUserStore();
+
+  // Ensure the CSRF token is fetched and set in the browser on component mount.
+  useCsrf();
 
   useEffect(() => {
     setIsMounted(true);
@@ -168,8 +172,7 @@ export default function RegisterPage() {
       const response = await api.post('/users/auth/register/', payload);
       const { user, tokens } = response.data;
 
-      setTokens(tokens.access, tokens.refresh);
-      login(user);
+      login(user, tokens.access, tokens.refresh);
 
       setVerificationSuccess(true);
       setTimeout(() => router.push('/set-pin'), 1500);

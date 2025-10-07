@@ -30,7 +30,7 @@ export default function SetPinPage() {
   const [success, setSuccess] = useState(false);
 
   const router = useRouter();
-  const { user, updateUser } = useUserStore();
+  const { user, fetchUser } = useUserStore();
 
   useEffect(() => {
     setIsMounted(true);
@@ -38,7 +38,7 @@ export default function SetPinPage() {
     if (!user) {
       router.replace('/login');
     } else if (user.has_set_pin) {
-      router.replace('/');
+      router.replace('/dashboard');
     }
   }, [user, router]);
 
@@ -80,13 +80,10 @@ export default function SetPinPage() {
     try {
       await api.post('/users/me/set-pin/', { pin, pin_confirmation: pinConfirmation });
 
-      // Update the user state in Zustand
-      if (user) {
-        updateUser({ has_set_pin: true });
-      }
+      await fetchUser();
 
       setSuccess(true);
-      setTimeout(() => router.push('/'), 1500);
+      setTimeout(() => router.push('/dashboard'), 1500);
     } catch (err: any) {
       triggerError(getApiErrorMessage(err));
     } finally {

@@ -9,7 +9,8 @@ from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 import secrets
 import logging
-from .models import OTPRequest
+from .models import OTPRequest, OviiUser
+from wallets.models import Wallet
 
 # Get the custom logger
 logger = logging.getLogger('users.otp')
@@ -28,6 +29,22 @@ def generate_and_log_otp(phone_number):
     logger.info(f"OTP for {phone_number}: {code} (Request ID: {otp_request.request_id})")
 
     return str(otp_request.request_id)
+
+
+@shared_task
+def create_user_wallet(user_id: int):
+    """
+    Creates a wallet for a new user and sends a welcome notification.
+    This is designed to be called after a user's account is activated.
+    """
+    try:
+        user = OviiUser.objects.get(id=user_id)
+        # The get_or_create method prevents race conditions or duplicate wallets.
+        Wallet.objects.get_or_create(user=user)
+        logger.info(f"Wallet created successfully for user {user_id}")
+        send_welcome_notification.delay(user_id)
+    except OviiUser.DoesNotExist:
+        logger.error(f"Attempted to create wallet for non-existent user ID: {user_id}")
 
 @shared_task
 def send_welcome_notification(user_id: int):

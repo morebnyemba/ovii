@@ -6,7 +6,7 @@ export function middleware(request: NextRequest) {
   const accessToken = request.cookies.get('access_token')?.value;
 
   // Define the paths that are considered public (don't require authentication)
-  const publicPaths = ['','register','set-pin','/login', '/verify-otp'];
+  const publicPaths = ['/register', '/set-pin', '/login', '/verify-otp'];
 
   // Check if the current path is a public path
   const isPublicPath = publicPaths.some(path => request.nextUrl.pathname.startsWith(path));
@@ -20,7 +20,7 @@ export function middleware(request: NextRequest) {
   // If the user is authenticated and tries to access a public auth page (like login),
   // redirect them to the dashboard.
   if (accessToken && isPublicPath) {
-    return NextResponse.redirect(new URL('/', request.url));
+    return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
   // If none of the above conditions are met, allow the request to proceed.

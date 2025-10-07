@@ -7,13 +7,13 @@ import toast from 'react-hot-toast';
 // This hook manages the WebSocket connection for real-time wallet updates.
 export const useWalletSocket = () => {
   const socket = useRef<WebSocket | null>(null);
-  const { user, fetchWallet, fetchTransactions } = useUserStore();
+  const { accessToken, fetchWallet, fetchTransactions } = useUserStore();
 
   useEffect(() => {
     // Only establish connection if we have a user token and no active socket.
-    if (user?.access_token && !socket.current) {
-      const wsUrl = process.env.NEXT_PUBLIC_WEBSOCKET_URL || 'ws://127.0.0.1:8000/ws/wallet/';
-      const fullUrl = `${wsUrl}?token=${user.access_token}`;
+    if (accessToken && !socket.current) {
+      const wsUrl = process.env.NEXT_PUBLIC_WEBSOCKET_URL || 'ws://api.ovii.it.com/ws/wallet/';
+      const fullUrl = `${wsUrl}?token=${accessToken}`;
 
       console.log('Ovii: Connecting to real-time service...');
       socket.current = new WebSocket(fullUrl);
@@ -58,5 +58,5 @@ export const useWalletSocket = () => {
         socket.current.close();
       }
     };
-  }, [user, fetchWallet, fetchTransactions]);
+  }, [accessToken, fetchWallet, fetchTransactions]);
 };
