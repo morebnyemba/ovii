@@ -11,6 +11,7 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models import Count, Sum
 from django.db.models.functions import TruncDay
 from rest_framework import generics, viewsets, status, mixins
+from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
