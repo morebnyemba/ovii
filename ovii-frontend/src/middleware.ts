@@ -1,7 +1,23 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { jwtDecode } from 'jwt-decode';
 
+/**
+ * A lightweight, dependency-free function to decode the payload of a JWT.
+ * This is safe to use in Edge environments like Next.js Middleware.
+ * @param token The JWT token string.
+ * @returns The decoded payload object, or null if decoding fails.
+ */
+function decodeJwtPayload(token: string): any | null {
+  try {
+    const base64Url = token.split('.')[1];
+    if (!base64Url) return null;
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+    return JSON.parse(jsonPayload);
+  } catch (e) {
+    return null; // Invalid token format
+  }
+}
 export function middleware(request: NextRequest) {
   // Retrieve the access token from the browser's cookies
   const accessToken = request.cookies.get('access_token')?.value;
@@ -22,7 +38,12 @@ export function middleware(request: NextRequest) {
   // If the user is authenticated:
   if (accessToken) {
     // Decode the token to check the user's status without an API call
-    const decodedToken: { has_set_pin: boolean } = jwtDecode(accessToken);
+    const decodedToken: { has_set_pin: boolean } | null = decodeJwtPayload(accessToken);
+
+    // If the token is malformed or decoding fails, treat as unauthenticated.
+    if (!decodedToken) {
+      return NextResponse.redirect(new URL('/login', request.url));
+    }
 
     // If the user has not set their PIN, force them to the /set-pin page.
     // Allow them to access the /set-pin page itself and the API routes.
