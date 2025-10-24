@@ -123,6 +123,7 @@ export const useUserStore = create<UserState>()(
         Cookies.set('access_token', access, { expires: 1, secure: process.env.NODE_ENV === 'production' });
         Cookies.set('refresh_token', refresh, { expires: 7, secure: process.env.NODE_ENV === 'production' });
         // Now that state and cookies are set, fetch user-specific data
+        get().fetchUser();
         get().fetchWallet();
         get().fetchTransactions();
       },
