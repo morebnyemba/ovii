@@ -41,6 +41,7 @@ export default function SetPinPage() {
     if (!user) {
       router.replace('/login');
     } else if (user.has_set_pin) {
+      console.log('Redirecting to dashboard...');
       router.replace('/dashboard');
     }
   }, [user, router, _hasHydrated]);
