@@ -84,7 +84,7 @@ export default function SetPinPage() {
       // The user object in the store is still valid, we just need to update the tokens
       // and re-persist the state with the new `has_set_pin` claim in the token.
       if (user && tokens) {
-        login(user, tokens.access, tokens.refresh);
+        await login(user, tokens.access, tokens.refresh);
       }
       setSuccess(true);
       setTimeout(() => router.push('/dashboard'), 1500);
