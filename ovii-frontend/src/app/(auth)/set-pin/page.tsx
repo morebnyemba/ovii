@@ -36,6 +36,7 @@ export default function SetPinPage() {
   useEffect(() => {
     setIsMounted(true);
     if (!_hasHydrated) return;
+    console.log('Checking user in useEffect:', user);
     // If user is not logged in or has already set a PIN, redirect them.
     if (!user) {
       router.replace('/login');
