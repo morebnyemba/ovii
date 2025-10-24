@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FiLock, FiLoader, FiAlertCircle, FiCheckCircle, FiShield } from 'react-icons/fi';
 import api from '@/lib/api';
 import { useUserStore } from '@/lib/store/useUserStore';
+import Cookies from 'js-cookie';
 
 const COLORS = {
   indigo: '#1A1B4B',
@@ -30,7 +31,7 @@ export default function SetPinPage() {
   const [success, setSuccess] = useState(false);
 
   const router = useRouter();
-  const { user, login } = useUserStore();
+  const { user, fetchUser } = useUserStore();
 
   useEffect(() => {
     setIsMounted(true);
@@ -81,10 +82,10 @@ export default function SetPinPage() {
       const response = await api.post('/users/me/set-pin/', { pin, pin_confirmation: pinConfirmation });
       const { tokens } = response.data;
 
-      // The user object in the store is still valid, we just need to update the tokens
-      // and re-persist the state with the new `has_set_pin` claim in the token.
-      if (user && tokens) {
-        await login(user, tokens.access, tokens.refresh);
+      if (tokens) {
+        Cookies.set('access_token', tokens.access, { expires: 1, secure: process.env.NODE_ENV === 'production' });
+        Cookies.set('refresh_token', tokens.refresh, { expires: 7, secure: process.env.NODE_ENV === 'production' });
+        await fetchUser();
       }
       setSuccess(true);
       setTimeout(() => router.push('/dashboard'), 1500);
