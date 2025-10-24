@@ -172,6 +172,9 @@ class UserLoginSerializer(BaseOTPVerificationSerializer):
 
         otp_request.delete()
 
+        # Re-fetch the user from the database to ensure we have the latest data.
+        user.refresh_from_db()
+
         refresh = RefreshToken.for_user(user)
         # Add custom claims to the access token
         refresh.access_token['has_set_pin'] = user.has_set_pin

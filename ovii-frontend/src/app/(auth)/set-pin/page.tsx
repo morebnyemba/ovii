@@ -36,13 +36,11 @@ export default function SetPinPage() {
   useEffect(() => {
     setIsMounted(true);
     if (!_hasHydrated) return;
-    console.log('Checking user in useEffect:', user);
     // If user is not logged in or has already set a PIN, redirect them.
     if (!user) {
-      window.location.href = '/login';
+      router.replace('/login');
     } else if (user.has_set_pin) {
-      console.log('Redirecting to dashboard...');
-      window.location.href = '/dashboard';
+      router.replace('/dashboard');
     }
   }, [user, router, _hasHydrated]);
 
@@ -91,7 +89,7 @@ export default function SetPinPage() {
         await fetchUser();
       }
       setSuccess(true);
-      setTimeout(() => window.location.href = '/dashboard', 1500);
+      setTimeout(() => router.push('/dashboard'), 1500);
     } catch (err: any) {
       triggerError(getApiErrorMessage(err));
     } finally {

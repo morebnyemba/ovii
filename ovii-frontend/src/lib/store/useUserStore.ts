@@ -146,7 +146,6 @@ export const useUserStore = create<UserState>()(
         if (!get().isAuthenticated) return;
         try {
           const response = await api.get('/users/me/');
-          console.log('User data from backend:', response.data);
           set({ user: response.data });
           console.log('User profile refreshed.');
         } catch (err) {
