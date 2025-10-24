@@ -151,7 +151,7 @@ export default function LoginPage() {
       const { user, tokens } = response.data;
 
       // Use the new atomic login action from the store
-      login(user, tokens.access, tokens.refresh);
+      await login(user, tokens.access, tokens.refresh);
 
       setVerificationSuccess(true);
       setTimeout(() => router.push('/dashboard'), 1500);

@@ -84,7 +84,7 @@ interface UserState {
     transactions: string | null;
     sendMoney: string | null;
   };
-  login: (userData: User, access: string, refresh: string) => void;
+  login: (userData: User, access: string, refresh: string) => Promise<void>;
   logout: () => void;
   fetchWallet: () => Promise<void>;
   fetchUser: () => Promise<void>;
@@ -111,7 +111,7 @@ export const useUserStore = create<UserState>()(
         set({ _hasHydrated: state });
       },
 
-      login: (userData, access, refresh) => {
+      login: async (userData, access, refresh) => {
         set({
           user: userData,
           isAuthenticated: true,
@@ -123,9 +123,9 @@ export const useUserStore = create<UserState>()(
         Cookies.set('access_token', access, { expires: 1, secure: process.env.NODE_ENV === 'production' });
         Cookies.set('refresh_token', refresh, { expires: 7, secure: process.env.NODE_ENV === 'production' });
         // Now that state and cookies are set, fetch user-specific data
-        get().fetchUser();
-        get().fetchWallet();
-        get().fetchTransactions();
+        await get().fetchUser();
+        await get().fetchWallet();
+        await get().fetchTransactions();
       },
 
       logout: () => {
