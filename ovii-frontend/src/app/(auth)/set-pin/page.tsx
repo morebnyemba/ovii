@@ -31,17 +31,18 @@ export default function SetPinPage() {
   const [success, setSuccess] = useState(false);
 
   const router = useRouter();
-  const { user, fetchUser } = useUserStore();
+  const { user, fetchUser, _hasHydrated } = useUserStore();
 
   useEffect(() => {
     setIsMounted(true);
+    if (!_hasHydrated) return;
     // If user is not logged in or has already set a PIN, redirect them.
     if (!user) {
       router.replace('/login');
     } else if (user.has_set_pin) {
       router.replace('/dashboard');
     }
-  }, [user, router]);
+  }, [user, router, _hasHydrated]);
 
   const getApiErrorMessage = (err: any): string => {
     if (err.response?.data) {
@@ -105,6 +106,14 @@ export default function SetPinPage() {
       }
     }
   };
+
+  if (!_hasHydrated) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <FiLoader className="animate-spin text-4xl text-white" />
+      </div>
+    );
+  }
 
   const renderPinForm = () => (
     <motion.form
