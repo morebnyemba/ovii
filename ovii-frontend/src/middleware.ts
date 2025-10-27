@@ -45,16 +45,11 @@ export function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/login', request.url));
     }
 
-    // If the user has not set their PIN, force them to the /set-pin page.
-    // Allow them to access the /set-pin page itself and the API routes.
-    if (
-      !decodedToken.has_set_pin &&
-      request.nextUrl.pathname !== '/set-pin' &&
-      !request.nextUrl.pathname.startsWith('/api/') // Explicitly ignore API routes
-    ) {
-      // This check prevents a redirect loop if they are already on the set-pin page.
-      return NextResponse.redirect(new URL('/set-pin', request.url));
-    }
+    // The logic to force users to the /set-pin page has been removed as per the new flow.
+    // Users will now be directed to set their PIN only when they attempt an action
+    // that requires it (e.g., sending money). This allows users who have not set a
+    // PIN to access their dashboard and other parts of the application freely.
+
 
     // If the user HAS set their PIN and tries to access the set-pin page, redirect to dashboard.
     if (decodedToken.has_set_pin && request.nextUrl.pathname === '/set-pin') {
