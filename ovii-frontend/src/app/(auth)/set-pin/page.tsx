@@ -7,16 +7,8 @@ import { FiLock, FiLoader, FiAlertCircle, FiCheckCircle, FiShield } from 'react-
 import api from '@/lib/api';
 import { useUserStore } from '@/lib/store/useUserStore';
 import Cookies from 'js-cookie';
-
-const COLORS = {
-  indigo: '#1A1B4B',
-  gold: '#FFC247',
-  mint: '#33D9B2',
-  coral: '#FF6B6B',
-  white: '#FDFDFD',
-  lightGray: '#F3F4F6',
-  darkIndigo: '#0F0F2D',
-};
+import { COLORS } from '@/lib/theme';
+import AuthLayout from '../AuthLayout';
 
 export default function SetPinPage() {
   // Form fields
@@ -29,6 +21,7 @@ export default function SetPinPage() {
   const [shake, setShake] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [particles, setParticles] = useState<Array<{id: number; x: number; y: number; size: number; duration: number; xOffset: number}>>([]);
 
   const router = useRouter();
   // Select state from the store. This ensures the component re-renders when state changes.
@@ -40,6 +33,16 @@ export default function SetPinPage() {
 
   useEffect(() => {
     setIsMounted(true);
+    // Create floating particles
+    const newParticles = Array.from({ length: 15 }, (_, i) => ({
+      id: i,
+      x: Math.random() * 100,
+      y: Math.random() * 100,
+      size: Math.random() * 3 + 1,
+      duration: Math.random() * 20 + 10,
+      xOffset: Math.random() * 20 - 10,
+    }));
+    setParticles(newParticles);
     if (!_hasHydrated) return;
     // If the user is not logged in, redirect them.
     if (!user) {
@@ -187,92 +190,47 @@ export default function SetPinPage() {
   );
 
   return (
-    <motion.main
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-      className="flex min-h-screen items-center justify-center bg-gradient-to-br p-4 md:p-8"
-      style={{
-        background: `linear-gradient(135deg, ${COLORS.darkIndigo} 0%, ${COLORS.mint} 100%)`,
-      }}
+    <AuthLayout
+      title={success ? 'All Set!' : 'Secure Your Account'}
+      subtitle={
+        success 
+          ? 'Your account is now fully secured.' 
+          : 'Create a 4-digit PIN to authorize transactions.'
+      }
+      icon={
+        success ? (
+          <FiCheckCircle className="text-3xl" style={{ color: COLORS.mint }} />
+        ) : (
+          <FiLock className="text-3xl" style={{ color: COLORS.gold }} />
+        )
+      }
+      footer={
+        !success && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.7 }}
+            className="mt-8 border-t pt-6"
+            style={{ borderColor: COLORS.lightGray }}
+          >
+            <div className="flex items-center justify-center gap-3 text-sm" style={{ color: COLORS.indigo, opacity: 0.7 }}>
+              <FiShield style={{ color: COLORS.mint }} />
+              <span>This PIN is separate from your login code.</span>
+            </div>
+          </motion.div>
+        )
+      }
+      shake={shake}
+      isMounted={isMounted}
+      particles={particles}
     >
-      <motion.div
-        initial={{ y: isMounted ? 20 : 0, opacity: isMounted ? 0 : 1 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.4, ease: 'easeOut' }}
-        className="w-full max-w-md"
-      >
-        <motion.div
-          animate={{ scale: shake ? [1, 0.98, 1.02, 1] : 1 }}
-          transition={{ duration: 0.4 }}
-          className="rounded-2xl bg-white p-6 shadow-2xl md:p-8"
-          style={{ backgroundColor: COLORS.white }}
-        >
-          {/* Header Section */}
-          <div className="mb-6 text-center">
-            <motion.div
-              initial={{ y: -10, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.1 }}
-              className="flex justify-center"
-            >
-              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-indigo-100">
-                {success ? (
-                  <FiCheckCircle className="text-2xl" style={{ color: COLORS.mint }} />
-                ) : (
-                  <FiLock className="text-2xl" style={{ color: COLORS.gold }} />
-                )}
-              </div>
-            </motion.div>
-            
-            <motion.h1
-              initial={{ y: -10, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.2 }}
-              className="text-3xl font-bold md:text-4xl"
-              style={{ color: COLORS.indigo }}
-            >
-              {success ? 'All Set!' : 'Secure Your Account'}
-            </motion.h1>
-            
-            <motion.p
-              initial={{ y: -10, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.3 }}
-              className="mt-2 text-sm opacity-80 md:text-base"
-              style={{ color: COLORS.indigo }}
-            >
-              {success 
-                ? 'Your account is now fully secured.' 
-                : 'Create a 4-digit PIN to authorize transactions.'
-              }
-            </motion.p>
-          </div>
-
-          {/* Main Form Area */}
-          <AnimatePresence mode="wait">
-            {success 
-              ? renderSuccessMessage()
-              : renderPinForm()
-            }
-          </AnimatePresence>
-
-          {/* Footer Section */}
-          {!success && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.7 }}
-              className="mt-6 border-t pt-4"
-            >
-              <div className="flex items-center justify-center gap-2 text-xs text-gray-500">
-                <FiShield className="text-indigo-400" />
-                <span>This PIN is separate from your login code.</span>
-              </div>
-            </motion.div>
-          )}
-        </motion.div>
-      </motion.div>
-    </motion.main>
+      {/* Main Form Area */}
+      <AnimatePresence mode="wait">
+        {success 
+          ? renderSuccessMessage()
+          : renderPinForm()
+        }
+      </AnimatePresence>
+    </AuthLayout>
   );
 }

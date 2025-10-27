@@ -1,15 +1,8 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { ReactNode } from 'react';
-
-const COLORS = {
-  indigo: '#1A1B4B',
-  gold: '#FFC247',
-  mint: '#33D9B2',
-  white: '#FDFDFD',
-  darkIndigo: '#0F0F2D',
-};
+import { ReactNode, useMemo } from 'react';
+import { COLORS } from '@/lib/theme';
 
 interface Particle {
   id: number;
@@ -17,6 +10,7 @@ interface Particle {
   y: number;
   size: number;
   duration: number;
+  xOffset: number; // Add a property for the random x-offset
 }
 
 interface AuthLayoutProps {
@@ -50,7 +44,7 @@ export default function AuthLayout({
         background: `linear-gradient(135deg, ${COLORS.darkIndigo} 0%, ${COLORS.indigo} 50%, ${COLORS.mint} 100%)`,
       }}
     >
-      {/* Animated Background Particles */}
+      {/* Animated Background Particles & Glows */}
       <div className="absolute inset-0 overflow-hidden">
         {particles.map((particle) => (
           <motion.div
@@ -65,8 +59,8 @@ export default function AuthLayout({
             }}
             animate={{
               y: [0, -30, 0],
-              x: [0, Math.random() * 20 - 10, 0],
               opacity: [0, 0.8, 0],
+              x: [0, particle.xOffset, 0], // Use the pre-calculated offset
             }}
             transition={{
               duration: particle.duration,
@@ -89,6 +83,7 @@ export default function AuthLayout({
         />
       </div>
 
+      {/* Main Content Card */}
       <motion.div
         initial={{ y: isMounted ? 20 : 0, opacity: isMounted ? 0 : 1 }}
         animate={{ y: 0, opacity: 1 }}
