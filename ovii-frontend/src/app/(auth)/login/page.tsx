@@ -17,8 +17,36 @@ import {
 import api from '@/lib/api';
 import { useUserStore } from '@/lib/store/useUserStore';
 import { useCsrf } from '@/hooks/useCsrf';
-import { COLORS } from '@/lib/theme';
-import AuthLayout from '../AuthLayout';
+
+const COLORS = {
+  indigo: '#1A1B4B',
+  gold: '#FFC247',
+  mint: '#33D9B2',
+  coral: '#FF6B6B',
+  white: '#FDFDFD',
+  lightGray: '#F3F4F6',
+  darkIndigo: '#0F0F2D',
+  
+  // Adding shades for gradients and effects
+  shades: {
+    indigo: {
+      light: '#2A2B6B',
+      dark: '#0A0B2B',
+    },
+    gold: {
+      light: '#FFD247',
+      dark: '#E6AE30',
+    },
+    mint: {
+      light: '#44E9C2',
+      dark: '#22C9A2',
+    },
+    coral: {
+      light: '#FF7B7B',
+      dark: '#E65B5B',
+    }
+  }
+};
 
 export default function LoginPage() {
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -33,7 +61,7 @@ export default function LoginPage() {
   const [resendLoading, setResendLoading] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const [showOtp, setShowOtp] = useState(false);
-  const [particles, setParticles] = useState<Array<{id: number; x: number; y: number; size: number; duration: number; xOffset: number}>>([]);
+  const [particles, setParticles] = useState<Array<{id: number; x: number; y: number; size: number; duration: number}>>([]);
   
   const router = useRouter();
   const { login } = useUserStore();
@@ -49,8 +77,7 @@ export default function LoginPage() {
       x: Math.random() * 100,
       y: Math.random() * 100,
       size: Math.random() * 3 + 1,
-      duration: Math.random() * 20 + 10,
-      xOffset: Math.random() * 20 - 10, // Calculate the random offset once
+      duration: Math.random() * 20 + 10
     }));
     setParticles(newParticles);
   }, []);
@@ -127,15 +154,7 @@ export default function LoginPage() {
       await login(user, tokens.access, tokens.refresh);
 
       setVerificationSuccess(true);
-
-      // CRITICAL: Redirect based on whether the user has set their PIN.
-      setTimeout(() => {
-        if (user.has_set_pin) {
-          router.push('/dashboard');
-        } else {
-          router.push('/set-pin');
-        }
-      }, 1500);
+      setTimeout(() => router.push('/dashboard'), 1500);
     } catch (err: any) {
       triggerError(getApiErrorMessage(err));
     } finally {
@@ -183,348 +202,444 @@ export default function LoginPage() {
   };
 
   return (
-    <AuthLayout
-      title={verificationSuccess ? 'Verified!' : 'Welcome to Ovii'}
-      subtitle={
-        verificationSuccess 
-          ? 'Your account is now secure' 
-          : otpSent 
-            ? `Enter the code sent to ${phoneNumber}` 
-            : 'Your secure digital wallet for instant payments'
-      }
-      icon={
-        verificationSuccess ? (
-          <FiCheckCircle className="text-3xl" style={{ color: COLORS.mint }} />
-        ) : (
-          <FiZap className="text-3xl" style={{ color: COLORS.gold }} />
-        )
-      }
-      footer={
-        !verificationSuccess && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.7 }}
-            className="mt-8 border-t pt-6"
-            style={{ borderColor: COLORS.lightGray }}
-          >
-            <div className="flex items-center justify-center gap-3 text-sm" style={{ color: COLORS.indigo, opacity: 0.7 }}>
-              <FiShield style={{ color: COLORS.mint }} />
-              <span>Bank-grade security encryption</span>
-            </div>
-            <p className="mt-3 text-center text-xs" style={{ color: COLORS.indigo, opacity: 0.7 }}>
-              By continuing, you agree to our{' '}
-              <a href="#" className="underline transition-colors" style={{ color: COLORS.mint }}>Terms</a>{' '}
-              and{' '}
-              <a href="#" className="underline transition-colors" style={{ color: COLORS.mint }}>Privacy Policy</a>
-            </p>
-          </motion.div>
-        )
-      }
-      shake={shake}
-      isMounted={isMounted}
-      particles={particles}
+    <motion.main
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.8 }}
+      className="flex min-h-screen items-center justify-center p-4 md:p-8 relative overflow-hidden"
+      style={{
+        background: `linear-gradient(135deg, ${COLORS.darkIndigo} 0%, ${COLORS.indigo} 50%, ${COLORS.mint} 100%)`,
+      }}
     >
-      {/* Main Form Area */}
-      <AnimatePresence mode="wait">
-        {!otpSent && !verificationSuccess ? (
-          <motion.form
-            key="phone-form"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            onSubmit={handleSendOTP}
-            className="space-y-6"
-          >
+      {/* Animated Background Particles */}
+      <div className="absolute inset-0 overflow-hidden">
+        {particles.map((particle) => (
+          <motion.div
+            key={particle.id}
+            className="absolute rounded-full"
+            style={{
+              width: particle.size,
+              height: particle.size,
+              left: `${particle.x}%`,
+              top: `${particle.y}%`,
+              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+            }}
+            animate={{
+              y: [0, -30, 0],
+              x: [0, Math.random() * 20 - 10, 0],
+              opacity: [0, 0.8, 0],
+            }}
+            transition={{
+              duration: particle.duration,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Glow Effects */}
+      <div className="absolute inset-0">
+        <div 
+          className="absolute top-1/4 -left-10 w-72 h-72 rounded-full blur-3xl opacity-20"
+          style={{ backgroundColor: COLORS.mint }}
+        />
+        <div 
+          className="absolute bottom-1/4 -right-10 w-72 h-72 rounded-full blur-3xl opacity-20"
+          style={{ backgroundColor: COLORS.gold }}
+        />
+      </div>
+
+      <motion.div
+        initial={{ y: isMounted ? 20 : 0, opacity: isMounted ? 0 : 1 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.6, ease: 'easeOut' }}
+        className="w-full max-w-md relative z-10"
+      >
+        <motion.div
+          animate={{ scale: shake ? [1, 0.98, 1.02, 1] : 1 }}
+          transition={{ duration: 0.4 }}
+          className="rounded-3xl backdrop-blur-xl border border-white/10 p-8 shadow-2xl"
+          style={{ 
+            backgroundColor: 'rgba(253, 253, 253, 0.95)',
+            boxShadow: '0 25px 50px -12px rgba(26, 27, 75, 0.5)',
+          }}
+        >
+          {/* Header Section */}
+          <div className="mb-8 text-center">
             <motion.div
-              initial={{ y: 10, opacity: 0 }}
+              initial={{ y: -10, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.4 }}
-              className="space-y-3"
+              transition={{ delay: 0.1 }}
+              className="flex justify-center mb-6"
             >
-              <label htmlFor="phone" className="block text-sm font-medium" style={{ color: COLORS.indigo }}>
-                Mobile Number
-              </label>
-              <div className="relative group">
+              <div className="relative">
                 <div 
-                  className="absolute inset-0 rounded-xl blur opacity-25 group-hover:opacity-50 transition duration-300"
+                  className="absolute inset-0 rounded-2xl blur opacity-75 animate-pulse"
                   style={{ backgroundColor: COLORS.mint }}
                 ></div>
-                <div className="relative">
-                  <FiPhone
-                    className="absolute left-4 top-1/2 -translate-y-1/2 text-xl z-10"
-                    style={{ color: COLORS.indigo }}
-                  />
-                  <input
-                    id="phone"
-                    type="tel"
-                    value={phoneNumber}
-                    onChange={(e) => handleChange(e.target.value)}
-                    placeholder="+263 712 345 678"
-                    maxLength={16}
-                    required
-                    className="w-full rounded-xl border-2 py-4 pl-12 pr-4 text-lg focus:outline-none focus:ring-2 backdrop-blur-sm transition duration-300"
-                    style={{
-                      color: COLORS.indigo,
-                      backgroundColor: COLORS.lightGray,
-                      borderColor: COLORS.mint,
-                    }}
-                  />
-                </div>
-              </div>
-              <p className="text-sm" style={{ color: COLORS.indigo, opacity: 0.7 }}>
-                We'll send a 6-digit verification code to this number
-              </p>
-            </motion.div>
-
-            <AnimatePresence>
-              {error && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="overflow-hidden"
-                >
-                  <div 
-                    className="flex items-center gap-3 rounded-xl p-4"
-                    style={{ backgroundColor: 'rgba(255, 107, 107, 0.1)' }}
-                  >
-                    <FiAlertCircle className="flex-shrink-0" style={{ color: COLORS.coral }} />
-                    <p className="text-sm" style={{ color: COLORS.coral }}>{error}</p>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            <motion.div
-              initial={{ y: 10, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.5 }}
-            >
-              <button
-                type="submit"
-                disabled={loading}
-                className="group relative w-full overflow-hidden rounded-xl py-4 text-lg font-semibold text-white shadow-lg transition-all hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-80 disabled:cursor-not-allowed"
-                style={{
-                  backgroundColor: COLORS.gold,
-                  color: COLORS.indigo,
-                }}
-              >
                 <div 
-                  className="absolute inset-0 opacity-0 transition-opacity group-hover:opacity-100"
-                  style={{ backgroundColor: COLORS.shades.gold.dark }}
-                ></div>
-                <div className="relative flex items-center justify-center gap-3">
-                  {loading ? (
-                    <>
-                      <FiLoader className="animate-spin" />
-                      <span>Sending OTP...</span>
-                    </>
+                  className="relative flex h-20 w-20 items-center justify-center rounded-2xl text-white shadow-lg"
+                  style={{ backgroundColor: COLORS.indigo }}
+                >
+                  {verificationSuccess ? (
+                    <FiCheckCircle className="text-3xl" style={{ color: COLORS.mint }} />
                   ) : (
-                    <>
-                      <span>Send Verification Code</span>
-                      <FiZap className="transition-transform group-hover:translate-x-1" />
-                    </>
+                    <FiZap className="text-3xl" style={{ color: COLORS.gold }} />
                   )}
                 </div>
-              </button>
+              </div>
             </motion.div>
-          </motion.form>
-        ) : !verificationSuccess ? (
-          <motion.form
-            key="otp-form"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            onSubmit={handleVerifyOTP}
-            className="space-y-6"
-          >
-            <motion.div
-              initial={{ y: 10, opacity: 0 }}
+            
+            <motion.h1
+              initial={{ y: -10, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.2 }}
-              className="space-y-4"
-            >
-              <div className="flex items-center justify-between">
-                <button
-                  type="button"
-                  onClick={resetOtpFlow}
-                  className="flex items-center gap-2 text-sm transition-colors"
-                  style={{ color: COLORS.indigo, opacity: 0.8 }}
-                >
-                  <FiArrowLeft />
-                  Change number
-                </button>
-                {countdown > 0 ? (
-                  <span className="text-sm" style={{ color: COLORS.indigo, opacity: 0.7 }}>
-                    Resend in <span style={{ color: COLORS.gold }}>{countdown}s</span>
-                  </span>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={handleResendOTP}
-                    disabled={resendLoading}
-                    className="flex items-center gap-2 text-sm transition-colors disabled:opacity-50"
-                    style={{ color: COLORS.mint }}
-                  >
-                    {resendLoading && <FiLoader className="animate-spin" />}
-                    {resendLoading ? 'Sending...' : 'Resend code'}
-                  </button>
-                )}
-              </div>
-
-              <div className="space-y-3">
-                <label htmlFor="otp" className="block text-sm font-medium" style={{ color: COLORS.indigo }}>
-                  Verification Code
-                </label>
-                <div className="relative group">
-                  <div 
-                    className="absolute inset-0 rounded-xl blur opacity-25 group-hover:opacity-50 transition duration-300"
-                    style={{ backgroundColor: COLORS.mint }}
-                  ></div>
-                  <div className="relative flex items-center">
-                    <input
-                      id="otp"
-                      type={showOtp ? "text" : "tel"}
-                      value={otp}
-                      onChange={(e) => handleOtpChange(e.target.value)}
-                      placeholder="••••••"
-                      maxLength={6}
-                      required
-                      className="w-full rounded-xl border-2 py-4 px-4 text-center text-2xl tracking-widest focus:outline-none focus:ring-2 backdrop-blur-sm"
-                      style={{
-                        color: COLORS.indigo,
-                        backgroundColor: COLORS.lightGray,
-                        borderColor: COLORS.mint,
-                        letterSpacing: '0.5em',
-                      }}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowOtp(!showOtp)}
-                      className="absolute right-4 text-lg transition-colors"
-                      style={{ color: COLORS.indigo, opacity: 0.7 }}
-                    >
-                      {showOtp ? <FiEyeOff /> : <FiEye />}
-                    </button>
-                  </div>
-                </div>
-                <p className="text-sm" style={{ color: COLORS.indigo, opacity: 0.7 }}>
-                  Enter the 6-digit code sent to your phone
-                </p>
-              </div>
-            </motion.div>
-
-            <AnimatePresence>
-              {error && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="overflow-hidden"
-                >
-                  <div 
-                    className="flex items-center gap-3 rounded-xl p-4"
-                    style={{ backgroundColor: 'rgba(255, 107, 107, 0.1)' }}
-                  >
-                    <FiAlertCircle className="flex-shrink-0" style={{ color: COLORS.coral }} />
-                    <p className="text-sm" style={{ color: COLORS.coral }}>{error}</p>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            <motion.div
-              initial={{ y: 10, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.3 }}
-            >
-              <button
-                type="submit"
-                disabled={loading}
-                className="group relative w-full overflow-hidden rounded-xl py-4 text-lg font-semibold text-white shadow-lg transition-all hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-80 disabled:cursor-not-allowed"
-                style={{
-                  backgroundColor: COLORS.mint,
-                  color: COLORS.indigo,
-                }}
-              >
-                <div 
-                  className="absolute inset-0 opacity-0 transition-opacity group-hover:opacity-100"
-                  style={{ backgroundColor: COLORS.shades.mint.dark }}
-                ></div>
-                <div className="relative flex items-center justify-center gap-3">
-                  {loading ? (
-                    <>
-                      <FiLoader className="animate-spin" />
-                      <span>Verifying...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Verify & Continue</span>
-                      <FiCheckCircle className="transition-transform group-hover:scale-110" />
-                    </>
-                  )}
-                </div>
-              </button>
-            </motion.div>
-          </motion.form>
-        ) : (
-          <motion.div
-            key="success-message"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="text-center py-8"
-          >
-            <motion.div
-              animate={{ 
-                scale: [1, 1.2, 1],
-                transition: { duration: 0.5 }
-              }}
-              className="mb-6"
-            >
-              <div className="relative inline-block">
-                <div 
-                  className="absolute inset-0 rounded-full blur-xl opacity-50 animate-ping"
-                  style={{ backgroundColor: COLORS.mint }}
-                ></div>
-                <FiCheckCircle 
-                  className="relative text-6xl z-10" 
-                  style={{ color: COLORS.mint }} 
-                />
-              </div>
-            </motion.div>
-            <motion.p 
-              className="text-xl mb-2 font-semibold"
+              className="text-3xl font-bold mb-3"
               style={{ color: COLORS.indigo }}
             >
-              Verification Successful!
-            </motion.p>
-            <motion.p 
+              {verificationSuccess ? 'Verified!' : 'Welcome to Ovii'}
+            </motion.h1>
+            
+            <motion.p
+              initial={{ y: -10, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.3 }}
               className="text-lg opacity-80"
               style={{ color: COLORS.indigo }}
             >
-              Redirecting to your dashboard...
+              {verificationSuccess 
+                ? 'Your account is now secure' 
+                : otpSent 
+                  ? `Enter the code sent to ${phoneNumber}` 
+                  : 'Your secure digital wallet for instant payments'}
             </motion.p>
-            <motion.div 
-              className="mt-6 w-full rounded-full h-2 overflow-hidden"
-              style={{ backgroundColor: COLORS.lightGray }}
-              initial={{ width: 0 }}
-              animate={{ width: '100%' }}
-              transition={{ duration: 1.5, ease: 'linear' }}
+          </div>
+
+          {/* Main Form Area */}
+          <AnimatePresence mode="wait">
+            {!otpSent && !verificationSuccess ? (
+              <motion.form
+                key="phone-form"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                onSubmit={handleSendOTP}
+                className="space-y-6"
+              >
+                <motion.div
+                  initial={{ y: 10, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.4 }}
+                  className="space-y-3"
+                >
+                  <label htmlFor="phone" className="block text-sm font-medium" style={{ color: COLORS.indigo }}>
+                    Mobile Number
+                  </label>
+                  <div className="relative group">
+                    <div 
+                      className="absolute inset-0 rounded-xl blur opacity-25 group-hover:opacity-50 transition duration-300"
+                      style={{ backgroundColor: COLORS.mint }}
+                    ></div>
+                    <div className="relative">
+                      <FiPhone
+                        className="absolute left-4 top-1/2 -translate-y-1/2 text-xl z-10"
+                        style={{ color: COLORS.indigo }}
+                      />
+                      <input
+                        id="phone"
+                        type="tel"
+                        value={phoneNumber}
+                        onChange={(e) => handleChange(e.target.value)}
+                        placeholder="+263 712 345 678"
+                        maxLength={16}
+                        required
+                        className="w-full rounded-xl border-2 py-4 pl-12 pr-4 text-lg focus:outline-none focus:ring-2 backdrop-blur-sm transition duration-300"
+                        style={{
+                          color: COLORS.indigo,
+                          backgroundColor: COLORS.lightGray,
+                          borderColor: COLORS.mint,
+                        }}
+                      />
+                    </div>
+                  </div>
+                  <p className="text-sm" style={{ color: COLORS.indigo, opacity: 0.7 }}>
+                    We'll send a 6-digit verification code to this number
+                  </p>
+                </motion.div>
+
+                <AnimatePresence>
+                  {error && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden"
+                    >
+                      <div 
+                        className="flex items-center gap-3 rounded-xl p-4"
+                        style={{ backgroundColor: 'rgba(255, 107, 107, 0.1)' }}
+                      >
+                        <FiAlertCircle className="flex-shrink-0" style={{ color: COLORS.coral }} />
+                        <p className="text-sm" style={{ color: COLORS.coral }}>{error}</p>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                <motion.div
+                  initial={{ y: 10, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                >
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="group relative w-full overflow-hidden rounded-xl py-4 text-lg font-semibold text-white shadow-lg transition-all hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-80 disabled:cursor-not-allowed"
+                    style={{
+                      backgroundColor: COLORS.gold,
+                      color: COLORS.indigo,
+                    }}
+                  >
+                    <div 
+                      className="absolute inset-0 opacity-0 transition-opacity group-hover:opacity-100"
+                      style={{ backgroundColor: COLORS.shades.gold.dark }}
+                    ></div>
+                    <div className="relative flex items-center justify-center gap-3">
+                      {loading ? (
+                        <>
+                          <FiLoader className="animate-spin" />
+                          <span>Sending OTP...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>Send Verification Code</span>
+                          <FiZap className="transition-transform group-hover:translate-x-1" />
+                        </>
+                      )}
+                    </div>
+                  </button>
+                </motion.div>
+              </motion.form>
+            ) : !verificationSuccess ? (
+              <motion.form
+                key="otp-form"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                onSubmit={handleVerifyOTP}
+                className="space-y-6"
+              >
+                <motion.div
+                  initial={{ y: 10, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.2 }}
+                  className="space-y-4"
+                >
+                  <div className="flex items-center justify-between">
+                    <button
+                      type="button"
+                      onClick={resetOtpFlow}
+                      className="flex items-center gap-2 text-sm transition-colors"
+                      style={{ color: COLORS.indigo, opacity: 0.8 }}
+                    >
+                      <FiArrowLeft />
+                      Change number
+                    </button>
+                    {countdown > 0 ? (
+                      <span className="text-sm" style={{ color: COLORS.indigo, opacity: 0.7 }}>
+                        Resend in <span style={{ color: COLORS.gold }}>{countdown}s</span>
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleResendOTP}
+                        disabled={resendLoading}
+                        className="flex items-center gap-2 text-sm transition-colors disabled:opacity-50"
+                        style={{ color: COLORS.mint }}
+                      >
+                        {resendLoading && <FiLoader className="animate-spin" />}
+                        {resendLoading ? 'Sending...' : 'Resend code'}
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="space-y-3">
+                    <label htmlFor="otp" className="block text-sm font-medium" style={{ color: COLORS.indigo }}>
+                      Verification Code
+                    </label>
+                    <div className="relative group">
+                      <div 
+                        className="absolute inset-0 rounded-xl blur opacity-25 group-hover:opacity-50 transition duration-300"
+                        style={{ backgroundColor: COLORS.mint }}
+                      ></div>
+                      <div className="relative flex items-center">
+                        <input
+                          id="otp"
+                          type={showOtp ? "text" : "tel"}
+                          value={otp}
+                          onChange={(e) => handleOtpChange(e.target.value)}
+                          placeholder="••••••"
+                          maxLength={6}
+                          required
+                          className="w-full rounded-xl border-2 py-4 px-4 text-center text-2xl tracking-widest focus:outline-none focus:ring-2 backdrop-blur-sm"
+                          style={{
+                            color: COLORS.indigo,
+                            backgroundColor: COLORS.lightGray,
+                            borderColor: COLORS.mint,
+                            letterSpacing: '0.5em',
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowOtp(!showOtp)}
+                          className="absolute right-4 text-lg transition-colors"
+                          style={{ color: COLORS.indigo, opacity: 0.7 }}
+                        >
+                          {showOtp ? <FiEyeOff /> : <FiEye />}
+                        </button>
+                      </div>
+                    </div>
+                    <p className="text-sm" style={{ color: COLORS.indigo, opacity: 0.7 }}>
+                      Enter the 6-digit code sent to your phone
+                    </p>
+                  </div>
+                </motion.div>
+
+                <AnimatePresence>
+                  {error && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden"
+                    >
+                      <div 
+                        className="flex items-center gap-3 rounded-xl p-4"
+                        style={{ backgroundColor: 'rgba(255, 107, 107, 0.1)' }}
+                      >
+                        <FiAlertCircle className="flex-shrink-0" style={{ color: COLORS.coral }} />
+                        <p className="text-sm" style={{ color: COLORS.coral }}>{error}</p>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                <motion.div
+                  initial={{ y: 10, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.3 }}
+                >
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="group relative w-full overflow-hidden rounded-xl py-4 text-lg font-semibold text-white shadow-lg transition-all hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-80 disabled:cursor-not-allowed"
+                    style={{
+                      backgroundColor: COLORS.mint,
+                      color: COLORS.indigo,
+                    }}
+                  >
+                    <div 
+                      className="absolute inset-0 opacity-0 transition-opacity group-hover:opacity-100"
+                      style={{ backgroundColor: COLORS.shades.mint.dark }}
+                    ></div>
+                    <div className="relative flex items-center justify-center gap-3">
+                      {loading ? (
+                        <>
+                          <FiLoader className="animate-spin" />
+                          <span>Verifying...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>Verify & Continue</span>
+                          <FiCheckCircle className="transition-transform group-hover:scale-110" />
+                        </>
+                      )}
+                    </div>
+                  </button>
+                </motion.div>
+              </motion.form>
+            ) : (
+              <motion.div
+                key="success-message"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="text-center py-8"
+              >
+                <motion.div
+                  animate={{ 
+                    scale: [1, 1.2, 1],
+                    transition: { duration: 0.5 }
+                  }}
+                  className="mb-6"
+                >
+                  <div className="relative inline-block">
+                    <div 
+                      className="absolute inset-0 rounded-full blur-xl opacity-50 animate-ping"
+                      style={{ backgroundColor: COLORS.mint }}
+                    ></div>
+                    <FiCheckCircle 
+                      className="relative text-6xl z-10" 
+                      style={{ color: COLORS.mint }} 
+                    />
+                  </div>
+                </motion.div>
+                <motion.p 
+                  className="text-xl mb-2 font-semibold"
+                  style={{ color: COLORS.indigo }}
+                >
+                  Verification Successful!
+                </motion.p>
+                <motion.p 
+                  className="text-lg opacity-80"
+                  style={{ color: COLORS.indigo }}
+                >
+                  Redirecting to your dashboard...
+                </motion.p>
+                <motion.div 
+                  className="mt-6 w-full rounded-full h-2 overflow-hidden"
+                  style={{ backgroundColor: COLORS.lightGray }}
+                  initial={{ width: 0 }}
+                  animate={{ width: '100%' }}
+                  transition={{ duration: 1.5, ease: 'linear' }}
+                >
+                  <div 
+                    className="h-full rounded-full"
+                    style={{ 
+                      backgroundColor: COLORS.mint,
+                      width: '100%' 
+                    }}
+                  />
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Footer Section */}
+          {!verificationSuccess && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.7 }}
+              className="mt-8 border-t pt-6"
+              style={{ borderColor: COLORS.lightGray }}
             >
-              <div 
-                className="h-full rounded-full"
-                style={{ 
-                  backgroundColor: COLORS.mint,
-                  width: '100%' 
-                }}
-              />
+              <div className="flex items-center justify-center gap-3 text-sm" style={{ color: COLORS.indigo, opacity: 0.7 }}>
+                <FiShield style={{ color: COLORS.mint }} />
+                <span>Bank-grade security encryption</span>
+              </div>
+              <p className="mt-3 text-center text-xs" style={{ color: COLORS.indigo, opacity: 0.7 }}>
+                By continuing, you agree to our{' '}
+                <a href="#" className="underline transition-colors" style={{ color: COLORS.mint }}>Terms</a>{' '}
+                and{' '}
+                <a href="#" className="underline transition-colors" style={{ color: COLORS.mint }}>Privacy Policy</a>
+              </p>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </AuthLayout>
+          )}
+        </motion.div>
+      </motion.div>
+    </motion.main>
   );
 }
