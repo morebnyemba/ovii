@@ -31,15 +31,20 @@ export default function SetPinPage() {
   const [success, setSuccess] = useState(false);
 
   const router = useRouter();
-  const { user, fetchUser, _hasHydrated } = useUserStore();
+  // Select state from the store. This ensures the component re-renders when state changes.
+  const { user, fetchUser, _hasHydrated } = useUserStore((state) => ({
+    user: state.user,
+    fetchUser: state.fetchUser,
+    _hasHydrated: state._hasHydrated,
+  }));
 
   useEffect(() => {
     setIsMounted(true);
     if (!_hasHydrated) return;
-    // If user is not logged in or has already set a PIN, redirect them.
+    // If the user is not logged in, redirect them.
     if (!user) {
       router.replace('/login');
-    } else if (user.has_set_pin) {
+    } else if (user.has_set_pin) { // If they land here but have a PIN, redirect.
       router.replace('/dashboard');
     }
   }, [user, router, _hasHydrated]);
@@ -86,10 +91,12 @@ export default function SetPinPage() {
       if (tokens) {
         Cookies.set('access_token', tokens.access, { expires: 1, secure: process.env.NODE_ENV === 'production' });
         Cookies.set('refresh_token', tokens.refresh, { expires: 7, secure: process.env.NODE_ENV === 'production' });
+        // Fetching the user will update the store, and our component will now react to it.
         await fetchUser();
       }
       setSuccess(true);
-      setTimeout(() => router.push('/dashboard'), 1500);
+      // Immediately redirect after success state is set and a short delay.
+      setTimeout(() => router.replace('/dashboard'), 1500);
     } catch (err: any) {
       triggerError(getApiErrorMessage(err));
     } finally {
