@@ -31,12 +31,7 @@ export default function SetPinPage() {
   const [success, setSuccess] = useState(false);
 
   const router = useRouter();
-  // Use a selector to ensure the component re-renders when the user object changes.
-  const { user, fetchUser, _hasHydrated } = useUserStore((state) => ({
-    user: state.user,
-    fetchUser: state.fetchUser,
-    _hasHydrated: state._hasHydrated,
-  }));
+  const { user, fetchUser, _hasHydrated } = useUserStore();
 
   useEffect(() => {
     setIsMounted(true);
