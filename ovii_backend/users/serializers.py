@@ -166,10 +166,14 @@ class UserLoginSerializer(BaseOTPVerificationSerializer):
         user = validated_data['user']
         otp_request = validated_data['otp_request']
 
+        # Ensure has_set_pin is accurate before issuing a token.
+        # This prevents issues if the flag and the pin field get out of sync.
+        user.has_set_pin = bool(user.pin)
+
         if not user.is_active:
             user.is_active = True
-            user.save(update_fields=['is_active'])
-
+        
+        user.save(update_fields=['is_active', 'has_set_pin', 'last_login'])
         otp_request.delete()
 
         # Re-fetch the user from the database to ensure we have the latest data.
@@ -184,7 +188,8 @@ class UserLoginSerializer(BaseOTPVerificationSerializer):
             'tokens': {
                 'refresh': str(refresh),
                 'access': str(refresh.access_token),
-            }
+            },
+            '__debug_has_set_pin': user.has_set_pin
         }
 
 

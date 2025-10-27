@@ -132,15 +132,14 @@ class OviiUser(AbstractUser):
     # --- Fintech-specific fields ---
 
     # A separate, hashed PIN for authorizing transactions.
-    transaction_pin = models.CharField(_('transaction pin'), max_length=128, blank=True)
+    pin = models.CharField(_('transaction pin'), max_length=128, blank=True)
 
     # A unique identifier for KYC purposes.
     id_number = models.CharField(
         _('national id number'),
         max_length=50,
-        unique=True,
-        null=True, # Will be populated during the verification step.
-        blank=True,
+        null=True,
+        blank=True, # Will be populated during the verification step.
         help_text=_('National ID or other official identification number.')
     )
     # User's date of birth for age verification and KYC.
@@ -176,11 +175,11 @@ class OviiUser(AbstractUser):
 
     def set_pin(self, raw_pin):
         """Hashes and sets the user's transaction PIN."""
-        self.transaction_pin = make_password(raw_pin)
+        self.pin = make_password(raw_pin)
 
     def check_pin(self, raw_pin):
         """Checks a raw PIN against the stored hash."""
-        return check_password(raw_pin, self.transaction_pin)
+        return check_password(raw_pin, self.pin)
 
 
 class OTPRequest(models.Model):
