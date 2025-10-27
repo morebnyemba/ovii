@@ -19,7 +19,7 @@ import {
 import api from '@/lib/api';
 import { useUserStore } from '@/lib/store/useUserStore';
 import { useCsrf } from '@/hooks/useCsrf';
-import AuthLayout from './AuthLayout';
+import AuthLayout from '../AuthLayout';
 
 const COLORS = {
   indigo: '#1A1B4B',
