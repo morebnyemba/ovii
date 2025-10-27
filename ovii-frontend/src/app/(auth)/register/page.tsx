@@ -19,6 +19,7 @@ import {
 import api from '@/lib/api';
 import { useUserStore } from '@/lib/store/useUserStore';
 import { useCsrf } from '@/hooks/useCsrf';
+import AuthLayout from './AuthLayout';
 
 const COLORS = {
   indigo: '#1A1B4B',
@@ -175,7 +176,15 @@ export default function RegisterPage() {
       login(user, tokens.access, tokens.refresh);
 
       setVerificationSuccess(true);
-      setTimeout(() => router.push('/set-pin'), 1500);
+      // Redirect based on the has_set_pin flag from the API response.
+      // For a new user, this will always be false, leading to /set-pin.
+      setTimeout(() => {
+        if (user.has_set_pin) {
+          router.push('/dashboard');
+        } else {
+          router.push('/set-pin');
+        }
+      }, 1500);
     } catch (err: any) {
       triggerError(getApiErrorMessage(err));
     } finally {
@@ -601,196 +610,67 @@ export default function RegisterPage() {
   );
 
   return (
-    <motion.main
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.8 }}
-      className="flex min-h-screen items-center justify-center p-4 md:p-8 relative overflow-hidden"
-      style={{
-        background: `linear-gradient(135deg, ${COLORS.darkIndigo} 0%, ${COLORS.indigo} 50%, ${COLORS.mint} 100%)`,
-      }}
-    >
-      {/* Animated Background Particles */}
-      <div className="absolute inset-0 overflow-hidden">
-        {particles.map((particle) => (
+    <AuthLayout
+      title={
+        verificationSuccess 
+          ? 'Welcome!' 
+          : step === 1 
+            ? 'Join Ovii Today' 
+            : 'Verify Your Number'
+      }
+      subtitle={
+        verificationSuccess 
+          ? 'Your account has been created successfully' 
+          : step === 1
+            ? 'Create your account for instant, secure payments'
+            : `Enter the code sent to ${phoneNumber}`
+      }
+      icon={
+        verificationSuccess ? (
+          <FiCheckCircle className="text-3xl" style={{ color: COLORS.mint }} />
+        ) : (
+          <FiZap className="text-3xl" style={{ color: COLORS.gold }} />
+        )
+      }
+      footer={
+        !verificationSuccess && (
           <motion.div
-            key={particle.id}
-            className="absolute rounded-full"
-            style={{
-              width: particle.size,
-              height: particle.size,
-              left: `${particle.x}%`,
-              top: `${particle.y}%`,
-              backgroundColor: 'rgba(255, 255, 255, 0.1)',
-            }}
-            animate={{
-              y: [0, -30, 0],
-              x: [0, Math.random() * 20 - 10, 0],
-              opacity: [0, 0.8, 0],
-            }}
-            transition={{
-              duration: particle.duration,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-          />
-        ))}
-      </div>
-
-      {/* Glow Effects */}
-      <div className="absolute inset-0">
-        <div 
-          className="absolute top-1/4 -left-10 w-72 h-72 rounded-full blur-3xl opacity-20"
-          style={{ backgroundColor: COLORS.mint }}
-        />
-        <div 
-          className="absolute bottom-1/4 -right-10 w-72 h-72 rounded-full blur-3xl opacity-20"
-          style={{ backgroundColor: COLORS.gold }}
-        />
-      </div>
-
-      <motion.div
-        initial={{ y: isMounted ? 20 : 0, opacity: isMounted ? 0 : 1 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.6, ease: 'easeOut' }}
-        className="w-full max-w-md relative z-10"
-      >
-        <motion.div
-          animate={{ scale: shake ? [1, 0.98, 1.02, 1] : 1 }}
-          transition={{ duration: 0.4 }}
-          className="rounded-3xl backdrop-blur-xl border border-white/10 p-8 shadow-2xl"
-          style={{ 
-            backgroundColor: 'rgba(253, 253, 253, 0.95)',
-            boxShadow: '0 25px 50px -12px rgba(26, 27, 75, 0.5)',
-          }}
-        >
-          {/* Header Section */}
-          <div className="mb-8 text-center">
-            <motion.div
-              initial={{ y: -10, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.1 }}
-              className="flex justify-center mb-6"
-            >
-              <div className="relative">
-                <div 
-                  className="absolute inset-0 rounded-2xl blur opacity-75 animate-pulse"
-                  style={{ backgroundColor: COLORS.mint }}
-                ></div>
-                <div 
-                  className="relative flex h-20 w-20 items-center justify-center rounded-2xl text-white shadow-lg"
-                  style={{ backgroundColor: COLORS.indigo }}
-                >
-                  {verificationSuccess ? (
-                    <FiCheckCircle className="text-3xl" style={{ color: COLORS.mint }} />
-                  ) : (
-                    <FiZap className="text-3xl" style={{ color: COLORS.gold }} />
-                  )}
-                </div>
-              </div>
-            </motion.div>
-            
-            <motion.h1
-              initial={{ y: -10, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.2 }}
-              className="text-3xl font-bold mb-3"
-              style={{ color: COLORS.indigo }}
-            >
-              {verificationSuccess 
-                ? 'Welcome!' 
-                : step === 1 
-                  ? 'Join Ovii Today' 
-                  : 'Verify Your Number'
-              }
-            </motion.h1>
-            
-            <motion.p
-              initial={{ y: -10, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.3 }}
-              className="text-lg opacity-80"
-              style={{ color: COLORS.indigo }}
-            >
-              {verificationSuccess 
-                ? 'Your account has been created successfully' 
-                : step === 1
-                  ? 'Create your account for instant, secure payments'
-                  : `Enter the code sent to ${phoneNumber}`
-              }
-            </motion.p>
-          </div>
-
-          {/* Progress Steps */}
-          {!verificationSuccess && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="flex justify-center mb-8"
-            >
-              <div className="flex items-center space-x-4">
-                {[1, 2].map((stepNumber) => (
-                  <div key={stepNumber} className="flex items-center">
-                    <div 
-                      className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
-                        step >= stepNumber ? 'text-white scale-110' : 'text-gray-400'
-                      }`}
-                      style={{
-                        backgroundColor: step >= stepNumber ? COLORS.mint : COLORS.lightGray,
-                      }}
-                    >
-                      {stepNumber}
-                    </div>
-                    {stepNumber < 2 && (
-                      <div 
-                        className={`w-12 h-1 mx-2 transition-all ${
-                          step > stepNumber ? 'bg-green-500' : 'bg-gray-300'
-                        }`}
-                      />
-                    )}
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          )}
-
-          {/* Main Form Area */}
-          <AnimatePresence mode="wait">
-            {verificationSuccess 
-              ? renderSuccessMessage()
-              : step === 1 
-                ? renderRegistrationForm() 
-                : renderOtpForm()
-            }
-          </AnimatePresence>
-
-          {/* Footer Section */}
-          {!verificationSuccess && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.7 }}
-              className="mt-8 border-t pt-6"
-              style={{ borderColor: COLORS.lightGray }}
-            >
-              <div className="flex items-center justify-center gap-3 text-sm" style={{ color: COLORS.indigo, opacity: 0.7 }}>
-                <FiShield style={{ color: COLORS.mint }} />
-                <span>Bank-grade security encryption</span>
-              </div>
-              <p className="mt-3 text-center text-sm" style={{ color: COLORS.indigo, opacity: 0.7 }}>
-                Already have an account?{' '}
-                <a 
-                  href="/login" 
-                  className="font-semibold transition-colors hover:text-blue-600"
-                  style={{ color: COLORS.mint }}
-                >
-                  Log in
-                </a>
-              </p>
-            </motion.div>
-          )}
-        </motion.div>
-      </motion.div>
-    </motion.main>
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.7 }}
+            className="mt-8 border-t pt-6"
+            style={{ borderColor: COLORS.lightGray }}
+          >
+            <div className="flex items-center justify-center gap-3 text-sm" style={{ color: COLORS.indigo, opacity: 0.7 }}>
+              <FiShield style={{ color: COLORS.mint }} />
+              <span>Bank-grade security encryption</span>
+            </div>
+            <p className="mt-3 text-center text-sm" style={{ color: COLORS.indigo, opacity: 0.7 }}>
+              Already have an account?{' '}
+              <a 
+                href="/login" 
+                className="font-semibold transition-colors hover:text-blue-600"
+                style={{ color: COLORS.mint }}
+              >
+                Log in
+              </a>
+            </p>
+          </motion.div>
+        )
+      }
+      shake={shake}
+      isMounted={isMounted}
+      particles={particles}
+    >
+      {/* Main Form Area */}
+      <AnimatePresence mode="wait">
+        {verificationSuccess 
+          ? renderSuccessMessage()
+          : step === 1 
+            ? renderRegistrationForm() 
+            : renderOtpForm()
+        }
+      </AnimatePresence>
+    </AuthLayout>
   );
 }
