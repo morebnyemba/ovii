@@ -49,14 +49,12 @@ export default function SendMoneyPage() {
 
   // Refactored state for UI feedback
   const [formErrors, setFormErrors] = useState<FormErrors>(null);
-  const [apiError, setApiError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
   const handleSendMoney = async (e: React.FormEvent) => {
     e.preventDefault();
     // Clear previous errors
     setFormErrors(null);
-    setApiError(null);
 
     const validationResult = sendMoneySchema.safeParse({ recipient, amount, pin, note });
 
@@ -68,7 +66,8 @@ export default function SendMoneyPage() {
     const validatedAmount = validationResult.data.amount;
 
     if (wallet && validatedAmount > parseFloat(wallet.balance)) {
-      setApiError('Insufficient balance.');
+      // Directly set the error in the form instead of using a separate state
+      setFormErrors(prev => ({ ...prev, _errors: ['Insufficient balance.'] }));
       return;
     }
 
@@ -90,8 +89,7 @@ export default function SendMoneyPage() {
     setAmount('');
     setNote('');
     setPin('');
-    setFormErrors(null);
-    setApiError(null);
+    setFormErrors(null); // This is sufficient to clear form errors
     setSuccess(false);
   };
 
@@ -226,10 +224,10 @@ export default function SendMoneyPage() {
                 {formErrors?.note && <p className="mt-1 text-xs text-red-600">{formErrors.note._errors[0]}</p>}
               </div>
 
-              {(apiError || storeError.sendMoney) && (
+              {(storeError.sendMoney || formErrors?._errors.length) && (
                 <div className="flex items-center gap-2 rounded-lg bg-red-50 p-3 text-sm text-red-600">
                   <FiAlertTriangle />
-                  <span>{apiError || storeError.sendMoney}</span>
+                  <span>{storeError.sendMoney || formErrors?._errors[0]}</span>
                 </div>
               )}
 
