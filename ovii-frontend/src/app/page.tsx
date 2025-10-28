@@ -16,8 +16,11 @@ import {
   FiPlay,
   FiStar,
   FiUsers,
-  FiAward
+  FiAward,
+  FiMenu,
+  FiX
 } from 'react-icons/fi';
+import Link from 'next/link';
 
 const COLORS = {
   indigo: '#1A1B4B',
@@ -51,6 +54,7 @@ const COLORS = {
 export default function LandingPage() {
   const [isVisible, setIsVisible] = useState(false);
   const [activeTestimonial, setActiveTestimonial] = useState(0);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -63,6 +67,21 @@ export default function LandingPage() {
     
     return () => clearInterval(interval);
   }, []);
+
+  const navItems = [
+    { name: 'Features', href: '#features' },
+    { name: 'How It Works', href: '#how-it-works' },
+    { name: 'Testimonials', href: '#testimonials' },
+    { name: 'Security', href: '#security' },
+  ];
+
+  const partnerLinks = [
+    { name: 'For Merchants', href: '/merchant' },
+    { name: 'For Agents', href: '/agent' },
+  ];
+
+  const allNavLinks = [...navItems, ...partnerLinks];
+
 
   const features = [
     {
@@ -134,7 +153,7 @@ export default function LandingPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-white overflow-hidden">
+    <div className="min-h-screen bg-white overflow-x-hidden">
       {/* Navigation */}
       <motion.nav
         initial={{ y: -50, opacity: 0 }}
@@ -163,33 +182,93 @@ export default function LandingPage() {
             </motion.div>
 
             <div className="hidden md:flex space-x-8">
-              {['Features', 'How It Works', 'Testimonials', 'Security'].map((item) => (
+              {navItems.map((item) => (
                 <a
-                  key={item}
-                  href={`#${item.toLowerCase().replace(' ', '-')}`}
+                  key={item.name}
+                  href={item.href}
                   className="font-medium transition-colors hover:text-blue-600"
                   style={{ color: COLORS.indigo }}
                 >
-                  {item}
+                  {item.name}
                 </a>
+              ))}
+              {/* Divider */}
+              <div className="h-6 w-px bg-gray-300"></div>
+              {/* New Links for Partners */}
+              {partnerLinks.map((link) => (
+                <Link key={link.name} href={link.href} className="font-medium transition-colors hover:text-blue-600" style={{ color: COLORS.indigo }}>
+                  {link.name}
+                </Link>
               ))}
             </div>
 
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => router.push('/login')}
-              className="px-6 py-2 rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl"
-              style={{
-                backgroundColor: COLORS.gold,
-                color: COLORS.indigo,
-              }}
-            >
-              Get Started
-            </motion.button>
+            <div className="flex items-center gap-4">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => router.push('/login')}
+                className="hidden sm:block px-6 py-2 rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl"
+                style={{
+                  backgroundColor: COLORS.gold,
+                  color: COLORS.indigo,
+                }}
+              >
+                Get Started
+              </motion.button>
+
+              {/* Mobile Menu Button */}
+              <div className="md:hidden">
+                <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} style={{ color: COLORS.indigo }}>
+                  {isMobileMenuOpen ? <FiX size={24} /> : <FiMenu size={24} />}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </motion.nav>
+
+      {/* Mobile Menu */}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="fixed top-20 left-0 w-full z-40 md:hidden p-4"
+          >
+            <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
+              <nav className="flex flex-col space-y-4">
+                {allNavLinks.map((item) => (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="font-medium text-lg p-2 rounded-md transition-colors hover:bg-gray-100"
+                    style={{ color: COLORS.indigo }}
+                  >
+                    {item.name}
+                  </Link>
+                ))}
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    router.push('/login');
+                  }}
+                  className="w-full mt-4 px-6 py-3 rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl"
+                  style={{
+                    backgroundColor: COLORS.gold,
+                    color: COLORS.indigo,
+                  }}
+                >
+                  Get Started
+                </motion.button>
+              </nav>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Hero Section */}
       <section 
