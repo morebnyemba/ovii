@@ -75,13 +75,6 @@ export default function LandingPage() {
     { name: 'Security', href: '#security' },
   ];
 
-  const partnerLinks = [
-    { name: 'For Merchants', href: '/merchant' },
-    { name: 'For Agents', href: '/agent' },
-  ];
-
-  const allNavLinks = [...navItems, ...partnerLinks];
-
 
   const features = [
     {
@@ -182,7 +175,7 @@ export default function LandingPage() {
             </motion.div>
 
             <div className="hidden md:flex space-x-8">
-              {navItems.map((item) => (
+              {navItems.map((item) => ( // Changed from allNavLinks to navItems
                 <a
                   key={item.name}
                   href={item.href}
@@ -191,14 +184,6 @@ export default function LandingPage() {
                 >
                   {item.name}
                 </a>
-              ))}
-              {/* Divider */}
-              <div className="h-6 w-px bg-gray-300"></div>
-              {/* New Links for Partners */}
-              {partnerLinks.map((link) => (
-                <Link key={link.name} href={link.href} className="font-medium transition-colors hover:text-blue-600" style={{ color: COLORS.indigo }}>
-                  {link.name}
-                </Link>
               ))}
             </div>
 
@@ -238,7 +223,7 @@ export default function LandingPage() {
           >
             <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
               <nav className="flex flex-col space-y-4">
-                {allNavLinks.map((item) => (
+                {navItems.map((item) => ( // Changed from allNavLinks to navItems
                   <Link
                     key={item.name}
                     href={item.href}

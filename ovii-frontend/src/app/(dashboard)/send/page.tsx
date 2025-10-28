@@ -149,32 +149,33 @@ export default function SendMoneyPage() {
                 >Set PIN Now</button>
               </Link>
             </motion.div>
-          ) : 
-          success ? (
-            <motion.div
-              key="success"
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              className="text-center py-8"
-            >
-              <FiCheckCircle className="mx-auto text-6xl mb-4" style={{ color: COLORS.mint }} />
-              <h2 className="text-2xl font-bold" style={{ color: COLORS.indigo }}>Transfer Successful!</h2>
-              <p className="mt-2" style={{ color: COLORS.darkIndigo }}>
-                You sent <span className="font-bold">{wallet?.currency} {parseFloat(amount).toFixed(2)}</span> to <span className="font-bold">{recipient}</span>.
-              </p>
-              <button
-                onClick={resetForm}
-                className="mt-6 font-bold py-3 px-8 rounded-full transition-colors"
-                style={{
-                  backgroundColor: COLORS.gold,
-                  color: COLORS.indigo,
-                }}
-              >
-                Send Another
-              </button>
-            </motion.div>
           ) : (
+            // This nested ternary ensures only one element is ever returned
+            success ? (
+              <motion.div
+                key="success"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                className="text-center py-8"
+              >
+                <FiCheckCircle className="mx-auto text-6xl mb-4" style={{ color: COLORS.mint }} />
+                <h2 className="text-2xl font-bold" style={{ color: COLORS.indigo }}>Transfer Successful!</h2>
+                <p className="mt-2" style={{ color: COLORS.darkIndigo }}>
+                  You sent <span className="font-bold">{wallet?.currency} {parseFloat(amount).toFixed(2)}</span> to <span className="font-bold">{recipient}</span>.
+                </p>
+                <button
+                  onClick={resetForm}
+                  className="mt-6 font-bold py-3 px-8 rounded-full transition-colors"
+                  style={{
+                    backgroundColor: COLORS.gold,
+                    color: COLORS.indigo,
+                  }}
+                >
+                  Send Another
+                </button>
+              </motion.div>
+            ) : (
             <motion.form
               noValidate
               key="form"
@@ -240,6 +241,7 @@ export default function SendMoneyPage() {
                 )}
               </button>
             </motion.form>
+            )
           )}
         </AnimatePresence>
       </motion.div>
