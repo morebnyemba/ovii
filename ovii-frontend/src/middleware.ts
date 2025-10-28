@@ -23,11 +23,12 @@ export function middleware(request: NextRequest) {
   const accessToken = request.cookies.get('access_token')?.value;
 
   // Define the paths that are considered public (don't require authentication)
-  // We remove /set-pin from public paths as it should only be accessed by authenticated users.
-  const publicPaths = ['/', '/register', '/login', '/verify-otp'];
+  const publicPaths = ['/', '/register', '/login', '/verify-otp', '/agents', '/merchants'];
+  // Define auth-specific paths that a logged-in user should be redirected away from.
+  const authPaths = ['/login', '/register', '/verify-otp'];
 
   // Check if the current path is a public path
-  const isPublicPath = publicPaths.includes(request.nextUrl.pathname);
+  const isPublicPath = publicPaths.some(path => request.nextUrl.pathname.startsWith(path));
 
   // If the user is trying to access a protected route without a token,
   // redirect them to the login page.
@@ -60,8 +61,8 @@ export function middleware(request: NextRequest) {
     if (request.nextUrl.pathname === '/') {
       return NextResponse.redirect(new URL('/dashboard', request.url));
     }
-    // and tries to access a public auth page (like login), also redirect to dashboard.
-    if (publicPaths.includes(request.nextUrl.pathname) && request.nextUrl.pathname !== '/') {
+    // and tries to access an auth-specific page (like login), also redirect to dashboard.
+    if (authPaths.includes(request.nextUrl.pathname)) {
       return NextResponse.redirect(new URL('/dashboard', request.url));
     }
   }
