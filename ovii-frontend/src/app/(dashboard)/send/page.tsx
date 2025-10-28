@@ -143,7 +143,7 @@ export default function SendMoneyPage() {
               </Link>
             </motion.div>
           ) : 
-          {success ? (
+          success ? (
             <motion.div
               key="success"
               initial={{ opacity: 0, scale: 0.8 }}
