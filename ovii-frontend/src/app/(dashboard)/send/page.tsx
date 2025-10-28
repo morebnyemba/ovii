@@ -32,7 +32,7 @@ const sendMoneySchema = z.object({
 type FormErrors = z.ZodFormattedError<z.infer<typeof sendMoneySchema>> | null;
 
 export default function SendMoneyPage() {
-  const { wallet, loading, sendMoney, error: storeError } = useUserStore();
+  const { user, wallet, loading, sendMoney, error: storeError } = useUserStore();
   
   // State for form fields
   const [recipient, setRecipient] = useState('');
@@ -123,6 +123,26 @@ export default function SendMoneyPage() {
         style={{ boxShadow: '0 4px 20px rgba(26, 27, 75, 0.1)' }}
       >
         <AnimatePresence mode="wait">
+          {user && !user.has_set_pin ? (
+            <motion.div
+              key="set-pin-prompt"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-center py-8"
+            >
+              <FiLock className="mx-auto text-5xl mb-4" style={{ color: COLORS.gold }} />
+              <h2 className="text-2xl font-bold" style={{ color: COLORS.indigo }}>Set Your PIN</h2>
+              <p className="mt-2 max-w-sm mx-auto" style={{ color: COLORS.darkIndigo }}>
+                To keep your account secure, you need to create a 4-digit transaction PIN before you can send money.
+              </p>
+              <Link href="/set-pin">
+                <button
+                  className="mt-6 font-bold py-3 px-8 rounded-full transition-colors"
+                  style={{ backgroundColor: COLORS.gold, color: COLORS.indigo }}
+                >Set PIN Now</button>
+              </Link>
+            </motion.div>
+          ) : 
           {success ? (
             <motion.div
               key="success"

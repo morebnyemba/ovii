@@ -45,22 +45,13 @@ class CreateTransactionView(generics.CreateAPIView):
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        source_wallet = request.user.wallet
-        receiver_wallet = serializer.validated_data['destination_wallet']
-        amount = serializer.validated_data['amount']
-        description = serializer.validated_data.get('description', "")
-
         try:
-            transaction = create_transaction(
-                sender_wallet=source_wallet,
-                receiver_wallet=receiver_wallet,
-                amount=amount,
-                description=description
-            )
-            response_serializer = TransactionSerializer(transaction)
-            return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+            serializer.is_valid(raise_exception=True)
+            # The serializer's .save() method will now handle the transaction creation
+            # because we've implemented the logic in its create() method.
+            self.perform_create(serializer)
+            headers = self.get_success_headers(serializer.data)
+            return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
         except (TransactionError, TransactionLimitExceededError) as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 

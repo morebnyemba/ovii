@@ -11,6 +11,7 @@ from phonenumber_field.serializerfields import PhoneNumberField
 from .models import Wallet, Transaction
 from users.models import OviiUser
 from agents.models import Agent
+from .services import create_transaction
 
 
 class WalletSerializer(serializers.ModelSerializer):
@@ -96,6 +97,22 @@ class TransactionCreateSerializer(serializers.Serializer):
             raise serializers.ValidationError({"pin": "Incorrect transaction PIN."})
 
         return data
+
+    def create(self, validated_data):
+        """
+        This method is called by the view's `perform_create` after validation succeeds.
+        It orchestrates the creation of the transaction by calling the service layer.
+        """
+        sender_wallet = self.context['request'].user.wallet
+        receiver_wallet = validated_data['destination_wallet']
+        amount = validated_data['amount']
+        description = validated_data.get('description', '')
+
+        # The PIN has already been validated, so we can now create the transaction.
+        transaction = create_transaction(
+            sender_wallet=sender_wallet, receiver_wallet=receiver_wallet, amount=amount, description=description
+        )
+        return transaction
 
 
 class CustomerCashOutRequestSerializer(serializers.Serializer):
