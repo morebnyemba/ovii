@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import Cookies from 'js-cookie';
-import api from './api'; // Correct the import path if necessary
+import api from '../api';
 
 // --- Enums to Match Your Django Model Choices ---
 export enum Gender {
