@@ -32,7 +32,14 @@ const sendMoneySchema = z.object({
 type FormErrors = z.ZodFormattedError<z.infer<typeof sendMoneySchema>> | null;
 
 export default function SendMoneyPage() {
-  const { user, wallet, loading, sendMoney, error: storeError } = useUserStore();
+  // Use a selector to make the component reactive to store changes.
+  const { user, wallet, loading, sendMoney, error: storeError } = useUserStore((state) => ({
+    user: state.user,
+    wallet: state.wallet,
+    loading: state.loading,
+    sendMoney: state.sendMoney,
+    error: state.error,
+  }));
   
   // State for form fields
   const [recipient, setRecipient] = useState('');
