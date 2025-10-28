@@ -105,7 +105,7 @@ export default function AgentPage() {
               </motion.div>
             ))}
           </div>
-        </section>
+        </motion.section>
       </main>
     </div>
   );
