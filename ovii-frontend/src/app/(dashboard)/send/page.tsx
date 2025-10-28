@@ -32,14 +32,7 @@ const sendMoneySchema = z.object({
 type FormErrors = z.ZodFormattedError<z.infer<typeof sendMoneySchema>> | null;
 
 export default function SendMoneyPage() {
-  // Use a selector to make the component reactive to store changes.
-  const { user, wallet, loading, sendMoney, error: storeError } = useUserStore((state) => ({
-    user: state.user,
-    wallet: state.wallet,
-    loading: state.loading,
-    sendMoney: state.sendMoney,
-    error: state.error,
-  }));
+  const { user, wallet, loading, sendMoney, error: storeError } = useUserStore();
   
   // State for form fields
   const [recipient, setRecipient] = useState('');
@@ -49,12 +42,14 @@ export default function SendMoneyPage() {
 
   // Refactored state for UI feedback
   const [formErrors, setFormErrors] = useState<FormErrors>(null);
+  const [apiError, setApiError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
   const handleSendMoney = async (e: React.FormEvent) => {
     e.preventDefault();
     // Clear previous errors
     setFormErrors(null);
+    setApiError(null);
 
     const validationResult = sendMoneySchema.safeParse({ recipient, amount, pin, note });
 
@@ -66,8 +61,7 @@ export default function SendMoneyPage() {
     const validatedAmount = validationResult.data.amount;
 
     if (wallet && validatedAmount > parseFloat(wallet.balance)) {
-      // Directly set the error in the form instead of using a separate state
-      setFormErrors(prev => ({ ...prev, _errors: ['Insufficient balance.'] }));
+      setApiError('Insufficient balance.');
       return;
     }
 
@@ -89,7 +83,8 @@ export default function SendMoneyPage() {
     setAmount('');
     setNote('');
     setPin('');
-    setFormErrors(null); // This is sufficient to clear form errors
+    setFormErrors(null);
+    setApiError(null);
     setSuccess(false);
   };
 
@@ -147,33 +142,31 @@ export default function SendMoneyPage() {
                 >Set PIN Now</button>
               </Link>
             </motion.div>
-          ) : (
-            // This nested ternary ensures only one element is ever returned
-            success ? (
-              <motion.div
-                key="success"
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.8 }}
-                className="text-center py-8"
+          ) : success ? (
+            <motion.div
+              key="success"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              className="text-center py-8"
+            >
+              <FiCheckCircle className="mx-auto text-6xl mb-4" style={{ color: COLORS.mint }} />
+              <h2 className="text-2xl font-bold" style={{ color: COLORS.indigo }}>Transfer Successful!</h2>
+              <p className="mt-2" style={{ color: COLORS.darkIndigo }}>
+                You sent <span className="font-bold">{wallet?.currency} {parseFloat(amount).toFixed(2)}</span> to <span className="font-bold">{recipient}</span>.
+              </p>
+              <button
+                onClick={resetForm}
+                className="mt-6 font-bold py-3 px-8 rounded-full transition-colors"
+                style={{
+                  backgroundColor: COLORS.gold,
+                  color: COLORS.indigo,
+                }}
               >
-                <FiCheckCircle className="mx-auto text-6xl mb-4" style={{ color: COLORS.mint }} />
-                <h2 className="text-2xl font-bold" style={{ color: COLORS.indigo }}>Transfer Successful!</h2>
-                <p className="mt-2" style={{ color: COLORS.darkIndigo }}>
-                  You sent <span className="font-bold">{wallet?.currency} {parseFloat(amount).toFixed(2)}</span> to <span className="font-bold">{recipient}</span>.
-                </p>
-                <button
-                  onClick={resetForm}
-                  className="mt-6 font-bold py-3 px-8 rounded-full transition-colors"
-                  style={{
-                    backgroundColor: COLORS.gold,
-                    color: COLORS.indigo,
-                  }}
-                >
-                  Send Another
-                </button>
-              </motion.div>
-            ) : (
+                Send Another
+              </button>
+            </motion.div>
+          ) : (
             <motion.form
               noValidate
               key="form"
@@ -224,10 +217,10 @@ export default function SendMoneyPage() {
                 {formErrors?.note && <p className="mt-1 text-xs text-red-600">{formErrors.note._errors[0]}</p>}
               </div>
 
-              {(storeError.sendMoney || formErrors?._errors.length) && (
+              {(apiError || storeError.sendMoney) && (
                 <div className="flex items-center gap-2 rounded-lg bg-red-50 p-3 text-sm text-red-600">
                   <FiAlertTriangle />
-                  <span>{storeError.sendMoney || formErrors?._errors[0]}</span>
+                  <span>{apiError || storeError.sendMoney}</span>
                 </div>
               )}
 
@@ -239,7 +232,6 @@ export default function SendMoneyPage() {
                 )}
               </button>
             </motion.form>
-            )
           )}
         </AnimatePresence>
       </motion.div>
