@@ -49,9 +49,11 @@ class CreateTransactionView(generics.CreateAPIView):
             serializer.is_valid(raise_exception=True)
             # The serializer's .save() method will now handle the transaction creation
             # because we've implemented the logic in its create() method.
-            self.perform_create(serializer)
-            headers = self.get_success_headers(serializer.data)
-            return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+            self.perform_create(serializer) # This sets serializer.instance to the created Transaction object
+            # Use TransactionSerializer to represent the created transaction for the response
+            response_serializer = TransactionSerializer(serializer.instance)
+            headers = self.get_success_headers(response_serializer.data)
+            return Response(response_serializer.data, status=status.HTTP_201_CREATED, headers=headers)
         except (TransactionError, TransactionLimitExceededError) as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
