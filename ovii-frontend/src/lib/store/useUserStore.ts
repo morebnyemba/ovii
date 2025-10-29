@@ -93,6 +93,26 @@ interface UserState {
   setHasHydrated: (state: boolean) => void;
 }
 
+/**
+ * Parses a DRF validation error object and returns a user-friendly string.
+ * @param errorData The `error.response.data` from an Axios error.
+ * @returns A single string with the error message.
+ */
+const getApiErrorMessage = (errorData: any): string => {
+  if (!errorData) {
+    return 'An unexpected error occurred.';
+  }
+  // Handles standard DRF errors like {"detail": "Error message"}
+  if (typeof errorData.detail === 'string') {
+    return errorData.detail;
+  }
+  // Handles DRF validation errors like {"field_name": ["Error message"]}
+  if (typeof errorData === 'object') {
+    const firstErrorKey = Object.keys(errorData)[0];
+    return Array.isArray(errorData[firstErrorKey]) ? errorData[firstErrorKey][0] : 'Invalid input.';
+  }
+  return 'An unknown error occurred.';
+};
 // --- The Zustand Store Implementation ---
 export const useUserStore = create<UserState>()(
   persist(
@@ -206,8 +226,7 @@ export const useUserStore = create<UserState>()(
         try {
           // Correct endpoint is /wallets/transfer/ and it requires a PIN
           const response = await api.post('/wallets/transfer/', {
-            destination_phone_number: recipient,
-            receiver_phone_number: recipient, // Match the likely backend serializer field
+            destination_phone_number: recipient, // This is the field the serializer expects for input
             amount,
             pin,
             description: note,
@@ -226,7 +245,7 @@ export const useUserStore = create<UserState>()(
           }));
           return false; // Indicate failure
         } catch (error: any) {
-          const errorMessage = error.response?.data?.detail || error.message || 'An unexpected error occurred. Please try again.';
+          const errorMessage = getApiErrorMessage(error.response?.data);
           console.error('Send Money Error:', error);
           set((state) => ({
             error: { ...state.error, sendMoney: errorMessage },
