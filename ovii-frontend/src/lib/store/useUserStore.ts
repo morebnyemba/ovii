@@ -207,6 +207,7 @@ export const useUserStore = create<UserState>()(
           // Correct endpoint is /wallets/transfer/ and it requires a PIN
           const response = await api.post('/wallets/transfer/', {
             destination_phone_number: recipient,
+            receiver_phone_number: recipient, // Match the likely backend serializer field
             amount,
             pin,
             description: note,
