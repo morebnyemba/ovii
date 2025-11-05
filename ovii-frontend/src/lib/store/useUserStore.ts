@@ -229,13 +229,22 @@ export const useUserStore = create<UserState>()(
         }));
         try {
           // Assuming your backend supports pagination via query params
-          const response = await api.get(`/wallets/transactions/?page=${page}`);
-          set({
-            transactions: response.data.results, // Assuming results are in a 'results' array
-            currentPage: page,
-            totalPages: response.data.total_pages, // Assuming backend provides total_pages
-            totalTransactions: response.data.count, // Assuming backend provides total count
-          });
+          const response = await api.get(`/api/wallets/transactions/?page=${page}`);
+          if (response.data && Array.isArray(response.data.results)) {
+            set({
+              transactions: response.data.results, // Assuming results are in a 'results' array
+              currentPage: page,
+              totalPages: response.data.total_pages, // Assuming backend provides total_pages
+              totalTransactions: response.data.count, // Assuming backend provides total count
+            });
+          } else {
+            set({
+              transactions: [],
+              currentPage: 1,
+              totalPages: 1,
+              totalTransactions: 0,
+            });
+          }
         } catch (err: unknown) {
           const errorMessage = err instanceof Error ? err.message : 'Could not fetch transaction history.';
           set((state) => ({

@@ -13,13 +13,32 @@ const navItems = [
 
 const SidebarContent = ({ setSidebarOpen }: { setSidebarOpen: (isOpen: boolean) => void }) => {
   const router = useRouter();
-  const { logout, user } = useUserStore();
+  const { logout, user, _hasHydrated } = useUserStore();
 
   const handleLogout = async () => {
     logout();
     await fetch('/api/logout', { method: 'POST' });
     router.replace('/login');
   };
+
+  if (!_hasHydrated) {
+    return (
+      <>
+        <div 
+          className="p-6 text-2xl font-bold border-b border-white/20 text-gold"
+        >
+          Ovii
+        </div>
+        <div className="p-4 text-center border-b border-white/10">
+          <div className="w-16 h-16 mx-auto mb-3 rounded-full flex items-center justify-center bg-mint">
+            <User className="text-white" size={24} />
+          </div>
+          <div className="h-4 bg-gray-300 rounded w-3/4 mx-auto"></div>
+          <div className="h-3 bg-gray-300 rounded w-1/2 mx-auto mt-2"></div>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>

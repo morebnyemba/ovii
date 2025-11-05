@@ -74,11 +74,11 @@ export default function DashboardPage() {
   useEffect(() => {
     if (_hasHydrated && isAuthenticated) {
       fetchWallet();
-      if (transactions.length === 0) {
+      if (transactions && transactions.length === 0) {
         fetchTransactions();
       }
     }
-  }, [_hasHydrated, isAuthenticated, fetchWallet, fetchTransactions, transactions.length]);
+  }, [_hasHydrated, isAuthenticated, fetchWallet, fetchTransactions]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
