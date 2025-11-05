@@ -35,12 +35,14 @@ export interface User {
   id_number: string | null;
   date_of_birth: string | null;
   gender: Gender | null;
+  address: string;
   address_line_1: string;
   address_line_2: string;
   city: string;
   postal_code: string;
   country: string;
   date_joined: string;
+  created_at: string;
   last_login: string | null;
   is_active: boolean;
   has_set_pin: boolean;
@@ -95,6 +97,7 @@ interface UserState {
   sendMoney: (recipient: string, amount: number, pin: string, note?: string) => Promise<boolean>;
   tokenRefresh: () => Promise<void>;
   setHasHydrated: (state: boolean) => void;
+  updateUser: (userData: Partial<User>) => Promise<void>;
 }
 
 /**
@@ -295,6 +298,16 @@ export const useUserStore = create<UserState>()(
           set((state) => ({
             loading: { ...state.loading, sendMoney: false },
           }));
+        }
+      },
+
+      updateUser: async (userData) => {
+        if (!get().isAuthenticated) return;
+        try {
+          const response = await api.patch('/users/me/', userData);
+          set({ user: response.data });
+        } catch (err) {
+          console.error('Failed to update user profile:', err);
         }
       },
     }),

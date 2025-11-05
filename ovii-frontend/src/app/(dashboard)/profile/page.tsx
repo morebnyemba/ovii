@@ -1,5 +1,3 @@
-'use client';
-
 import { useState, useEffect } from 'react';
 import { useUserStore } from '@/lib/store/useUserStore';
 import { motion } from 'framer-motion';
@@ -82,7 +80,7 @@ const EditProfileField = ({ label, name, value, onChange, type = 'text' }: { lab
 );
 
 export default function ProfilePage() {
-  const { user, loading, _hasHydrated } = useUserStore();
+  const { user, loading, _hasHydrated, updateUser } = useUserStore();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState(user);
 
@@ -109,11 +107,10 @@ export default function ProfilePage() {
     setFormData(prev => prev ? { ...prev, [name]: value } : null);
   };
 
-  const handleSave = () => {
-    // TODO: Implement API call to update user profile
-    // For now, we'll log the data and update the UI state.
-    console.log('Saving profile data:', formData);
-    // In a real app: await updateUser(formData);
+  const handleSave = async () => {
+    if (formData) {
+      await updateUser(formData);
+    }
     setIsEditing(false);
   };
 
@@ -215,7 +212,7 @@ export default function ProfilePage() {
                     <EditProfileField label="Date of Birth" name="date_of_birth" value={formData?.date_of_birth ? new Date(formData.date_of_birth).toISOString().split('T')[0] : ''} onChange={handleInputChange} type="date" />
                     <EditProfileField label="Gender" name="gender" value={formData?.gender} onChange={handleInputChange} />
                     <div className="sm:col-span-2">
-                      <EditProfileField label="Address" name="address" value={formData?.address} onChange={handleInputChange} />
+                      <EditProfileField label="Address" name="address_line_1" value={formData?.address_line_1} onChange={handleInputChange} />
                     </div>
                   </div>
                 </div>
@@ -229,7 +226,7 @@ export default function ProfilePage() {
                   <ProfileField icon={FiPhone} label="Phone Number" value={user.phone_number} />
                   <ProfileField icon={FiCalendar} label="Date of Birth" value={user.date_of_birth ? new Date(user.date_of_birth).toLocaleDateString() : 'Not set'} />
                   <ProfileField icon={FiUser} label="Gender" value={user.gender} />
-                  <ProfileField icon={FiMapPin} label="Address" value={user.address} />
+                  <ProfileField icon={FiMapPin} label="Address" value={user.address_line_1} />
                 </div>
               </div>
             )}
@@ -239,7 +236,7 @@ export default function ProfilePage() {
               <h3 className="text-xl font-bold mb-4 border-b pb-2" style={{ color: COLORS.indigo }}>Account Details</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-4">
                 <ProfileField icon={FiShield} label="Account Status" value={user.is_active ? 'Active' : 'Inactive'} />
-                <ProfileField icon={FiCalendar} label="Member Since" value={new Date(user.created_at).toLocaleDateString()} />
+                <ProfileField icon={FiCalendar} label="Member Since" value={new Date(user.date_joined).toLocaleDateString()} />
               </div>
             </div>
           </form>
