@@ -160,6 +160,28 @@ ASGI_APPLICATION = "ovii_backend.asgi.application"
 # ------------------------------------------------------------------
 # 7. DATABASE
 # ------------------------------------------------------------------
+# 7. DATABASE
+# ------------------------------------------------------------------
+# Construct DATABASE_URL from individual environment variables if not already set
+if not os.getenv("DATABASE_URL"):
+    DB_ENGINE = os.getenv("DATABASE_ENGINE", "django.db.backends.postgresql")
+    DB_NAME = os.getenv("DATABASE_NAME", "ovii_prod_db")
+    DB_USER = os.getenv("DATABASE_USER", "ovii_prod_user")
+    DB_PASSWORD = os.getenv("DATABASE_PASSWORD", "Ovii@PROD2025!")
+    DB_HOST = os.getenv("DATABASE_HOST", "db")
+    DB_PORT = os.getenv("DATABASE_PORT", "5432")
+
+    # dj_database_url expects a URL format, e.g., postgres://user:password@host:port/dbname
+    # We'll construct it based on the engine.
+    # For PostgreSQL, the scheme is 'postgres' or 'postgresql'
+    if "postgresql" in DB_ENGINE:
+        os.environ["DATABASE_URL"] = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+    else:
+        # Fallback for other engines or if not explicitly postgresql
+        # This might need adjustment based on actual engine used
+        os.environ["DATABASE_URL"] = f"{DB_ENGINE.split('.')[-1]}://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+
+
 DATABASES = {
     "default": dj_database_url.config(
         default=os.getenv("DATABASE_URL", "sqlite:///db.sqlite3"),
