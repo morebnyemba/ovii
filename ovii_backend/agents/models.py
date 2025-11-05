@@ -27,6 +27,10 @@ class Agent(models.Model):
         help_text=_("Unique code identifying the agent."),
     )
     business_name = models.CharField(_("business name"), max_length=255)
+    business_address = models.CharField(_("business address"), max_length=255, blank=True)
+    business_registration_number = models.CharField(_("business registration number"), max_length=255, blank=True)
+    business_registration_document = models.FileField(_("business registration document"), upload_to='agent_documents/', blank=True, null=True)
+    proof_of_address_document = models.FileField(_("proof of address document"), upload_to='agent_documents/', blank=True, null=True)
     location = models.CharField(
         _("location"),
         max_length=255,

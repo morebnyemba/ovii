@@ -5,8 +5,15 @@ from django.urls import path
 from django.db import transaction
 from django.contrib import messages
 
-from .models import Wallet, Transaction
+from .models import Wallet, Transaction, TransactionCharge
 from .forms import WalletTopUpForm
+
+
+@admin.register(TransactionCharge)
+class TransactionChargeAdmin(admin.ModelAdmin):
+    list_display = ('name', 'charge_type', 'value', 'applies_to', 'is_active')
+    list_filter = ('charge_type', 'applies_to', 'is_active')
+    search_fields = ('name',)
 
 
 @admin.register(Wallet)

@@ -30,7 +30,18 @@ class AgentOnboardingSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Agent
-        fields = ["business_name", "location"]
+        fields = [
+            "business_name",
+            "location",
+            "business_address",
+            "business_registration_number",
+            "business_registration_document",
+            "proof_of_address_document",
+        ]
+        extra_kwargs = {
+            'business_name': {'required': True},
+            'location': {'required': True},
+        }
 
 
 class CommissionSerializer(serializers.ModelSerializer):

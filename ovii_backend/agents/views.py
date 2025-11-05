@@ -26,12 +26,15 @@ from wallets.services import (
 )
 
 
+from rest_framework.parsers import MultiPartParser, FormParser
+
 class AgentOnboardingView(generics.CreateAPIView):
     """
     API view for a new agent to onboard.
     """
 
     serializer_class = AgentOnboardingSerializer
+    parser_classes = (MultiPartParser, FormParser)
 
     def perform_create(self, serializer):
         """
