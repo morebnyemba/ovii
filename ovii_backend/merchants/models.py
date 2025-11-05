@@ -23,6 +23,8 @@ class Merchant(models.Model):
         related_name="merchant_profile",
     )
     business_name = models.CharField(_("business name"), max_length=255)
+    business_registration_number = models.CharField(_("business registration number"), max_length=255, blank=True)
+    website = models.URLField(_("website"), blank=True)
     api_key = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     webhook_url = models.URLField(
         _("webhook URL"),

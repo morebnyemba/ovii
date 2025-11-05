@@ -15,6 +15,8 @@ class MerchantProfileSerializer(serializers.ModelSerializer):
         model = Merchant
         fields = [
             "business_name",
+            "business_registration_number",
+            "website",
             "api_key",
             "webhook_url",
             "return_url",
@@ -30,3 +32,17 @@ class MerchantProfileUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Merchant
         fields = ["webhook_url", "return_url"]
+
+
+class MerchantOnboardingSerializer(serializers.ModelSerializer):
+    """Serializer for onboarding a new merchant."""
+
+    class Meta:
+        model = Merchant
+        fields = [
+            "business_name",
+            "business_registration_number",
+            "website",
+            "webhook_url",
+            "return_url",
+        ]

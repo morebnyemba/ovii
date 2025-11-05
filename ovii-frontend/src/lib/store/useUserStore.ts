@@ -72,6 +72,9 @@ interface UserState {
   user: User | null;
   wallet: Wallet | null;
   transactions: Transaction[];
+  currentPage: number;
+  totalPages: number;
+  totalTransactions: number;
   isAuthenticated: boolean;
   _hasHydrated: boolean;
   loading: {
@@ -90,6 +93,7 @@ interface UserState {
   fetchUser: () => Promise<void>;
   fetchTransactions: (page?: number) => Promise<void>;
   sendMoney: (recipient: string, amount: number, pin: string, note?: string) => Promise<boolean>;
+  tokenRefresh: () => Promise<void>;
   setHasHydrated: (state: boolean) => void;
 }
 
@@ -162,6 +166,28 @@ export const useUserStore = create<UserState>()(
         Cookies.remove('refresh_token');
       },
 
+      tokenRefresh: async () => {
+        const currentRefreshToken = get().refreshToken;
+        if (!currentRefreshToken) {
+          get().logout();
+          return;
+        }
+
+        try {
+          const response = await api.post('/token/refresh/', {
+            refresh: currentRefreshToken,
+          });
+          const { access, refresh } = response.data;
+          set({ accessToken: access, refreshToken: refresh });
+          Cookies.set('access_token', access, { expires: 1, secure: process.env.NODE_ENV === 'production' });
+          Cookies.set('refresh_token', refresh, { expires: 7, secure: process.env.NODE_ENV === 'production' });
+        } catch (error) {
+          console.error('Failed to refresh token:', error);
+          get().logout();
+          return Promise.reject(error);
+        }
+      },
+
       fetchUser: async () => {
         if (!get().isAuthenticated) return;
         try {
@@ -204,7 +230,12 @@ export const useUserStore = create<UserState>()(
         try {
           // Assuming your backend supports pagination via query params
           const response = await api.get(`/wallets/transactions/?page=${page}`);
-          set({ transactions: response.data });
+          set({
+            transactions: response.data.results, // Assuming results are in a 'results' array
+            currentPage: page,
+            totalPages: response.data.total_pages, // Assuming backend provides total_pages
+            totalTransactions: response.data.count, // Assuming backend provides total count
+          });
         } catch (err: unknown) {
           const errorMessage = err instanceof Error ? err.message : 'Could not fetch transaction history.';
           set((state) => ({

@@ -32,6 +32,13 @@ class Agent(models.Model):
         max_length=255,
         help_text=_("Physical location or area of operation."),
     )
+    commission_rate = models.DecimalField(
+        _("commission rate"),
+        max_digits=5,
+        decimal_places=2,
+        default=0.00,
+        help_text=_("Commission rate for the agent."),
+    )
     is_approved = models.BooleanField(
         default=False,
         help_text=_("Designates whether the agent is approved and active."),

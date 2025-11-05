@@ -8,8 +8,32 @@ from rest_framework import generics, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from .permissions import IsApprovedMerchant, IsApprovedMerchantAPI
-from .serializers import MerchantProfileSerializer, MerchantProfileUpdateSerializer
-from wallets.serializers import MerchantPaymentRequestSerializer
+from .serializers import (
+    MerchantProfileSerializer,
+    MerchantProfileUpdateSerializer,
+    MerchantOnboardingSerializer,
+)
+from wallets.serializers import MerchantPaymentRequestSerializer, TransactionSerializer
+from wallets.models import Transaction
+
+
+class MerchantOnboardingView(generics.CreateAPIView):
+    """
+    API view for a new merchant to onboard.
+    """
+
+    serializer_class = MerchantOnboardingSerializer
+
+    def perform_create(self, serializer):
+        """
+        Creates a new merchant and sets the user's role to MERCHANT.
+        """
+        from users.models import OviiUser
+
+        user = self.request.user
+        user.role = OviiUser.Role.MERCHANT
+        user.save()
+        serializer.save(user=user)
 
 
 class MerchantProfileView(generics.RetrieveUpdateAPIView):
@@ -81,3 +105,21 @@ class MerchantRequestPaymentView(generics.CreateAPIView):
             status=Transaction.Status.PENDING,
             transaction_type=Transaction.TransactionType.PAYMENT,
         )
+
+
+class MerchantTransactionHistoryView(generics.ListAPIView):
+    """
+    API view for a merchant to retrieve their transaction history.
+    """
+
+    serializer_class = TransactionSerializer
+    permission_classes = [IsApprovedMerchant]
+
+    def get_queryset(self):
+        """
+        Returns the transactions where the merchant is either the sender or the receiver.
+        """
+        user = self.request.user
+        return Transaction.objects.filter(
+            models.Q(wallet__user=user) | models.Q(related_wallet__user=user)
+        ).order_by("-timestamp")

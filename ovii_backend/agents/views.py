@@ -8,13 +8,41 @@ from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from .permissions import IsApprovedAgent
-from .serializers import AgentProfileSerializer
-from wallets.serializers import AgentCashInSerializer, CustomerCashOutRequestSerializer
+from .serializers import (
+    AgentProfileSerializer,
+    AgentOnboardingSerializer,
+    CommissionSerializer,
+)
+from wallets.serializers import (
+    AgentCashInSerializer,
+    CustomerCashOutRequestSerializer,
+    TransactionSerializer,
+)
+from wallets.models import Transaction
 from wallets.services import (
     create_transaction,
     TransactionError,
     TransactionLimitExceededError,
 )
+
+
+class AgentOnboardingView(generics.CreateAPIView):
+    """
+    API view for a new agent to onboard.
+    """
+
+    serializer_class = AgentOnboardingSerializer
+
+    def perform_create(self, serializer):
+        """
+        Creates a new agent and sets the user's role to AGENT.
+        """
+        from users.models import OviiUser
+
+        user = self.request.user
+        user.role = OviiUser.Role.AGENT
+        user.save()
+        serializer.save(user=user)
 
 
 class AgentProfileView(generics.RetrieveAPIView):
@@ -91,3 +119,39 @@ class CustomerCashOutRequestView(generics.CreateAPIView):
             )
         except (TransactionError, TransactionLimitExceededError) as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class AgentTransactionHistoryView(generics.ListAPIView):
+    """
+    API view for an agent to retrieve their transaction history.
+    """
+
+    serializer_class = TransactionSerializer
+    permission_classes = [IsApprovedAgent]
+
+    def get_queryset(self):
+        """
+        Returns the transactions where the agent is either the sender or the receiver.
+        """
+        user = self.request.user
+        return Transaction.objects.filter(
+            models.Q(wallet__user=user) | models.Q(related_wallet__user=user)
+        ).order_by("-timestamp")
+
+
+class AgentCommissionHistoryView(generics.ListAPIView):
+    """
+    API view for an agent to retrieve their commission history.
+    """
+
+    serializer_class = CommissionSerializer
+    permission_classes = [IsApprovedAgent]
+
+    def get_queryset(self):
+        """
+        Returns the commission transactions for the agent.
+        """
+        user = self.request.user
+        return Transaction.objects.filter(
+            wallet__user=user, transaction_type=Transaction.TransactionType.COMMISSION
+        ).order_by("-timestamp")

@@ -5,9 +5,16 @@ Description: URL patterns for the merchants app.
 """
 
 from django.urls import path
-from .views import MerchantProfileView, RegenerateAPIKeyView, MerchantRequestPaymentView
+from .views import (
+    MerchantProfileView,
+    RegenerateAPIKeyView,
+    MerchantRequestPaymentView,
+    MerchantOnboardingView,
+    MerchantTransactionHistoryView,
+)
 
 urlpatterns = [
+    path("onboarding/", MerchantOnboardingView.as_view(), name="merchant-onboarding"),
     path("profile/", MerchantProfileView.as_view(), name="merchant-profile"),
     path(
         "profile/regenerate-key/",
@@ -18,5 +25,10 @@ urlpatterns = [
         "request-payment/",
         MerchantRequestPaymentView.as_view(),
         name="merchant-request-payment",
+    ),
+    path(
+        "transactions/",
+        MerchantTransactionHistoryView.as_view(),
+        name="merchant-transactions",
     ),
 ]

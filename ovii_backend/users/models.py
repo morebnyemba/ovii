@@ -10,8 +10,15 @@ from django.utils import timezone
 from django.contrib.auth.hashers import make_password, check_password
 from phonenumber_field.modelfields import PhoneNumberField
 from django.utils.translation import gettext_lazy as _
+from django.core.validators import FileExtensionValidator, ValidationError
 import uuid
 from datetime import timedelta
+from django_countries.fields import CountryField
+
+def FileSizeValidator(value): # Custom validator for file size
+    limit = 2 * 1024 * 1024  # 2MB
+    if value.size > limit:
+        raise ValidationError('File too large. Size should not exceed 2 MiB.')
 
 
 class OviiUserManager(BaseUserManager):
@@ -117,7 +124,7 @@ class OviiUser(AbstractUser):
         unique=True,
         help_text=_("Must be in international format, e.g., +263787211325"),
     )
-    email = models.EmailField(_("email address"), unique=False, null=True, blank=True)
+    email = models.EmailField(_("email address"), unique=True, null=True, blank=True)
 
     # The field used for authentication.
     USERNAME_FIELD = "phone_number"
@@ -140,7 +147,10 @@ class OviiUser(AbstractUser):
     # `upload_to` specifies the subdirectory within MEDIA_ROOT to store uploaded images.
     # `blank=True` and `null=True` make the profile picture optional.
     profile_picture = models.ImageField(
-        upload_to="profile_pics/", null=True, blank=True
+        upload_to="profile_pics/",
+        null=True,
+        blank=True,
+        validators=[FileExtensionValidator(allowed_extensions=['jpg', 'jpeg', 'png']), FileSizeValidator]
     )
 
     # --- Fintech-specific fields ---
@@ -167,7 +177,7 @@ class OviiUser(AbstractUser):
     address_line_2 = models.CharField(_("address line 2"), max_length=255, blank=True)
     city = models.CharField(_("city"), max_length=100, blank=True)
     postal_code = models.CharField(_("postal code"), max_length=20, blank=True)
-    country = models.CharField(_("country"), max_length=100, blank=True)
+    country = CountryField(_("country"), blank=True)
 
     # Tracks if the user has set up their transaction PIN.
     has_set_pin = models.BooleanField(default=False)
