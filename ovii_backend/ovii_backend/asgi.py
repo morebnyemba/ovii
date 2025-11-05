@@ -17,9 +17,11 @@ from users.middleware import JwtAuthMiddleware
 # Combine the WebSocket URL patterns from all relevant apps
 combined_ws_urlpatterns = wallet_ws_urlpatterns + user_ws_urlpatterns
 
-application = ProtocolTypeRouter({
-    "http": django_asgi_app,
-    "websocket": AllowedHostsOriginValidator(
-        JwtAuthMiddleware(URLRouter(combined_ws_urlpatterns))
-    ),
-})
+application = ProtocolTypeRouter(
+    {
+        "http": django_asgi_app,
+        "websocket": AllowedHostsOriginValidator(
+            JwtAuthMiddleware(URLRouter(combined_ws_urlpatterns))
+        ),
+    }
+)

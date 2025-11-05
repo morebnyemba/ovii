@@ -9,8 +9,8 @@ def main():
     """Run administrative tasks."""
     # Load environment variables from .env file in the project root.
     # This is crucial for management commands to use the correct settings.
-    load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'ovii_backend.settings')
+    load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "ovii_backend.settings")
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:
@@ -22,5 +22,5 @@ def main():
     execute_from_command_line(sys.argv)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

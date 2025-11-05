@@ -3,6 +3,7 @@ Author: Moreblessing Nyemba +263787211325
 Date: 2024-05-21
 Description: Defines models for the merchants app.
 """
+
 import uuid
 from django.db import models
 from django.conf import settings
@@ -14,13 +15,37 @@ class Merchant(models.Model):
     Represents a Merchant in the system, linked to an OviiUser.
     This model stores business details and credentials for API access.
     """
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, primary_key=True, related_name='merchant_profile')
-    business_name = models.CharField(_('business name'), max_length=255)
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        primary_key=True,
+        related_name="merchant_profile",
+    )
+    business_name = models.CharField(_("business name"), max_length=255)
     api_key = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
-    webhook_url = models.URLField(_('webhook URL'), blank=True, help_text=_("URL to send payment notifications to."))
-    return_url = models.URLField(_('return URL'), blank=True, help_text=_("URL to redirect customers to after a payment."))
-    is_approved = models.BooleanField(default=False, help_text=_("Designates whether the merchant is approved and can accept payments."))
-    is_active = models.BooleanField(default=True, help_text=_("Designates whether the merchant's integration is currently active."))
+    webhook_url = models.URLField(
+        _("webhook URL"),
+        blank=True,
+        help_text=_("URL to send payment notifications to."),
+    )
+    return_url = models.URLField(
+        _("return URL"),
+        blank=True,
+        help_text=_("URL to redirect customers to after a payment."),
+    )
+    is_approved = models.BooleanField(
+        default=False,
+        help_text=_(
+            "Designates whether the merchant is approved and can accept payments."
+        ),
+    )
+    is_active = models.BooleanField(
+        default=True,
+        help_text=_(
+            "Designates whether the merchant's integration is currently active."
+        ),
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -29,4 +54,4 @@ class Merchant(models.Model):
     def regenerate_api_key(self):
         """Generates a new API key for the merchant."""
         self.api_key = uuid.uuid4()
-        self.save(update_fields=['api_key'])
+        self.save(update_fields=["api_key"])

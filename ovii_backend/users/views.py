@@ -22,10 +22,15 @@ from wallets.permissions import IsMobileVerifiedOrHigher
 from .models import OviiUser, KYCDocument, VerificationLevels
 from wallets.models import Transaction
 from .serializers import (
-    UserDetailSerializer, OTPRequestSerializer,
-    UserLoginSerializer, UserRegistrationVerifySerializer, InitialRegistrationSerializer,
-    SetTransactionPINSerializer, KYCDocumentSerializer,
-    AdminUserManagementSerializer, UserProfileUpdateSerializer
+    UserDetailSerializer,
+    OTPRequestSerializer,
+    UserLoginSerializer,
+    UserRegistrationVerifySerializer,
+    InitialRegistrationSerializer,
+    SetTransactionPINSerializer,
+    KYCDocumentSerializer,
+    AdminUserManagementSerializer,
+    UserProfileUpdateSerializer,
 )
 
 # Get a logger instance for this file
@@ -37,42 +42,54 @@ class ApiRootView(APIView):
     A simple view for the API root that provides a welcome message.
     This confirms the API is running and can link to documentation.
     """
+
     permission_classes = [AllowAny]
 
     def get(self, request, *args, **kwargs):
-        return Response({
-            "message": "Welcome to the Ovii API!",
-            "version": "1.0.0",
-            "docs": "/api/docs/",  # Example link to API documentation
-        })
+        return Response(
+            {
+                "message": "Welcome to the Ovii API!",
+                "version": "1.0.0",
+                "docs": "/api/docs/",  # Example link to API documentation
+            }
+        )
 
 
 class OTPRequestView(generics.CreateAPIView):
     """
     API view for requesting an OTP.
     """
+
     throttle_classes = [AnonRateThrottle]
     serializer_class = OTPRequestSerializer
     permission_classes = [AllowAny]
 
     def get_throttles(self):
-        self.throttle_scope = 'otp.request'
+        self.throttle_scope = "otp.request"
         return super().get_throttles()
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         try:
             serializer.is_valid(raise_exception=True)
-            phone_number = serializer.validated_data.get('phone_number')
+            phone_number = serializer.validated_data.get("phone_number")
             response_data = serializer.save()
             logger.info(f"OTP requested successfully for phone number: {phone_number}")
             return Response(response_data, status=status.HTTP_201_CREATED)
         except ValidationError as e:
-            logger.warning(f"OTP request validation failed for data: {request.data}. Error: {e.detail}")
+            logger.warning(
+                f"OTP request validation failed for data: {request.data}. Error: {e.detail}"
+            )
             raise
         except Exception as e:
-            logger.error(f"An unexpected error occurred during OTP request for data: {request.data}. Error: {e}", exc_info=True)
-            return Response({"detail": "An unexpected server error occurred."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            logger.error(
+                f"An unexpected error occurred during OTP request for data: {request.data}. Error: {e}",
+                exc_info=True,
+            )
+            return Response(
+                {"detail": "An unexpected server error occurred."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
 
 class UserLoginView(generics.GenericAPIView):
@@ -80,6 +97,7 @@ class UserLoginView(generics.GenericAPIView):
     API view for user login with OTP.
     Handles POST requests to /api/users/auth/login/
     """
+
     serializer_class = UserLoginSerializer
     permission_classes = [AllowAny]
 
@@ -91,21 +109,30 @@ class UserLoginView(generics.GenericAPIView):
         try:
             serializer.is_valid(raise_exception=True)
             response_data = serializer.save()
-            user_id = response_data.get('user', {}).get('id')
+            user_id = response_data.get("user", {}).get("id")
             logger.info(f"User login successful for user ID: {user_id}")
             return Response(response_data, status=status.HTTP_200_OK)
         except ValidationError as e:
-            logger.warning(f"User login failed for request data: {request.data}. Error: {e.detail}")
+            logger.warning(
+                f"User login failed for request data: {request.data}. Error: {e.detail}"
+            )
             raise
         except Exception as e:
-            logger.error(f"An unexpected error occurred during user login. Error: {e}", exc_info=True)
-            return Response({"detail": "An unexpected server error occurred."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            logger.error(
+                f"An unexpected error occurred during user login. Error: {e}",
+                exc_info=True,
+            )
+            return Response(
+                {"detail": "An unexpected server error occurred."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
 
 class UserRegistrationStartView(generics.CreateAPIView):
     """
     API view for the first step of user registration.
     """
+
     serializer_class = InitialRegistrationSerializer
     permission_classes = [AllowAny]
 
@@ -117,20 +144,31 @@ class UserRegistrationStartView(generics.CreateAPIView):
         try:
             serializer.is_valid(raise_exception=True)
             response_data = serializer.save()
-            logger.info(f"New user registration started for phone: {serializer.validated_data['phone_number']}")
+            logger.info(
+                f"New user registration started for phone: {serializer.validated_data['phone_number']}"
+            )
             return Response(response_data, status=status.HTTP_201_CREATED)
         except ValidationError as e:
-            logger.warning(f"Initial registration failed for data: {request.data}. Error: {e.detail}")
+            logger.warning(
+                f"Initial registration failed for data: {request.data}. Error: {e.detail}"
+            )
             raise
         except Exception as e:
-            logger.error(f"An unexpected error occurred during initial registration. Error: {e}", exc_info=True)
-            return Response({"detail": "An unexpected server error occurred."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            logger.error(
+                f"An unexpected error occurred during initial registration. Error: {e}",
+                exc_info=True,
+            )
+            return Response(
+                {"detail": "An unexpected server error occurred."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
 
 class UserRegistrationVerifyView(generics.CreateAPIView):
     """
     API view for the second step of user registration (OTP verification).
     """
+
     serializer_class = UserRegistrationVerifySerializer
     permission_classes = [AllowAny]
 
@@ -142,21 +180,30 @@ class UserRegistrationVerifyView(generics.CreateAPIView):
         try:
             serializer.is_valid(raise_exception=True)
             response_data = serializer.save()
-            user_id = response_data.get('user', {}).get('id')
+            user_id = response_data.get("user", {}).get("id")
             logger.info(f"New user registration successful. User ID: {user_id}")
             return Response(response_data, status=status.HTTP_201_CREATED)
         except ValidationError as e:
-            logger.warning(f"User registration failed for data: {request.data}. Error: {e.detail}")
+            logger.warning(
+                f"User registration failed for data: {request.data}. Error: {e.detail}"
+            )
             raise
         except Exception as e:
-            logger.error(f"An unexpected error occurred during user registration. Error: {e}", exc_info=True)
-            return Response({"detail": "An unexpected server error occurred."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            logger.error(
+                f"An unexpected error occurred during user registration. Error: {e}",
+                exc_info=True,
+            )
+            return Response(
+                {"detail": "An unexpected server error occurred."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
 
 class SetTransactionPINView(generics.GenericAPIView):
     """
     API view for an authenticated user to set their transaction PIN.
     """
+
     serializer_class = SetTransactionPINSerializer
     permission_classes = [IsAuthenticated, IsMobileVerifiedOrHigher]
 
@@ -165,40 +212,52 @@ class SetTransactionPINView(generics.GenericAPIView):
         if user.has_set_pin:
             return Response(
                 {"detail": "Transaction PIN has already been set."},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         serializer = self.get_serializer(data=request.data)
         try:
             serializer.is_valid(raise_exception=True)
-            user.set_pin(serializer.validated_data['pin'])
+            user.set_pin(serializer.validated_data["pin"])
             user.has_set_pin = True
-            user.save(update_fields=['pin', 'has_set_pin'])
+            user.save(update_fields=["pin", "has_set_pin"])
 
             # After setting the PIN, issue a new token with the updated 'has_set_pin' claim.
             refresh = RefreshToken.for_user(user)
-            refresh.access_token['has_set_pin'] = user.has_set_pin
+            refresh.access_token["has_set_pin"] = user.has_set_pin
 
             logger.info(f"Transaction PIN set successfully for user: {request.user.id}")
-            return Response({
-                "detail": "PIN set successfully.",
-                "tokens": {
-                    'refresh': str(refresh),
-                    'access': str(refresh.access_token),
-                }
-            }, status=status.HTTP_200_OK)
+            return Response(
+                {
+                    "detail": "PIN set successfully.",
+                    "tokens": {
+                        "refresh": str(refresh),
+                        "access": str(refresh.access_token),
+                    },
+                },
+                status=status.HTTP_200_OK,
+            )
         except ValidationError as e:
-            logger.warning(f"PIN set failed for user {request.user.id}. Error: {e.detail}")
+            logger.warning(
+                f"PIN set failed for user {request.user.id}. Error: {e.detail}"
+            )
             raise
         except Exception as e:
-            logger.error(f"Unexpected error setting PIN for user {request.user.id}. Error: {e}", exc_info=True)
-            return Response({"detail": "An unexpected error occurred."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            logger.error(
+                f"Unexpected error setting PIN for user {request.user.id}. Error: {e}",
+                exc_info=True,
+            )
+            return Response(
+                {"detail": "An unexpected error occurred."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
 
 class UserProfileView(generics.RetrieveUpdateAPIView):
     """
     API view for retrieving and updating the authenticated user's profile.
     """
+
     queryset = OviiUser.objects.all()
     permission_classes = [IsAuthenticated]
 
@@ -206,14 +265,16 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
         return self.request.user
 
     def get_serializer_class(self):
-        if self.request.method in ['PUT', 'PATCH']:
+        if self.request.method in ["PUT", "PATCH"]:
             return UserProfileUpdateSerializer
         return UserDetailSerializer
 
     def update(self, request, *args, **kwargs):
         response = super().update(request, *args, **kwargs)
         if response.status_code == 200:
-            logger.info(f"User profile updated successfully for user: {request.user.id}")
+            logger.info(
+                f"User profile updated successfully for user: {request.user.id}"
+            )
         return response
 
 
@@ -221,25 +282,31 @@ class UserViewSet(viewsets.ModelViewSet):
     """
     ViewSet for administrative management of users.
     """
-    queryset = OviiUser.objects.all().order_by('phone_number')
+
+    queryset = OviiUser.objects.all().order_by("phone_number")
     serializer_class = AdminUserManagementSerializer
     permission_classes = [IsAdminUser]
 
     def perform_update(self, serializer):
         super().perform_update(serializer)
-        logger.info(f"Admin {self.request.user.id} updated user profile for user: {serializer.instance.id}")
+        logger.info(
+            f"Admin {self.request.user.id} updated user profile for user: {serializer.instance.id}"
+        )
 
     def perform_destroy(self, instance):
-        logger.warning(f"Admin {self.request.user.id} deleted user: {instance.id} ({instance.phone_number})")
+        logger.warning(
+            f"Admin {self.request.user.id} deleted user: {instance.id} ({instance.phone_number})"
+        )
         super().perform_destroy(instance)
 
 
-class KYCDocumentViewSet(mixins.CreateModelMixin,
-                         mixins.ListModelMixin,
-                         viewsets.GenericViewSet):
+class KYCDocumentViewSet(
+    mixins.CreateModelMixin, mixins.ListModelMixin, viewsets.GenericViewSet
+):
     """
     ViewSet for users to manage their KYC documents.
     """
+
     serializer_class = KYCDocumentSerializer
     permission_classes = [IsAuthenticated]
 
@@ -248,10 +315,13 @@ class KYCDocumentViewSet(mixins.CreateModelMixin,
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
-        logger.info(f"KYC Document of type '{serializer.validated_data['document_type']}' uploaded for user: {self.request.user.id}")
+        logger.info(
+            f"KYC Document of type '{serializer.validated_data['document_type']}' uploaded for user: {self.request.user.id}"
+        )
 
 
 # --- Admin Dashboard Chart Data Endpoint ---
+
 
 @staff_member_required
 def dashboard_chart_data(request):
@@ -262,44 +332,61 @@ def dashboard_chart_data(request):
     logger.info(f"Admin user {request.user.id} accessed dashboard chart data.")
     try:
         # 1. Data for Users by Verification Level (Pie Chart)
-        verification_counts = OviiUser.objects.values('verification_level').annotate(count=Count('id')).order_by('verification_level')
+        verification_counts = (
+            OviiUser.objects.values("verification_level")
+            .annotate(count=Count("id"))
+            .order_by("verification_level")
+        )
         verification_data = {
-            'labels': [VerificationLevels(level['verification_level']).label for level in verification_counts],
-            'counts': [level['count'] for level in verification_counts]
+            "labels": [
+                VerificationLevels(level["verification_level"]).label
+                for level in verification_counts
+            ],
+            "counts": [level["count"] for level in verification_counts],
         }
 
         # 2. Data for User Signups in the Last 30 Days (Line Chart)
         thirty_days_ago = datetime.date.today() - datetime.timedelta(days=30)
         signups = (
             OviiUser.objects.filter(date_joined__gte=thirty_days_ago)
-            .annotate(day=TruncDay('date_joined'))
-            .values('day')
-            .annotate(count=Count('id'))
-            .order_by('day')
+            .annotate(day=TruncDay("date_joined"))
+            .values("day")
+            .annotate(count=Count("id"))
+            .order_by("day")
         )
         signup_data = {
-            'labels': [s['day'].strftime('%b %d') for s in signups],
-            'counts': [s['count'] for s in signups]
+            "labels": [s["day"].strftime("%b %d") for s in signups],
+            "counts": [s["count"] for s in signups],
         }
 
         # 3. Data for Transaction Volume in the Last 30 Days (Bar Chart)
         transactions = (
-            Transaction.objects.filter(timestamp__gte=thirty_days_ago, status=Transaction.Status.COMPLETED)
-            .annotate(day=TruncDay('timestamp'))
-            .values('day')
-            .annotate(volume=Sum('amount'))
-            .order_by('day')
+            Transaction.objects.filter(
+                timestamp__gte=thirty_days_ago, status=Transaction.Status.COMPLETED
+            )
+            .annotate(day=TruncDay("timestamp"))
+            .values("day")
+            .annotate(volume=Sum("amount"))
+            .order_by("day")
         )
         transaction_data = {
-            'labels': [t['day'].strftime('%b %d') for t in transactions],
-            'volumes': [t['volume'] or 0 for t in transactions] # Ensure None is handled
+            "labels": [t["day"].strftime("%b %d") for t in transactions],
+            "volumes": [
+                t["volume"] or 0 for t in transactions
+            ],  # Ensure None is handled
         }
-        
-        return JsonResponse({
-            'verification_data': verification_data,
-            'signup_data': signup_data,
-            'transaction_data': transaction_data,
-        })
+
+        return JsonResponse(
+            {
+                "verification_data": verification_data,
+                "signup_data": signup_data,
+                "transaction_data": transaction_data,
+            }
+        )
     except Exception as e:
-        logger.error(f"Failed to generate dashboard chart data. Error: {e}", exc_info=True)
-        return JsonResponse({"detail": "An error occurred while generating chart data."}, status=500)
+        logger.error(
+            f"Failed to generate dashboard chart data. Error: {e}", exc_info=True
+        )
+        return JsonResponse(
+            {"detail": "An error occurred while generating chart data."}, status=500
+        )

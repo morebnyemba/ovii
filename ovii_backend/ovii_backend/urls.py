@@ -14,6 +14,7 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+
 from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
@@ -27,20 +28,24 @@ from ovii_backend.views_utils import CSRFTokenView
 
 
 urlpatterns = [
-    path('', user_views.ApiRootView.as_view(), name='api-root'),
-    path('admin/', admin.site.urls),
-    path('api/users/', include('users.urls')),
-    path('api/wallets/', include('wallets.urls')),
-    path('api/agents/', include('agents.urls')),
-    path('api/merchants/', include('merchants.urls')),
-    path('api/integrations/', include('integrations.urls')),
-    path('api/notifications/', include('notifications.urls')),
+    path("", user_views.ApiRootView.as_view(), name="api-root"),
+    path("admin/", admin.site.urls),
+    path("api/users/", include("users.urls")),
+    path("api/wallets/", include("wallets.urls")),
+    path("api/agents/", include("agents.urls")),
+    path("api/merchants/", include("merchants.urls")),
+    path("api/integrations/", include("integrations.urls")),
+    path("api/notifications/", include("notifications.urls")),
     # JWT Token Endpoints
-    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
-    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
-    path('api/csrf-token/', CSRFTokenView.as_view(), name='csrf-token'),
+    path("api/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
+    path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
+    path("api/csrf-token/", CSRFTokenView.as_view(), name="csrf-token"),
     # Custom admin URLs
-    path('admin/dashboard/chart-data/', user_views.dashboard_chart_data, name='admin_chart_data'),
+    path(
+        "admin/dashboard/chart-data/",
+        user_views.dashboard_chart_data,
+        name="admin_chart_data",
+    ),
 ]
 
 # Serve media files during development

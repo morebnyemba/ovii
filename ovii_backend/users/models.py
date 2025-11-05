@@ -13,6 +13,7 @@ from django.utils.translation import gettext_lazy as _
 import uuid
 from datetime import timedelta
 
+
 class OviiUserManager(BaseUserManager):
     """
     Custom manager for the OviiUser model.
@@ -24,14 +25,14 @@ class OviiUserManager(BaseUserManager):
     def create_user(self, phone_number, password=None, **extra_fields):
         """
         Creates and saves a new User.
-        
+
         New users are created as inactive and with no usable password until
         they verify their identity via OTP.
         """
         if not phone_number:
-            raise ValueError(_('The Phone Number field must be set'))
+            raise ValueError(_("The Phone Number field must be set"))
         # New users are inactive until they verify OTP.
-        extra_fields.setdefault('is_active', False)
+        extra_fields.setdefault("is_active", False)
         user = self.model(phone_number=phone_number, **extra_fields)
         # Regular users do not use passwords for login.
         user.set_unusable_password()
@@ -43,23 +44,25 @@ class OviiUserManager(BaseUserManager):
         Creates and saves a new superuser with a password.
         """
         if not phone_number:
-            raise ValueError(_('Superusers must have a phone number.'))
+            raise ValueError(_("Superusers must have a phone number."))
         if not email:
-            raise ValueError(_('Superusers must have an email address.'))
+            raise ValueError(_("Superusers must have an email address."))
         if not password:
-            raise ValueError(_('Superuser must have a password.'))
+            raise ValueError(_("Superuser must have a password."))
 
-        extra_fields.setdefault('is_staff', True)
-        extra_fields.setdefault('is_superuser', True)
-        extra_fields.setdefault('is_active', True) # Superusers are active by default
+        extra_fields.setdefault("is_staff", True)
+        extra_fields.setdefault("is_superuser", True)
+        extra_fields.setdefault("is_active", True)  # Superusers are active by default
 
-        if extra_fields.get('is_staff') is not True:
-            raise ValueError(_('Superuser must have is_staff=True.'))
-        if extra_fields.get('is_superuser') is not True:
-            raise ValueError(_('Superuser must have is_superuser=True.'))
+        if extra_fields.get("is_staff") is not True:
+            raise ValueError(_("Superuser must have is_staff=True."))
+        if extra_fields.get("is_superuser") is not True:
+            raise ValueError(_("Superuser must have is_superuser=True."))
 
         # We don't use create_user here to ensure a password is set
-        user = self.model(phone_number=phone_number, email=self.normalize_email(email), **extra_fields)
+        user = self.model(
+            phone_number=phone_number, email=self.normalize_email(email), **extra_fields
+        )
         user.set_password(password)
         user.save(using=self._db)
         return user
@@ -67,31 +70,36 @@ class OviiUserManager(BaseUserManager):
 
 class VerificationLevels(models.IntegerChoices):
     """Defines tiers for user KYC verification."""
-    LEVEL_0 = 0, _('Unverified')
-    LEVEL_1 = 1, _('Mobile Verified')
-    LEVEL_2 = 2, _('Identity Verified')
-    LEVEL_3 = 3, _('Address Verified')
+
+    LEVEL_0 = 0, _("Unverified")
+    LEVEL_1 = 1, _("Mobile Verified")
+    LEVEL_2 = 2, _("Identity Verified")
+    LEVEL_3 = 3, _("Address Verified")
 
 
 class DocumentStatus(models.TextChoices):
     """Defines the status of a submitted KYC document."""
-    PENDING = 'PENDING', _('Pending')
-    APPROVED = 'APPROVED', _('Approved')
-    REJECTED = 'REJECTED', _('Rejected')
+
+    PENDING = "PENDING", _("Pending")
+    APPROVED = "APPROVED", _("Approved")
+    REJECTED = "REJECTED", _("Rejected")
+
 
 class OviiUser(AbstractUser):
     class Gender(models.TextChoices):
         """Defines choices for the gender field."""
-        MALE = 'MALE', _('Male')
-        FEMALE = 'FEMALE', _('Female')
-        OTHER = 'OTHER', _('Other')
-        PREFER_NOT_TO_SAY = 'PREFER_NOT_TO_SAY', _('Prefer not to say')
+
+        MALE = "MALE", _("Male")
+        FEMALE = "FEMALE", _("Female")
+        OTHER = "OTHER", _("Other")
+        PREFER_NOT_TO_SAY = "PREFER_NOT_TO_SAY", _("Prefer not to say")
 
     class Role(models.TextChoices):
         """Defines the role of the user in the system."""
-        CUSTOMER = 'CUSTOMER', _('Customer')
-        AGENT = 'AGENT', _('Agent')
-        MERCHANT = 'MERCHANT', _('Merchant')
+
+        CUSTOMER = "CUSTOMER", _("Customer")
+        AGENT = "AGENT", _("Agent")
+        MERCHANT = "MERCHANT", _("Merchant")
 
     """
     Custom User model for the Ovii application.
@@ -104,22 +112,26 @@ class OviiUser(AbstractUser):
 
     # Email field is now the unique identifier for the user.
     # It must be unique across all users in the database.
-    phone_number = PhoneNumberField(_('phone number'), unique=True, help_text=_('Must be in international format, e.g., +263787211325'))
-    email = models.EmailField(_('email address'), unique=False, null=True, blank=True)
+    phone_number = PhoneNumberField(
+        _("phone number"),
+        unique=True,
+        help_text=_("Must be in international format, e.g., +263787211325"),
+    )
+    email = models.EmailField(_("email address"), unique=False, null=True, blank=True)
 
     # The field used for authentication.
-    USERNAME_FIELD = 'phone_number'
+    USERNAME_FIELD = "phone_number"
     # Fields required when creating a user via the createsuperuser command.
     # Email and password are required by default.
-    REQUIRED_FIELDS = ['email']
+    REQUIRED_FIELDS = ["email"]
 
     # Override is_active to be False by default for new users
     is_active = models.BooleanField(
-        _('active'),
+        _("active"),
         default=False,
         help_text=_(
-            'Designates whether this user should be treated as active. '
-            'Unselect this instead of deleting accounts.'
+            "Designates whether this user should be treated as active. "
+            "Unselect this instead of deleting accounts."
         ),
     )
 
@@ -127,31 +139,35 @@ class OviiUser(AbstractUser):
     # Custom field for the user's profile picture.
     # `upload_to` specifies the subdirectory within MEDIA_ROOT to store uploaded images.
     # `blank=True` and `null=True` make the profile picture optional.
-    profile_picture = models.ImageField(upload_to='profile_pics/', null=True, blank=True)
+    profile_picture = models.ImageField(
+        upload_to="profile_pics/", null=True, blank=True
+    )
 
     # --- Fintech-specific fields ---
 
     # A separate, hashed PIN for authorizing transactions.
-    pin = models.CharField(_('transaction pin'), max_length=128, blank=True)
+    pin = models.CharField(_("transaction pin"), max_length=128, blank=True)
 
     # A unique identifier for KYC purposes.
     id_number = models.CharField(
-        _('national id number'),
+        _("national id number"),
         max_length=50,
         null=True,
-        blank=True, # Will be populated during the verification step.
-        help_text=_('National ID or other official identification number.')
+        blank=True,  # Will be populated during the verification step.
+        help_text=_("National ID or other official identification number."),
     )
     # User's date of birth for age verification and KYC.
-    date_of_birth = models.DateField(_('date of birth'), null=True, blank=True)
-    gender = models.CharField(_('gender'), max_length=20, choices=Gender.choices, null=True, blank=True)
+    date_of_birth = models.DateField(_("date of birth"), null=True, blank=True)
+    gender = models.CharField(
+        _("gender"), max_length=20, choices=Gender.choices, null=True, blank=True
+    )
 
     # Address fields for higher-tier KYC
-    address_line_1 = models.CharField(_('address line 1'), max_length=255, blank=True)
-    address_line_2 = models.CharField(_('address line 2'), max_length=255, blank=True)
-    city = models.CharField(_('city'), max_length=100, blank=True)
-    postal_code = models.CharField(_('postal code'), max_length=20, blank=True)
-    country = models.CharField(_('country'), max_length=100, blank=True)
+    address_line_1 = models.CharField(_("address line 1"), max_length=255, blank=True)
+    address_line_2 = models.CharField(_("address line 2"), max_length=255, blank=True)
+    city = models.CharField(_("city"), max_length=100, blank=True)
+    postal_code = models.CharField(_("postal code"), max_length=20, blank=True)
+    country = models.CharField(_("country"), max_length=100, blank=True)
 
     # Tracks if the user has set up their transaction PIN.
     has_set_pin = models.BooleanField(default=False)
@@ -159,12 +175,13 @@ class OviiUser(AbstractUser):
     # KYC (Know Your Customer) verification level.
     # This determines the user's transaction limits and access to features.
     verification_level = models.IntegerField(
-        choices=VerificationLevels.choices,
-        default=VerificationLevels.LEVEL_0
+        choices=VerificationLevels.choices, default=VerificationLevels.LEVEL_0
     )
 
     # User's role in the system
-    role = models.CharField(_('role'), max_length=20, choices=Role.choices, default=Role.CUSTOMER)
+    role = models.CharField(
+        _("role"), max_length=20, choices=Role.choices, default=Role.CUSTOMER
+    )
 
     # Assign the custom manager to the `objects` attribute.
     objects = OviiUserManager()
@@ -186,6 +203,7 @@ class OTPRequest(models.Model):
     """
     Stores data for a single OTP request.
     """
+
     request_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     phone_number = PhoneNumberField()
     code = models.CharField(max_length=6)
@@ -210,14 +228,19 @@ class KYCDocument(models.Model):
     """
     Stores documents submitted by users for KYC verification.
     """
-    class DocumentType(models.TextChoices):
-        ID_CARD = 'ID_CARD', _('National ID Card')
-        PASSPORT = 'PASSPORT', _('Passport')
-        UTILITY_BILL = 'UTILITY_BILL', _('Utility Bill')
 
-    user = models.ForeignKey(OviiUser, on_delete=models.CASCADE, related_name='kyc_documents')
+    class DocumentType(models.TextChoices):
+        ID_CARD = "ID_CARD", _("National ID Card")
+        PASSPORT = "PASSPORT", _("Passport")
+        UTILITY_BILL = "UTILITY_BILL", _("Utility Bill")
+
+    user = models.ForeignKey(
+        OviiUser, on_delete=models.CASCADE, related_name="kyc_documents"
+    )
     document_type = models.CharField(max_length=20, choices=DocumentType.choices)
-    document_image = models.ImageField(upload_to='kyc_documents/')
-    status = models.CharField(max_length=10, choices=DocumentStatus.choices, default=DocumentStatus.PENDING)
+    document_image = models.ImageField(upload_to="kyc_documents/")
+    status = models.CharField(
+        max_length=10, choices=DocumentStatus.choices, default=DocumentStatus.PENDING
+    )
     uploaded_at = models.DateTimeField(auto_now_add=True)
     reviewed_at = models.DateTimeField(null=True, blank=True)

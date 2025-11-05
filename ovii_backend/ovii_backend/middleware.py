@@ -3,12 +3,14 @@ import traceback
 
 logger = logging.getLogger(__name__)
 
+
 class ErrorLoggingMiddleware:
     """
     Middleware that logs unhandled exceptions, including the request body.
     This is crucial for debugging API errors, especially 400 Bad Request
     and 500 Internal Server Error responses.
     """
+
     def __init__(self, get_response):
         self.get_response = get_response
 
@@ -21,7 +23,7 @@ class ErrorLoggingMiddleware:
             # If any unhandled exception occurs, log it before it's
             # processed by Django's exception handling.
             try:
-                body = request.body.decode('utf-8')
+                body = request.body.decode("utf-8")
             except Exception:
                 body = "Could not decode request body."
 

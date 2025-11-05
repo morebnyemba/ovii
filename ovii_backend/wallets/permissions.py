@@ -15,8 +15,9 @@ class IsVerifiedBase(BasePermission):
     Subclasses must set the `required_level` and `message` attributes. This
     approach keeps the permission logic DRY (Don't Repeat Yourself).
     """
+
     required_level = VerificationLevels.LEVEL_0
-    message = 'Your account verification level is not sufficient for this action.'
+    message = "Your account verification level is not sufficient for this action."
 
     def has_permission(self, request, view):
         """
@@ -33,8 +34,9 @@ class IsMobileVerifiedOrHigher(IsVerifiedBase):
     This is the minimum level required for basic transactions. This class
     replaces the old `CanPerformTransactions` with a more descriptive name.
     """
+
     required_level = VerificationLevels.LEVEL_1
-    message = 'Your account must be mobile-verified to perform this action. Please complete your profile.'
+    message = "Your account must be mobile-verified to perform this action. Please complete your profile."
 
 
 class IsIdentityVerifiedOrHigher(IsVerifiedBase):
@@ -42,8 +44,9 @@ class IsIdentityVerifiedOrHigher(IsVerifiedBase):
     Allows access only to users with at least Identity Verification (Level 2).
     This can be used for higher-value transactions or more sensitive features.
     """
+
     required_level = VerificationLevels.LEVEL_2
-    message = 'Your identity must be verified for this action. Please upload your ID document.'
+    message = "Your identity must be verified for this action. Please upload your ID document."
 
 
 class IsFullyVerified(IsVerifiedBase):
@@ -51,5 +54,6 @@ class IsFullyVerified(IsVerifiedBase):
     Allows access only to users who have completed full KYC, including
     address verification (Level 3), which is the highest level.
     """
+
     required_level = VerificationLevels.LEVEL_3
-    message = 'Full verification (including address) is required for this action. Please upload your proof of address.'
+    message = "Full verification (including address) is required for this action. Please upload your proof of address."

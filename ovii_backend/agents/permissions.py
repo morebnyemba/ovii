@@ -12,10 +12,15 @@ class IsApprovedAgent(BasePermission):
     """
     Custom permission to only allow approved agents to access a view.
     """
-    message = 'You must be an approved agent to perform this action.'
+
+    message = "You must be an approved agent to perform this action."
 
     def has_permission(self, request, view):
         user = request.user
         return bool(
-            user and user.is_authenticated and user.role == OviiUser.Role.AGENT and hasattr(user, 'agent_profile') and user.agent_profile.is_approved
+            user
+            and user.is_authenticated
+            and user.role == OviiUser.Role.AGENT
+            and hasattr(user, "agent_profile")
+            and user.agent_profile.is_approved
         )

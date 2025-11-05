@@ -6,6 +6,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 def send_email_notification(notification_id):
     try:
         notification = Notification.objects.get(id=notification_id)
@@ -23,9 +24,10 @@ def send_email_notification(notification_id):
         logger.error(f"Notification with id {notification_id} does not exist.")
     except Exception as e:
         logger.error(f"Failed to send email notification {notification_id}: {e}")
-        if 'notification' in locals():
+        if "notification" in locals():
             notification.status = Notification.Status.FAILED
             notification.save()
+
 
 def send_sms_notification(notification_id):
     # This is a placeholder. You would integrate with an SMS gateway like Twilio here.
@@ -37,14 +39,17 @@ def send_sms_notification(notification_id):
         logger.info(f"--- END SIMULATING SMS ---")
         notification.status = Notification.Status.SENT
         notification.save()
-        logger.info(f"SMS notification {notification_id} sent successfully (simulated).")
+        logger.info(
+            f"SMS notification {notification_id} sent successfully (simulated)."
+        )
     except Notification.DoesNotExist:
         logger.error(f"Notification with id {notification_id} does not exist.")
     except Exception as e:
         logger.error(f"Failed to send SMS notification {notification_id}: {e}")
-        if 'notification' in locals():
+        if "notification" in locals():
             notification.status = Notification.Status.FAILED
             notification.save()
+
 
 def send_push_notification(notification_id):
     # This is a placeholder. You would integrate with a push notification service like Firebase Cloud Messaging (FCM) here.
@@ -57,11 +62,13 @@ def send_push_notification(notification_id):
         logger.info(f"--- END SIMULATING PUSH NOTIFICATION ---")
         notification.status = Notification.Status.SENT
         notification.save()
-        logger.info(f"Push notification {notification_id} sent successfully (simulated).")
+        logger.info(
+            f"Push notification {notification_id} sent successfully (simulated)."
+        )
     except Notification.DoesNotExist:
         logger.error(f"Notification with id {notification_id} does not exist.")
     except Exception as e:
         logger.error(f"Failed to send push notification {notification_id}: {e}")
-        if 'notification' in locals():
+        if "notification" in locals():
             notification.status = Notification.Status.FAILED
             notification.save()

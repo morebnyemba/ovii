@@ -55,7 +55,7 @@ THIRD_PARTY_APPS = [
 
 LOCAL_APPS = [
     "users.apps.UsersConfig",
-    "wallets.apps.WalletsConfig", # Ensure this points to the new AppConfig
+    "wallets.apps.WalletsConfig",  # Ensure this points to the new AppConfig
     "agents.apps.AgentsConfig",
     "merchants.apps.MerchantsConfig",
     "integrations.apps.IntegrationsConfig",
@@ -70,8 +70,8 @@ INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
-    "corsheaders.middleware.CorsMiddleware",      # must be high
-    "ovii_backend.middleware.ErrorLoggingMiddleware", # Our custom error logger
+    "corsheaders.middleware.CorsMiddleware",  # must be high
+    "ovii_backend.middleware.ErrorLoggingMiddleware",  # Our custom error logger
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -84,14 +84,16 @@ MIDDLEWARE = [
 # ------------------------------------------------------------------
 if DEBUG:
     CORS_ALLOWED_ORIGINS = [
-        "http://localhost:3000",      # Next.js default
-        "http://127.0.0.1:3000",      # common alias
+        "http://localhost:3000",  # Next.js default
+        "http://127.0.0.1:3000",  # common alias
     ]
 else:
     # In production, you should restrict this to your frontend's domain
     # We provide a sensible default and allow it to be overridden.
     allowed_origins_str = os.getenv("CORS_ALLOWED_ORIGINS", "https://ovii.it.com")
-    CORS_ALLOWED_ORIGINS = [origin.strip() for origin in allowed_origins_str.split(',') if origin.strip()]
+    CORS_ALLOWED_ORIGINS = [
+        origin.strip() for origin in allowed_origins_str.split(",") if origin.strip()
+    ]
 
 # Allow cookies / Authorization header
 CORS_ALLOW_CREDENTIALS = True
@@ -102,6 +104,7 @@ CORS_ALLOW_ALL_ORIGINS = False
 
 # Make sure we allow the headers Next.js will send
 from corsheaders.defaults import default_headers
+
 CORS_ALLOW_HEADERS = list(default_headers) + [
     "authorization",
     "content-type",
@@ -112,7 +115,9 @@ CORS_ALLOW_HEADERS = list(default_headers) + [
 # 5.1. Production Security Settings
 # ------------------------------------------------------------------
 if not DEBUG:
-    SECURE_SSL_REDIRECT = os.getenv("DJANGO_SECURE_SSL_REDIRECT", "True").lower() == "true"
+    SECURE_SSL_REDIRECT = (
+        os.getenv("DJANGO_SECURE_SSL_REDIRECT", "True").lower() == "true"
+    )
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     SECURE_HSTS_SECONDS = 31536000  # 1 year
@@ -122,10 +127,12 @@ if not DEBUG:
     # A list of trusted origins for unsafe requests (e.g. POST).
     # For 'https' schemes, the header must be a match.
     trusted_origins_str = os.getenv("CSRF_TRUSTED_ORIGINS", "https://ovii.it.com")
-    CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in trusted_origins_str.split(',') if origin.strip()]
+    CSRF_TRUSTED_ORIGINS = [
+        origin.strip() for origin in trusted_origins_str.split(",") if origin.strip()
+    ]
     # This tells Django to trust the X-Forwarded-Proto header from our proxy (Nginx)
     # to determine if a request is secure. This is critical for CSRF checks.
-    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
     # Set cookie domain to allow sharing across subdomains (e.g., ovii.it.com and api.ovii.it.com)
     # The leading dot is important.
@@ -133,14 +140,13 @@ if not DEBUG:
     CSRF_COOKIE_DOMAIN = ".ovii.it.com"
 
     # Tells the browser to send the CSRF cookie with cross-site API requests.
-    CSRF_COOKIE_SAMESITE = 'None'
+    CSRF_COOKIE_SAMESITE = "None"
 
     # 'SameSite=None' requires the Secure flag, meaning your site MUST use HTTPS.
     CSRF_COOKIE_SECURE = True
 
-    SESSION_COOKIE_SAMESITE = 'None'
+    SESSION_COOKIE_SAMESITE = "None"
     SESSION_COOKIE_SECURE = True
-
 
 
 # ------------------------------------------------------------------
@@ -170,7 +176,9 @@ DATABASES = {
 AUTH_USER_MODEL = "users.OviiUser"
 
 AUTH_PASSWORD_VALIDATORS = [
-    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
+    },
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
@@ -255,49 +263,49 @@ CELERY_TIMEZONE = TIME_ZONE
 # 14. LOGGING
 # ------------------------------------------------------------------
 LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'formatters': {
-        'verbose': {
-            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
-            'style': '{',
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "{levelname} {asctime} {module} {process:d} {thread:d} {message}",
+            "style": "{",
         },
-        'simple': {
-            'format': '{levelname} {message}',
-            'style': '{',
-        },
-    },
-    'handlers': {
-        'console': {
-            'level': 'INFO',
-            'class': 'logging.StreamHandler',
-            'formatter': 'verbose',
+        "simple": {
+            "format": "{levelname} {message}",
+            "style": "{",
         },
     },
-    'loggers': {
+    "handlers": {
+        "console": {
+            "level": "INFO",
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+        },
+    },
+    "loggers": {
         # Root logger: catches all logs that don't have a specific logger
-        '': {
-            'handlers': ['console'],
-            'level': 'INFO',
-            'propagate': True,
+        "": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": True,
         },
         # Django's own loggers
-        'django': {
-            'handlers': ['console'],
-            'level': 'INFO',
-            'propagate': False,
+        "django": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
         },
-        'django.request': {
-            'handlers': ['console'],
-            'level': 'WARNING', # To avoid logging every single request
-            'propagate': False,
+        "django.request": {
+            "handlers": ["console"],
+            "level": "WARNING",  # To avoid logging every single request
+            "propagate": False,
         },
         # Your specific app loggers
-        'users': {
-            'handlers': ['console'],
-            'level': 'DEBUG' if DEBUG else 'INFO',
-            'propagate': False,
-        }
+        "users": {
+            "handlers": ["console"],
+            "level": "DEBUG" if DEBUG else "INFO",
+            "propagate": False,
+        },
     },
 }
 
@@ -305,6 +313,7 @@ LOGGING = {
 # 15. TRANSACTION LIMITS
 # ------------------------------------------------------------------
 from decimal import Decimal
+
 TRANSACTION_LIMITS = {
     0: Decimal("0.00"),
     1: Decimal("100.00"),

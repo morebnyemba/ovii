@@ -3,6 +3,7 @@ from .models import Notification
 from .serializers import NotificationSerializer
 from . import tasks
 
+
 class NotificationViewSet(viewsets.ModelViewSet):
     queryset = Notification.objects.all()
     serializer_class = NotificationSerializer

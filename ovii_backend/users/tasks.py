@@ -13,7 +13,7 @@ from .models import OTPRequest, OviiUser
 from wallets.models import Wallet
 
 # Get the custom logger
-logger = logging.getLogger('users.otp')
+logger = logging.getLogger("users.otp")
 
 
 @shared_task
@@ -22,11 +22,13 @@ def generate_and_log_otp(phone_number):
     Generates a 6-digit OTP, saves it, and logs it for development.
     In production, this task would be responsible for sending an email or SMS.
     """
-    code = str(secrets.randbelow(900000) + 100000) # 6-digit OTP
+    code = str(secrets.randbelow(900000) + 100000)  # 6-digit OTP
     otp_request = OTPRequest.objects.create(phone_number=phone_number, code=code)
 
     # Log the OTP to the console for development purposes.
-    logger.info(f"OTP for {phone_number}: {code} (Request ID: {otp_request.request_id})")
+    logger.info(
+        f"OTP for {phone_number}: {code} (Request ID: {otp_request.request_id})"
+    )
 
     return str(otp_request.request_id)
 
@@ -46,6 +48,7 @@ def create_user_wallet(user_id: int):
     except OviiUser.DoesNotExist:
         logger.error(f"Attempted to create wallet for non-existent user ID: {user_id}")
 
+
 @shared_task
 def send_welcome_notification(user_id: int):
     """
@@ -55,8 +58,11 @@ def send_welcome_notification(user_id: int):
     channel layer and sends a message to the user's private notification group.
     """
     channel_layer = get_channel_layer()
-    room_group_name = f'user_{user_id}_notifications'
-    message = {'type': 'user.notification', 'message': 'Welcome to Ovii! Thank you for registering.'}
+    room_group_name = f"user_{user_id}_notifications"
+    message = {
+        "type": "user.notification",
+        "message": "Welcome to Ovii! Thank you for registering.",
+    }
     async_to_sync(channel_layer.group_send)(room_group_name, message)
     return f"Welcome notification sent to user {user_id}"
 
@@ -67,10 +73,10 @@ def send_realtime_notification(user_id: int, message: str):
     Sends a real-time notification to a specific user via WebSocket.
     """
     channel_layer = get_channel_layer()
-    room_group_name = f'user_{user_id}_notifications'
+    room_group_name = f"user_{user_id}_notifications"
     event = {
-        'type': 'user.notification',  # This corresponds to the consumer method name
-        'message': message
+        "type": "user.notification",  # This corresponds to the consumer method name
+        "message": message,
     }
     async_to_sync(channel_layer.group_send)(room_group_name, event)
     return f"Notification sent to user {user_id}: '{message}'"
