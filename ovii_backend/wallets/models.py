@@ -10,6 +10,19 @@ from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 
 
+class SystemWallet(models.Model):
+    """
+    Represents a system-level wallet, e.g., for collecting fees.
+    """
+    name = models.CharField(_("wallet name"), max_length=100, unique=True)
+    balance = models.DecimalField(
+        _("balance"), max_digits=12, decimal_places=2, default=Decimal("0.00")
+    )
+
+    def __str__(self):
+        return f"{self.name}: {self.balance}"
+
+
 class TransactionCharge(models.Model):
     """
     Defines a rule for applying a transaction charge.

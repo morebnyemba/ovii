@@ -10,37 +10,9 @@ from django.db.models import Sum
 from django.utils import timezone
 from django.conf import settings
 
-from .models import Wallet, Transaction, TransactionCharge
-from .signals import transaction_completed
+from .models import Wallet, Transaction, TransactionCharge, SystemWallet
 
-
-class TransactionError(Exception):
-    """Custom exception for transaction failures."""
-
-    pass
-
-
-class TransactionLimitExceededError(Exception):
-    """Custom exception raised when a user exceeds their daily transaction limit."""
-
-    pass
-
-
-def get_transaction_charge(
-    transaction_type: str, user_role: str, amount: Decimal
-) -> TransactionCharge | None:
-    """
-    Determines the transaction charge to apply based on the transaction type,
-    user role, and amount.
-    """
-    # This is a placeholder for your business logic to determine the charge.
-    # You can have more complex rules here, e.g., based on the user's verification level.
-    charge_name = f"{transaction_type.lower()}_{user_role.lower()}"
-    try:
-        return TransactionCharge.objects.get(name=charge_name, is_active=True)
-    except TransactionCharge.DoesNotExist:
-        return None
-
+# ...
 
 def create_transaction(
     sender_wallet: Wallet,
@@ -73,6 +45,9 @@ def create_transaction(
         raise TransactionError("Sender and receiver wallets cannot be the same.")
 
     with transaction.atomic():
+        # --- System Wallet for Fee Collection ---
+        fee_wallet, _ = SystemWallet.objects.get_or_create(name="Fee Wallet")
+
         # --- Limit Enforcement ---
         sender_user = sender_wallet.user
         daily_limit = settings.TRANSACTION_LIMITS.get(
@@ -119,6 +94,10 @@ def create_transaction(
             sender_wallet_locked.balance -= amount
             receiver_wallet_locked.balance += (amount - charge_amount)
 
+        # Add the charge to the fee wallet
+        if charge_amount > 0:
+            fee_wallet.balance += charge_amount
+            fee_wallet.save(update_fields=["balance"])
 
         sender_wallet_locked.save(update_fields=["balance", "updated_at"])
         receiver_wallet_locked.save(update_fields=["balance", "updated_at"])

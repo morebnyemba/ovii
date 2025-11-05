@@ -5,8 +5,14 @@ from django.urls import path
 from django.db import transaction
 from django.contrib import messages
 
-from .models import Wallet, Transaction, TransactionCharge
+from .models import Wallet, Transaction, TransactionCharge, SystemWallet
 from .forms import WalletTopUpForm
+
+
+@admin.register(SystemWallet)
+class SystemWalletAdmin(admin.ModelAdmin):
+    list_display = ('name', 'balance')
+    search_fields = ('name',)
 
 
 @admin.register(TransactionCharge)
