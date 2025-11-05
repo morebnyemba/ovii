@@ -20,7 +20,7 @@ const COLORS = {
 
 // Skeleton components for better loading states
 const BalanceCardSkeleton = () => (
-  <div className="lg:col-span-2 bg-gray-100 p-6 rounded-2xl shadow-lg">
+  <div className="lg:col-span-2" style={{ backgroundColor: COLORS.lightGray, padding: '1.5rem', borderRadius: '1rem', boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)' }}>
     <Skeleton width={120} height={24} />
     <Skeleton width={200} height={48} className="mt-2" />
     <div className="mt-8 flex flex-wrap gap-4">
@@ -31,7 +31,7 @@ const BalanceCardSkeleton = () => (
 );
 
 const QuickActionsSkeleton = () => (
-  <div className="bg-white p-6 rounded-2xl shadow-lg">
+  <div style={{ backgroundColor: COLORS.white, padding: '1.5rem', borderRadius: '1rem', boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)' }}>
     <Skeleton width={120} height={24} />
     <div className="mt-4 space-y-4">
       {[1, 2, 3].map((item) => (
@@ -45,7 +45,7 @@ const QuickActionsSkeleton = () => (
 );
 
 const RecentActivitySkeleton = () => (
-  <div className="bg-white p-6 rounded-2xl shadow-lg">
+  <div style={{ backgroundColor: COLORS.white, padding: '1.5rem', borderRadius: '1rem', boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)' }}>
     <div className="flex justify-between">
       <Skeleton width={120} height={24} />
       <Skeleton width={60} height={20} />
@@ -94,8 +94,8 @@ export default function DashboardPage() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className={`bg-white p-6 rounded-2xl shadow-lg ${className}`}
-      style={{ boxShadow: '0 4px 20px rgba(26, 27, 75, 0.1)' }}
+      className={`p-6 rounded-2xl shadow-lg ${className}`}
+      style={{ boxShadow: '0 4px 20px rgba(26, 27, 75, 0.1)', backgroundColor: COLORS.white }}
       {...props}
     >
       {children}

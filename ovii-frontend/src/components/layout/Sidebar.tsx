@@ -1,8 +1,8 @@
 import React from 'react';
 import Link from 'next/link';
-import { Wallet, Landmark, History, User, LogOut } from 'lucide-react';
+import { Wallet, Landmark, History, User, LogOut, Users, Briefcase, DollarSign } from 'lucide-react';
 import { useUserStore } from '@/lib/store/useUserStore';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 
 const COLORS = {
   indigo: '#1A1B4B',
@@ -14,15 +14,24 @@ const COLORS = {
   darkIndigo: '#0F0F2D',
 };
 
-const navItems = [
+const userNavItems = [
   { name: 'Wallet', href: '/dashboard', icon: Wallet },
   { name: 'Send Money', href: '/send', icon: Landmark },
   { name: 'Transaction History', href: '/history', icon: History },
   { name: 'Profile', href: '/profile', icon: User },
 ];
 
+const agentNavItems = [
+  { name: 'Dashboard', href: '/agent/dashboard', icon: Wallet },
+  { name: 'Onboarding', href: '/agent/onboarding', icon: Users },
+  { name: 'Cash In/Out', href: '/agent/cash-in-out', icon: Briefcase },
+  { name: 'Commissions', href: '/agent/commissions', icon: DollarSign },
+  { name: 'Profile', href: '/agent/profile', icon: User },
+];
+
 const SidebarContent = ({ setSidebarOpen }: { setSidebarOpen: (isOpen: boolean) => void }) => {
   const router = useRouter();
+  const pathname = usePathname();
   const { logout, user } = useUserStore();
 
   const handleLogout = async () => {
@@ -30,6 +39,8 @@ const SidebarContent = ({ setSidebarOpen }: { setSidebarOpen: (isOpen: boolean) 
     await fetch('/api/logout', { method: 'POST' });
     router.replace('/login');
   };
+
+  const navItems = pathname.startsWith('/agent') ? agentNavItems : userNavItems;
 
   return (
     <>
