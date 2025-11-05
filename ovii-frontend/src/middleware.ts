@@ -23,7 +23,7 @@ export function middleware(request: NextRequest) {
   const accessToken = request.cookies.get('access_token')?.value;
 
   // Define the paths that are considered public (don't require authentication)
-  const publicPaths = ['/', '/register', '/login', '/verify-otp', '/agents', '/merchants'];
+  const publicPaths = ['/', '/register', '/login', '/verify-otp', '/become-a-merchant', '/become-an-agent'];
   // Define auth-specific paths that a logged-in user should be redirected away from.
   const authPaths = ['/login', '/register', '/verify-otp'];
 

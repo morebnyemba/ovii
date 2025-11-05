@@ -1,15 +1,11 @@
-/opt/venv/lib/python3.11/site-packages/django_countries/fields.py:5: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
-  import pkg_resources
-INFO 2025-11-05 17:39:07,895 cli 1 134108338845504 Starting server at tcp:port=8000:interface=0.0.0.0
-INFO 2025-11-05 17:39:07,895 server 1 134108338845504 HTTP/2 support enabled
-INFO 2025-11-05 17:39:07,895 server 1 134108338845504 Configuring endpoint tcp:port=8000:interface=0.0.0.0
-INFO 2025-11-05 17:39:07,896 server 1 134108338845504 Listening on TCP address 0.0.0.0:8000
-172.18.0.8:50918 - - [05/Nov/2025:17:39:24] "GET /api/csrf-token/" 200 28
-INFO 2025-11-05 17:39:42,236 views 1 134108241671936 OTP requested successfully for phone number: +263787211325
-172.18.0.8:39516 - - [05/Nov/2025:17:39:42] "POST /api/users/otp/request/" 201 84
-172.18.0.8:46376 - - [05/Nov/2025:17:40:19] "OPTIONS /api/users/auth/login/" 200 -
-INFO 2025-11-05 17:40:19,960 views 1 134108241671936 User login successful for user ID: 1
-ERROR 2025-11-05 17:40:19,977 log 1 134108226987776 Internal Server Error: /api/users/auth/login/
+Traceback (most recent call last):
+  File "/opt/venv/lib/python3.11/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+psycopg2.errors.UndefinedTable: relation "wallets_transactioncharge" does not exist
+LINE 1: ...ge", "wallets_transactioncharge"."is_active" FROM "wallets_t...
+                                                             ^
+The above exception was the direct cause of the following exception:
 Traceback (most recent call last):
   File "/opt/venv/lib/python3.11/site-packages/asgiref/sync.py", line 552, in thread_handler
     raise exc_info[1]
@@ -18,9 +14,9 @@ Traceback (most recent call last):
                ^^^^^^^^^^^^^^^^^^^^^^^^^^^
   File "/opt/venv/lib/python3.11/site-packages/asgiref/sync.py", line 552, in thread_handler
     raise exc_info[1]
-  File "/opt/venv/lib/python3.11/site-packages/django/core/handlers/base.py", line 284, in _get_response_async
-    response = await sync_to_async(
-               ^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.11/site-packages/django/core/handlers/base.py", line 253, in _get_response_async
+    response = await wrapped_callback(
+               ^^^^^^^^^^^^^^^^^^^^^^^
   File "/opt/venv/lib/python3.11/site-packages/asgiref/sync.py", line 502, in __call__
     ret = await asyncio.shield(exec_coro)
           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -30,31 +26,71 @@ Traceback (most recent call last):
   File "/opt/venv/lib/python3.11/site-packages/asgiref/sync.py", line 556, in thread_handler
     return func(*args, **kwargs)
            ^^^^^^^^^^^^^^^^^^^^^
-  File "/opt/venv/lib/python3.11/site-packages/django/template/response.py", line 114, in render
-    self.content = self.rendered_content
-                   ^^^^^^^^^^^^^^^^^^^^^
-  File "/opt/venv/lib/python3.11/site-packages/rest_framework/response.py", line 74, in rendered_content
-    ret = renderer.render(self.data, accepted_media_type, context)
-          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/opt/venv/lib/python3.11/site-packages/rest_framework/renderers.py", line 100, in render
-    ret = json.dumps(
-          ^^^^^^^^^^^
-  File "/opt/venv/lib/python3.11/site-packages/rest_framework/utils/json.py", line 25, in dumps
-    return json.dumps(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/local/lib/python3.11/json/__init__.py", line 238, in dumps
-    **kw).encode(obj)
-          ^^^^^^^^^^^
-  File "/usr/local/lib/python3.11/json/encoder.py", line 200, in encode
-    chunks = self.iterencode(o, _one_shot=True)
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/local/lib/python3.11/json/encoder.py", line 258, in iterencode
-    return _iterencode(o, 0)
-           ^^^^^^^^^^^^^^^^^
-  File "/opt/venv/lib/python3.11/site-packages/rest_framework/utils/encoders.py", line 67, in default
-    return super().default(obj)
-           ^^^^^^^^^^^^^^^^^^^^
-  File "/usr/local/lib/python3.11/json/encoder.py", line 180, in default
-    raise TypeError(f'Object of type {o.__class__.__name__} '
-TypeError: Object of type Country is not JSON serializable
-172.18.0.8:46384 - - [05/Nov/2025:17:40:19] "POST /api/users/auth/login/" 500 145
+  File "/opt/venv/lib/python3.11/site-packages/django/views/decorators/csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.11/site-packages/django/views/generic/base.py", line 105, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.11/site-packages/rest_framework/views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.11/site-packages/rest_framework/views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "/opt/venv/lib/python3.11/site-packages/rest_framework/views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "/opt/venv/lib/python3.11/site-packages/rest_framework/views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.11/site-packages/rest_framework/generics.py", line 194, in post
+    return self.create(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/app/web/wallets/views.py", line 105, in create
+    self.perform_create(
+  File "/opt/venv/lib/python3.11/site-packages/rest_framework/mixins.py", line 24, in perform_create
+    serializer.save()
+  File "/opt/venv/lib/python3.11/site-packages/rest_framework/serializers.py", line 210, in save
+    self.instance = self.create(validated_data)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/app/web/wallets/serializers.py", line 136, in create
+    transaction = create_transaction(
+                  ^^^^^^^^^^^^^^^^^^^
+  File "/home/app/web/wallets/services.py", line 97, in create_transaction
+    charge = get_transaction_charge(
+             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/app/web/wallets/services.py", line 40, in get_transaction_charge
+    return TransactionCharge.objects.get(name=charge_name, is_active=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.11/site-packages/django/db/models/manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.11/site-packages/django/db/models/query.py", line 629, in get
+    num = len(clone)
+          ^^^^^^^^^^
+  File "/opt/venv/lib/python3.11/site-packages/django/db/models/query.py", line 366, in __len__
+    self._fetch_all()
+  File "/opt/venv/lib/python3.11/site-packages/django/db/models/query.py", line 1949, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.11/site-packages/django/db/models/query.py", line 91, in __iter__
+    results = compiler.execute_sql(
+              ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.11/site-packages/django/db/models/sql/compiler.py", line 1623, in execute_sql
+    cursor.execute(sql, params)
+  File "/opt/venv/lib/python3.11/site-packages/django/db/backends/utils.py", line 79, in execute
+    return self._execute_with_wrappers(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.11/site-packages/django/db/backends/utils.py", line 92, in _execute_with_wrappers
+    return executor(sql, params, many, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.11/site-packages/django/db/backends/utils.py", line 100, in _execute
+    with self.db.wrap_database_errors:
+  File "/opt/venv/lib/python3.11/site-packages/django/db/utils.py", line 91, in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+  File "/opt/venv/lib/python3.11/site-packages/django/db/backends/utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+django.db.utils.ProgrammingError: relation "wallets_transactioncharge" does not exist
+LINE 1: ...ge", "wallets_transactioncharge"."is_active" FROM "wallets_t...
+                                                             ^
+172.18.0.8:52134 - - [05/Nov/2025:17:52:02] "POST /api/wallets/transfer/" 500 14511
