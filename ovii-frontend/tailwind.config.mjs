@@ -1,5 +1,3 @@
-import { COLORS } from './src/lib/colors';
-
 /** @type {import('tailwindcss').Config} */
 const config = {
   content: [
@@ -9,7 +7,13 @@ const config = {
   ],
   theme: {
     extend: {
-      colors: COLORS,
+      colors: {
+        indigo: 'var(--ovii-indigo)',
+        gold: 'var(--ovii-gold)',
+        mint: 'var(--ovii-mint)',
+        coral: 'var(--ovii-coral)',
+        white: 'var(--ovii-off-white)',
+      },
     },
   },
   plugins: [],
