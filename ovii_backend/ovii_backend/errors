@@ -1,0 +1,337 @@
+ > [frontend builder 5/5] RUN npm run build:
+0.984 
+0.984 > ovii-frontend@0.1.0 build
+0.984 > next build
+0.984 
+2.851  ⚠ `eslint` configuration in next.config.ts is no longer supported. See more info here: https://nextjs.org/docs/app/api-reference/cli/next#next-lint-options
+2.861  ⚠ Invalid next.config.ts options detected: 
+2.861  ⚠     Unrecognized key(s) in object: 'eslint'
+2.861  ⚠ See more info here: https://nextjs.org/docs/messages/invalid-next-config
+2.890    ▲ Next.js 16.0.1 (Turbopack)
+2.890 
+2.894  ⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+2.959    Creating an optimized production build ...
+69.05 
+69.05 > Build error occurred
+69.06 Error: Turbopack build failed with 12 errors:
+69.06 ./src/app/agents
+69.06 You cannot have two parallel pages that resolve to the same path. Please check /(dashboard)/agents and /agents.
+69.06 
+69.06 ./src/app/merchants
+69.06 You cannot have two parallel pages that resolve to the same path. Please check /(dashboard)/merchants and /merchants.
+69.06 
+69.06 ./src/app/(dashboard)/agents/commissions/page.tsx:7:1
+69.06 Module not found: Can't resolve '@/components/ui/pagination'
+69.06    5 | import { Card, CardContent } from "@/components/ui/card";
+69.06    6 | import { useRouter } from "next/navigation";
+69.06 >  7 | import {
+69.06      | ^^^^^^^^
+69.06 >  8 |   Pagination,
+69.06      | ^^^^^^^^^^^^^
+69.06 >  9 |   PaginationContent,
+69.06      | ^^^^^^^^^^^^^
+69.06 > 10 |   PaginationItem,
+69.06      | ^^^^^^^^^^^^^
+69.06 > 11 |   PaginationLink,
+69.06      | ^^^^^^^^^^^^^
+69.06 > 12 |   PaginationNext,
+69.06      | ^^^^^^^^^^^^^
+69.06 > 13 |   PaginationPrevious,
+69.06      | ^^^^^^^^^^^^^
+69.06 > 14 | } from "@/components/ui/pagination";
+69.06      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+69.06   15 | import toast from "react-hot-toast";
+69.06   16 | import api from "@/lib/api";
+69.06   17 |
+69.06 
+69.06 Import map: aliased to relative './src/components/ui/pagination' inside of [project]/
+69.06 
+69.06 
+69.06 Import traces:
+69.06   Client Component Browser:
+69.06     ./src/app/(dashboard)/agents/commissions/page.tsx [Client Component Browser]
+69.06     ./src/app/(dashboard)/agents/commissions/page.tsx [Server Component]
+69.06 
+69.06   Client Component SSR:
+69.06     ./src/app/(dashboard)/agents/commissions/page.tsx [Client Component SSR]
+69.06     ./src/app/(dashboard)/agents/commissions/page.tsx [Server Component]
+69.06 
+69.06 https://nextjs.org/docs/messages/module-not-found
+69.06 
+69.06 
+69.06 ./src/app/(dashboard)/merchants/transactions/page.tsx:8:1
+69.06 Module not found: Can't resolve '@/components/ui/pagination'
+69.06    6 | import { Button } from "@/components/ui/button";
+69.06    7 | import { useRouter } from "next/navigation";
+69.06 >  8 | import {
+69.06      | ^^^^^^^^
+69.06 >  9 |   Pagination,
+69.06      | ^^^^^^^^^^^^^
+69.06 > 10 |   PaginationContent,
+69.06      | ^^^^^^^^^^^^^
+69.06 > 11 |   PaginationItem,
+69.06      | ^^^^^^^^^^^^^
+69.06 > 12 |   PaginationLink,
+69.06      | ^^^^^^^^^^^^^
+69.06 > 13 |   PaginationNext,
+69.06      | ^^^^^^^^^^^^^
+69.06 > 14 |   PaginationPrevious,
+69.06      | ^^^^^^^^^^^^^
+69.06 > 15 | } from "@/components/ui/pagination";
+69.06      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+69.06   16 | import toast from "react-hot-toast";
+69.06   17 |
+69.06   18 | const MerchantTransactionsPage = () => {
+69.06 
+69.06 Import map: aliased to relative './src/components/ui/pagination' inside of [project]/
+69.06 
+69.06 
+69.06 Import traces:
+69.06   Client Component Browser:
+69.06     ./src/app/(dashboard)/merchants/transactions/page.tsx [Client Component Browser]
+69.06     ./src/app/(dashboard)/merchants/transactions/page.tsx [Server Component]
+69.06 
+69.06   Client Component SSR:
+69.06     ./src/app/(dashboard)/merchants/transactions/page.tsx [Client Component SSR]
+69.06     ./src/app/(dashboard)/merchants/transactions/page.tsx [Server Component]
+69.06 
+69.06 https://nextjs.org/docs/messages/module-not-found
+69.06 
+69.06 
+69.06 ./src/app/(dashboard)/agents/cash-in-out/page.tsx:5:1
+69.06 Module not found: Can't resolve '@hookform/resolvers/zod'
+69.06   3 | import React from "react";
+69.06   4 | import { useForm } from "react-hook-form";
+69.06 > 5 | import { zodResolver } from "@hookform/resolvers/zod";
+69.06     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+69.06   6 | import * as z from "zod";
+69.06   7 | import { Button } from "@/components/ui/button";
+69.06   8 | import { Input } from "@/components/ui/input";
+69.06 
+69.06 
+69.06 
+69.06 Import traces:
+69.06   Client Component Browser:
+69.06     ./src/app/(dashboard)/agents/cash-in-out/page.tsx [Client Component Browser]
+69.06     ./src/app/(dashboard)/agents/cash-in-out/page.tsx [Server Component]
+69.06 
+69.06   Client Component SSR:
+69.06     ./src/app/(dashboard)/agents/cash-in-out/page.tsx [Client Component SSR]
+69.06     ./src/app/(dashboard)/agents/cash-in-out/page.tsx [Server Component]
+69.06 
+69.06 https://nextjs.org/docs/messages/module-not-found
+69.06 
+69.06 
+69.06 ./src/app/(dashboard)/agents/onboarding/page.tsx:5:1
+69.06 Module not found: Can't resolve '@hookform/resolvers/zod'
+69.06   3 | import React from "react";
+69.06   4 | import { useForm } from "react-hook-form";
+69.06 > 5 | import { zodResolver } from "@hookform/resolvers/zod";
+69.06     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+69.06   6 | import * as z from "zod";
+69.06   7 | import { Button } from "@/components/ui/button";
+69.06   8 | import { Input } from "@/components/ui/input";
+69.06 
+69.06 
+69.06 
+69.06 Import traces:
+69.06   Client Component Browser:
+69.06     ./src/app/(dashboard)/agents/onboarding/page.tsx [Client Component Browser]
+69.06     ./src/app/(dashboard)/agents/onboarding/page.tsx [Server Component]
+69.06 
+69.06   Client Component SSR:
+69.06     ./src/app/(dashboard)/agents/onboarding/page.tsx [Client Component SSR]
+69.06     ./src/app/(dashboard)/agents/onboarding/page.tsx [Server Component]
+69.06 
+69.06 https://nextjs.org/docs/messages/module-not-found
+69.06 
+69.06 
+69.06 ./src/app/(dashboard)/agents/settings/page.tsx:5:1
+69.06 Module not found: Can't resolve '@hookform/resolvers/zod'
+69.06   3 | import React, { useEffect } from "react";
+69.06   4 | import { useForm } from "react-hook-form";
+69.06 > 5 | import { zodResolver } from "@hookform/resolvers/zod";
+69.06     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+69.06   6 | import * as z from "zod";
+69.06   7 | import { Button } from "@/components/ui/button";
+69.06   8 | import { Input } from "@/components/ui/input";
+69.06 
+69.06 
+69.06 
+69.06 Import traces:
+69.06   Client Component Browser:
+69.06     ./src/app/(dashboard)/agents/settings/page.tsx [Client Component Browser]
+69.06     ./src/app/(dashboard)/agents/settings/page.tsx [Server Component]
+69.06 
+69.06   Client Component SSR:
+69.06     ./src/app/(dashboard)/agents/settings/page.tsx [Client Component SSR]
+69.06     ./src/app/(dashboard)/agents/settings/page.tsx [Server Component]
+69.06 
+69.06 https://nextjs.org/docs/messages/module-not-found
+69.06 
+69.06 
+69.06 ./src/app/(dashboard)/merchants/onboarding/page.tsx:5:1
+69.06 Module not found: Can't resolve '@hookform/resolvers/zod'
+69.06   3 | import React from "react";
+69.06   4 | import { useForm } from "react-hook-form";
+69.06 > 5 | import { zodResolver } from "@hookform/resolvers/zod";
+69.06     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+69.06   6 | import * as z from "zod";
+69.06   7 | import { Button } from "@/components/ui/button";
+69.06   8 | import { Input } from "@/components/ui/input";
+69.06 
+69.06 
+69.06 
+69.06 Import traces:
+69.06   Client Component Browser:
+69.06     ./src/app/(dashboard)/merchants/onboarding/page.tsx [Client Component Browser]
+69.06     ./src/app/(dashboard)/merchants/onboarding/page.tsx [Server Component]
+69.06 
+69.06   Client Component SSR:
+69.06     ./src/app/(dashboard)/merchants/onboarding/page.tsx [Client Component SSR]
+69.06     ./src/app/(dashboard)/merchants/onboarding/page.tsx [Server Component]
+69.06 
+69.06 https://nextjs.org/docs/messages/module-not-found
+69.06 
+69.06 
+69.06 ./src/app/(dashboard)/merchants/settings/page.tsx:5:1
+69.06 Module not found: Can't resolve '@hookform/resolvers/zod'
+69.06   3 | import React, { useEffect } from "react";
+69.06   4 | import { useForm } from "react-hook-form";
+69.06 > 5 | import { zodResolver } from "@hookform/resolvers/zod";
+69.06     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+69.06   6 | import * as z from "zod";
+69.06   7 | import { Button } from "@/components/ui/button";
+69.06   8 | import { Input } from "@/components/ui/input";
+69.06 
+69.06 
+69.06 
+69.06 Import traces:
+69.06   Client Component Browser:
+69.06     ./src/app/(dashboard)/merchants/settings/page.tsx [Client Component Browser]
+69.06     ./src/app/(dashboard)/merchants/settings/page.tsx [Server Component]
+69.06 
+69.06   Client Component SSR:
+69.06     ./src/app/(dashboard)/merchants/settings/page.tsx [Client Component SSR]
+69.06     ./src/app/(dashboard)/merchants/settings/page.tsx [Server Component]
+69.06 
+69.06 https://nextjs.org/docs/messages/module-not-found
+69.06 
+69.06 
+69.06 ./src/app/(dashboard)/transfer/page.tsx:5:1
+69.06 Module not found: Can't resolve '@hookform/resolvers/zod'
+69.06   3 | import React, { useState, useEffect } from "react";
+69.06   4 | import { useForm } from "react-hook-form";
+69.06 > 5 | import { zodResolver } from "@hookform/resolvers/zod";
+69.06     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+69.06   6 | import * as z from "zod";
+69.06   7 | import { Button } from "@/components/ui/button";
+69.06   8 | import { Input } from "@/components/ui/input";
+69.06 
+69.06 
+69.06 
+69.06 Import traces:
+69.06   Client Component Browser:
+69.06     ./src/app/(dashboard)/transfer/page.tsx [Client Component Browser]
+69.06     ./src/app/(dashboard)/transfer/page.tsx [Server Component]
+69.06 
+69.06   Client Component SSR:
+69.06     ./src/app/(dashboard)/transfer/page.tsx [Client Component SSR]
+69.06     ./src/app/(dashboard)/transfer/page.tsx [Server Component]
+69.06 
+69.06 https://nextjs.org/docs/messages/module-not-found
+69.06 
+69.06 
+69.06 ./src/app/(dashboard)/send/page.tsx:10:1
+69.06 Module not found: Can't resolve 'decimal.js'
+69.06    8 | import { z } from 'zod';
+69.06    9 | import api from '@/lib/api';
+69.06 > 10 | import { Decimal } from 'decimal.js';
+69.06      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+69.06   11 |
+69.06   12 | // Using the same color palette for consistency
+69.06   13 | const COLORS = {
+69.06 
+69.06 
+69.06 
+69.06 Import traces:
+69.06   Client Component Browser:
+69.06     ./src/app/(dashboard)/send/page.tsx [Client Component Browser]
+69.06     ./src/app/(dashboard)/send/page.tsx [Server Component]
+69.06 
+69.06   Client Component SSR:
+69.06     ./src/app/(dashboard)/send/page.tsx [Client Component SSR]
+69.06     ./src/app/(dashboard)/send/page.tsx [Server Component]
+69.06 
+69.06 https://nextjs.org/docs/messages/module-not-found
+69.06 
+69.06 
+69.06 ./src/app/(dashboard)/transfer/page.tsx:14:1
+69.06 Module not found: Can't resolve 'decimal.js'
+69.06   12 | import toast from "react-hot-toast";
+69.06   13 | import { useRouter } from "next/navigation";
+69.06 > 14 | import { Decimal } from "decimal.js";
+69.06      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+69.06   15 |
+69.06   16 | const transferSchema = z.object({
+69.06   17 |   destination_phone_number: z.string().min(10, "Please enter a valid phone number"),
+69.06 
+69.06 
+69.06 
+69.06 Import traces:
+69.06   Client Component Browser:
+69.06     ./src/app/(dashboard)/transfer/page.tsx [Client Component Browser]
+69.06     ./src/app/(dashboard)/transfer/page.tsx [Server Component]
+69.06 
+69.06   Client Component SSR:
+69.06     ./src/app/(dashboard)/transfer/page.tsx [Client Component SSR]
+69.06     ./src/app/(dashboard)/transfer/page.tsx [Server Component]
+69.06 
+69.06 https://nextjs.org/docs/messages/module-not-found
+69.06 
+69.06 
+69.06     at <unknown> (./src/app/(dashboard)/agents/commissions/page.tsx:7:1)
+69.06     at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+69.06     at <unknown> (./src/app/(dashboard)/merchants/transactions/page.tsx:8:1)
+69.06     at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+69.06     at <unknown> (./src/app/(dashboard)/agents/cash-in-out/page.tsx:5:1)
+69.06     at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+69.06     at <unknown> (./src/app/(dashboard)/agents/onboarding/page.tsx:5:1)
+69.06     at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+69.06     at <unknown> (./src/app/(dashboard)/agents/settings/page.tsx:5:1)
+69.06     at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+69.06     at <unknown> (./src/app/(dashboard)/merchants/onboarding/page.tsx:5:1)
+69.06     at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+69.06     at <unknown> (./src/app/(dashboard)/merchants/settings/page.tsx:5:1)
+69.06     at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+69.06     at <unknown> (./src/app/(dashboard)/transfer/page.tsx:5:1)
+69.06     at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+69.06     at <unknown> (./src/app/(dashboard)/send/page.tsx:10:1)
+69.06     at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+69.06     at <unknown> (./src/app/(dashboard)/transfer/page.tsx:14:1)
+69.06     at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+69.17 npm notice
+69.17 npm notice New major version of npm available! 10.8.2 -> 11.6.2
+69.17 npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.6.2
+69.17 npm notice To update run: npm install -g npm@11.6.2
+69.17 npm notice
+------
+Dockerfile:31
+
+--------------------
+
+  29 |     
+
+  30 |     # Build the Next.js application
+
+  31 | >>> RUN npm run build
+
+  32 |     
+
+  33 |     # --- Stage 3: Production Runner ---
+
+--------------------
+
+target frontend: failed to solve: process "/bin/sh -c npm run build" did not complete successfully: exit code: 1
+3
+root@vmi2841471:~/ovii# 
