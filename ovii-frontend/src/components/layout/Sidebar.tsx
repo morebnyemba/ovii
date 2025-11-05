@@ -3,7 +3,16 @@ import Link from 'next/link';
 import { Wallet, Landmark, History, User, LogOut } from 'lucide-react';
 import { useUserStore } from '@/lib/store/useUserStore';
 import { useRouter } from 'next/navigation';
-import { COLORS } from '@/lib/colors';
+
+const COLORS = {
+  indigo: '#1A1B4B',
+  gold: '#FFC247',
+  mint: '#33D9B2',
+  coral: '#FF6B6B',
+  white: '#FDFDFD',
+  lightGray: '#F3F4F6',
+  darkIndigo: '#0F0F2D',
+};
 
 const navItems = [
   { name: 'Wallet', href: '/dashboard', icon: Wallet },

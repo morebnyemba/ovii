@@ -1,5 +1,3 @@
-import { COLORS } from './src/lib/colors';
-
 /** @type {import('tailwindcss').Config} */
 const config = {
   content: [
@@ -8,9 +6,7 @@ const config = {
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
-    extend: {
-      colors: COLORS,
-    },
+    extend: {},
   },
   plugins: [],
 };
