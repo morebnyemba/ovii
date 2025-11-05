@@ -10,6 +10,7 @@ from phonenumber_field.serializerfields import PhoneNumberField
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import OviiUser, OTPRequest, KYCDocument, VerificationLevels
 from .tasks import generate_and_log_otp, create_user_wallet
+from django_countries.serializer_fields import CountryField
 
 
 class UserDetailSerializer(serializers.ModelSerializer):
@@ -17,6 +18,7 @@ class UserDetailSerializer(serializers.ModelSerializer):
     Serializer for retrieving and updating user details.
     Used for the /me endpoint and admin user management.
     """
+    country = CountryField(country_dict=True)
 
     class Meta:
         model = OviiUser
@@ -237,7 +239,7 @@ class UserLoginSerializer(BaseOTPVerificationSerializer):
         otp_request = validated_data["otp_request"]
 
         # Ensure has_set_pin is accurate before issuing a token.
-        # This prevents issues if the flag and the pin field get out of sync.
+        # This should prevent issues if the flag and the pin field get out of sync.
         user.has_set_pin = bool(user.pin)
 
         if not user.is_active:
