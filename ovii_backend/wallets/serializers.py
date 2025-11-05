@@ -42,6 +42,7 @@ class TransactionSerializer(serializers.ModelSerializer):
     transaction_type = serializers.CharField(
         source="get_transaction_type_display", read_only=True
     )
+    charge = serializers.StringRelatedField()
 
     class Meta:
         model = Transaction
@@ -50,6 +51,8 @@ class TransactionSerializer(serializers.ModelSerializer):
             "sender",
             "receiver",
             "amount",
+            "charge",
+            "charge_amount",
             "status",
             "transaction_type",
             "description",

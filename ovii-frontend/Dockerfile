@@ -2,7 +2,7 @@
 
 # --- Stage 1: Dependency Installation ---
 # Use a specific version of Node.js for reproducibility. 'alpine' is lightweight.
-FROM node:18-alpine AS deps
+FROM node:20-alpine AS deps
 WORKDIR /app
 
 # Copy package.json and the npm lock file
@@ -12,7 +12,7 @@ COPY package.json package-lock.json* ./
 RUN npm ci
 
 # --- Stage 2: Code Builder ---
-FROM node:18-alpine AS builder
+FROM node:20-alpine AS builder
 WORKDIR /app
 
 # Get the build-time argument for the WebSocket URL.
@@ -32,7 +32,7 @@ RUN npm run build
 
 # --- Stage 3: Production Runner ---
 # Use a minimal image for the final stage.
-FROM node:18-alpine AS runner
+FROM node:20-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production

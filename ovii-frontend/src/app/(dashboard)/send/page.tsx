@@ -1,11 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiSend, FiLoader, FiCheckCircle, FiAlertTriangle, FiArrowLeft, FiUser, FiDollarSign, FiEdit2, FiLock } from 'react-icons/fi';
 import { useUserStore } from '@/lib/store/useUserStore';
 import Link from 'next/link';
 import { z } from 'zod';
+import api from '@/lib/api';
+import { Decimal } from 'decimal.js';
 
 // Using the same color palette for consistency
 const COLORS = {
@@ -39,11 +41,30 @@ export default function SendMoneyPage() {
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
   const [pin, setPin] = useState('');
+  const [charge, setCharge] = useState<Decimal | null>(null);
 
   // Refactored state for UI feedback
   const [formErrors, setFormErrors] = useState<FormErrors>(null);
   const [apiError, setApiError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    const fetchCharge = async () => {
+      if (amount) {
+        try {
+          const response = await api.get(
+            `/wallets/get-charge/?transaction_type=TRANSFER&amount=${amount}`
+          );
+          setCharge(new Decimal(response.data.charge_amount));
+        } catch (error) {
+          console.error("Failed to fetch charge:", error);
+        }
+      } else {
+        setCharge(null);
+      }
+    };
+    fetchCharge();
+  }, [amount]);
 
   const handleSendMoney = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,9 +80,10 @@ export default function SendMoneyPage() {
     }
 
     const validatedAmount = validationResult.data.amount;
+    const totalDeduction = charge ? new Decimal(validatedAmount).plus(charge) : new Decimal(validatedAmount);
 
-    if (wallet && validatedAmount > parseFloat(wallet.balance)) {
-      setApiError('Insufficient balance.');
+    if (wallet && totalDeduction.greaterThan(new Decimal(wallet.balance))) {
+      setApiError('Insufficient balance to cover transaction and charges.');
       return;
     }
 
@@ -86,6 +108,7 @@ export default function SendMoneyPage() {
     setFormErrors(null);
     setApiError(null);
     setSuccess(false);
+    setCharge(null);
   };
 
   if (loading.wallet) {
@@ -95,6 +118,8 @@ export default function SendMoneyPage() {
       </div>
     );
   }
+
+  const totalDeduction = charge ? new Decimal(amount || 0).plus(charge) : new Decimal(amount || 0);
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -200,6 +225,12 @@ export default function SendMoneyPage() {
                 </div>
                 {formErrors?.amount && <p className="mt-1 text-xs text-red-600">{formErrors.amount._errors[0]}</p>}
               </div>
+              {charge && (
+                <div className="text-sm text-muted-foreground">
+                  <p>Transaction Charge: {charge.toString()}</p>
+                  <p>Total Deduction: {totalDeduction.toString()}</p>
+                </div>
+              )}
               <div>
                 <label htmlFor="pin" className="block text-sm font-medium mb-1" style={{ color: COLORS.indigo }}>Transaction PIN</label>
                 <div className="relative">

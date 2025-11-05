@@ -10,6 +10,7 @@ from .views import (
     TransactionHistoryView,
     CreateTransactionView,
     ApproveMerchantPaymentView,
+    GetTransactionChargeView,
 )
 
 urlpatterns = [
@@ -20,5 +21,10 @@ urlpatterns = [
         "transactions/<int:transaction_id>/approve-payment/",
         ApproveMerchantPaymentView.as_view(),
         name="approve-merchant-payment",
+    ),
+    path(
+        "get-charge/",
+        GetTransactionChargeView.as_view(),
+        name="get-transaction-charge",
     ),
 ]

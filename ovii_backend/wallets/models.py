@@ -10,6 +10,58 @@ from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 
 
+class TransactionCharge(models.Model):
+    """
+    Defines a rule for applying a transaction charge.
+    """
+
+    class ChargeType(models.TextChoices):
+        PERCENTAGE = "PERCENTAGE", _("Percentage")
+        FIXED = "FIXED", _("Fixed Amount")
+
+    class AppliesTo(models.TextChoices):
+        SENDER = "SENDER", _("Sender")
+        RECEIVER = "RECEIVER", _("Receiver")
+
+    name = models.CharField(_("charge name"), max_length=100, unique=True)
+    charge_type = models.CharField(
+        _("charge type"), max_length=20, choices=ChargeType.choices
+    )
+    value = models.DecimalField(
+        _("value"),
+        max_digits=10,
+        decimal_places=2,
+        help_text=_("The percentage or fixed amount of the charge."),
+    )
+    applies_to = models.CharField(
+        _("applies to"), max_length=20, choices=AppliesTo.choices, default=AppliesTo.SENDER
+    )
+    min_charge = models.DecimalField(
+        _("minimum charge"), max_digits=10, decimal_places=2, default=0.00
+    )
+    max_charge = models.DecimalField(
+        _("maximum charge"), max_digits=10, decimal_places=2, null=True, blank=True
+    )
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return self.name
+
+    def calculate_charge(self, amount):
+        """
+        Calculates the charge for a given transaction amount.
+        """
+        if self.charge_type == self.ChargeType.PERCENTAGE:
+            charge = (self.value / 100) * amount
+        else:
+            charge = self.value
+
+        if self.max_charge is not None:
+            charge = min(charge, self.max_charge)
+
+        return max(charge, self.min_charge)
+
+
 class Wallet(models.Model):
     """
     Represents a user's wallet in the system.
@@ -64,6 +116,7 @@ class Transaction(models.Model):
         DEPOSIT = "DEPOSIT", _("Deposit")
         WITHDRAWAL = "WITHDRAWAL", _("Withdrawal")
         PAYMENT = "PAYMENT", _("Payment")
+        COMMISSION = "COMMISSION", _("Commission")
 
     # The primary wallet involved in the transaction (e.g., the sender).
     wallet = models.ForeignKey(
@@ -81,6 +134,18 @@ class Transaction(models.Model):
 
     # The amount of money in the transaction.
     amount = models.DecimalField(_("amount"), max_digits=12, decimal_places=2)
+
+    # The charge for the transaction.
+    charge = models.ForeignKey(
+        TransactionCharge,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="transactions",
+    )
+    charge_amount = models.DecimalField(
+        _("charge amount"), max_digits=12, decimal_places=2, default=Decimal("0.00")
+    )
 
     # The current status of the transaction.
     status = models.CharField(

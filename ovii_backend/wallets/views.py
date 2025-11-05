@@ -1,3 +1,4 @@
+from decimal import Decimal, InvalidOperation
 from django.db.models import Q
 from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated
@@ -13,9 +14,45 @@ from .serializers import (
 from .permissions import IsMobileVerifiedOrHigher
 from .services import (
     create_transaction,
+    get_transaction_charge,
     TransactionError,
     TransactionLimitExceededError,
 )
+
+
+class GetTransactionChargeView(APIView):
+    """
+    API view to get the transaction charge for a given amount.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        transaction_type = request.query_params.get("transaction_type")
+        amount_str = request.query_params.get("amount")
+
+        if not transaction_type or not amount_str:
+            return Response(
+                {"detail": "transaction_type and amount are required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            amount = Decimal(amount_str)
+        except (InvalidOperation, TypeError):
+            return Response(
+                {"detail": "Invalid amount."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        charge = get_transaction_charge(
+            transaction_type, request.user.role, amount
+        )
+        charge_amount = charge.calculate_charge(amount) if charge else Decimal("0.00")
+
+        return Response(
+            {"charge_amount": charge_amount}, status=status.HTTP_200_OK
+        )
 
 
 class MyWalletView(generics.RetrieveAPIView):
