@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Wallet, Landmark, History, User, LogOut } from 'lucide-react';
 import { useUserStore } from '@/lib/store/useUserStore';
 import { useRouter } from 'next/navigation';
+import { COLORS } from '@/lib/colors';
 
 const navItems = [
   { name: 'Wallet', href: '/dashboard', icon: Wallet },
@@ -13,7 +14,7 @@ const navItems = [
 
 const SidebarContent = ({ setSidebarOpen }: { setSidebarOpen: (isOpen: boolean) => void }) => {
   const router = useRouter();
-  const { logout, user, _hasHydrated } = useUserStore();
+  const { logout, user } = useUserStore();
 
   const handleLogout = async () => {
     logout();
@@ -21,40 +22,23 @@ const SidebarContent = ({ setSidebarOpen }: { setSidebarOpen: (isOpen: boolean) 
     router.replace('/login');
   };
 
-  if (!_hasHydrated) {
-    return (
-      <>
-        <div 
-          className="p-6 text-2xl font-bold border-b border-white/20 text-gold"
-        >
-          Ovii
-        </div>
-        <div className="p-4 text-center border-b border-white/10">
-          <div className="w-16 h-16 mx-auto mb-3 rounded-full flex items-center justify-center bg-mint">
-            <User className="text-white" size={24} />
-          </div>
-          <div className="h-4 bg-gray-300 rounded w-3/4 mx-auto"></div>
-          <div className="h-3 bg-gray-300 rounded w-1/2 mx-auto mt-2"></div>
-        </div>
-      </>
-    );
-  }
-
   return (
     <>
       <div 
-        className="p-6 text-2xl font-bold border-b border-white/20 text-gold"
+        className="p-6 text-2xl font-bold border-b border-white/20"
+        style={{ color: COLORS.gold }}
       >
         Ovii
       </div>
       
       {/* User Profile Section */}
       <div className="p-4 text-center border-b border-white/10">
-        <div className="w-16 h-16 mx-auto mb-3 rounded-full flex items-center justify-center bg-mint">
+        <div className="w-16 h-16 mx-auto mb-3 rounded-full flex items-center justify-center" 
+             style={{ backgroundColor: COLORS.mint }}>
           <User className="text-white" size={24} />
         </div>
         <p className="font-semibold text-white">{user?.first_name} {user?.last_name}</p>
-        <p className="text-sm text-mint">{user?.phone_number}</p>
+        <p className="text-sm" style={{ color: COLORS.mint }}>{user?.phone_number}</p>
       </div>
 
       {/* Navigation */}
@@ -63,10 +47,11 @@ const SidebarContent = ({ setSidebarOpen }: { setSidebarOpen: (isOpen: boolean) 
           <Link 
             key={item.name} 
             href={item.href} 
-            className="flex items-center px-4 py-3 mb-2 rounded-lg transition-colors hover:bg-white/10 text-white"
+            className="flex items-center px-4 py-3 mb-2 rounded-lg transition-colors hover:bg-white/10"
+            style={{ color: COLORS.white }}
             onClick={() => setSidebarOpen(false)}
           >
-            <item.icon className="w-5 h-5 mr-3 text-mint" />
+            <item.icon className="w-5 h-5 mr-3" style={{ color: COLORS.mint }} />
             <span>{item.name}</span>
           </Link>
         ))}
@@ -76,7 +61,8 @@ const SidebarContent = ({ setSidebarOpen }: { setSidebarOpen: (isOpen: boolean) 
       <div className="p-4 border-t border-white/20">
         <button 
           onClick={handleLogout} 
-          className="flex items-center w-full px-4 py-3 rounded-lg transition-colors hover:bg-white/10 text-coral"
+          className="flex items-center w-full px-4 py-3 rounded-lg transition-colors hover:bg-white/10"
+          style={{ color: COLORS.coral }}
         >
           <LogOut className="w-5 h-5 mr-3" />
           <span>Logout</span>
@@ -89,8 +75,9 @@ const SidebarContent = ({ setSidebarOpen }: { setSidebarOpen: (isOpen: boolean) 
 export const Sidebar = ({ isOpen, setSidebarOpen }: { isOpen: boolean, setSidebarOpen: (isOpen: boolean) => void }) => {
   return (
     <aside 
-      className={`fixed top-0 left-0 h-full w-64 flex flex-col z-40 transition-transform duration-300 ease-in-out md:hidden bg-indigo`}
+      className={`fixed top-0 left-0 h-full w-64 flex flex-col z-40 transition-transform duration-300 ease-in-out md:hidden`}
       style={{ 
+        backgroundColor: COLORS.indigo,
         transform: isOpen ? 'translateX(0)' : 'translateX(-100%)' 
       }}
     >
@@ -102,7 +89,8 @@ export const Sidebar = ({ isOpen, setSidebarOpen }: { isOpen: boolean, setSideba
 export const DesktopSidebar = () => {
   return (
     <aside 
-      className="w-64 flex-col hidden md:flex bg-indigo"
+      className="w-64 flex-col hidden md:flex"
+      style={{ backgroundColor: COLORS.indigo }}
     >
       <SidebarContent setSidebarOpen={() => {}} />
     </aside>
