@@ -1,15 +1,55 @@
-Charge name *
-transfare
-Charge type *
+ => => naming to docker.io/library/ovii_backend_image                                                                                                                         0.0s
+ => ERROR [frontend builder 5/5] RUN npm run build                                                                                                                           64.3s
+ => [celery_beat] resolving provenance for metadata file                                                                                                                      0.0s
+ => [celery_worker] resolving provenance for metadata file                                                                                                                    0.0s
+ => [backend] resolving provenance for metadata file                                                                                                                          0.0s
+------
+ > [frontend builder 5/5] RUN npm run build:
+1.024 
+1.024 > ovii-frontend@0.1.0 build
+1.024 > next build
+1.024 
+2.785  ⚠ `eslint` configuration in next.config.ts is no longer supported. See more info here: https://nextjs.org/docs/app/api-reference/cli/next#next-lint-options
+2.797  ⚠ Invalid next.config.ts options detected: 
+2.797  ⚠     Unrecognized key(s) in object: 'eslint'
+2.797  ⚠ See more info here: https://nextjs.org/docs/messages/invalid-next-config
+2.827    ▲ Next.js 16.0.1 (Turbopack)
+2.827 
+2.831  ⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+2.901    Creating an optimized production build ...
+59.92  ✓ Compiled successfully in 56s
+59.93    Skipping validation of types
+60.22    Collecting page data ...
+61.79    Generating static pages (0/30) ...
+63.68    Generating static pages (7/30) 
+63.70    Generating static pages (14/30) 
+63.97 Error occurred prerendering page "/become-an-agent". Read more: https://nextjs.org/docs/messages/prerender-error
+63.98 ReferenceError: FiCheckCircle is not defined
+63.98     at h (.next/server/chunks/ssr/[root-of-the-server]__fe95b609._.js:1:6466) {
+63.98   digest: '3528111857'
+63.98 }
+63.98 Export encountered an error on /become-an-agent/page: /become-an-agent, exiting the build.
+64.04  ⨯ Next.js build worker exited with code: 1 and signal: null
+64.17 npm notice
+64.17 npm notice New major version of npm available! 10.8.2 -> 11.6.2
+64.17 npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.6.2
+64.17 npm notice To update run: npm install -g npm@11.6.2
+64.17 npm notice
+------
+Dockerfile:31
 
-Value *
-2.50
-The percentage or fixed amount of the charge.
-Applies to *
+--------------------
 
-Minimum charge *
-0.50
-Maximum charge
-100000.00
-Is active
-3
+  29 |     
+
+  30 |     # Build the Next.js application
+
+  31 | >>> RUN npm run build
+
+  32 |     
+
+  33 |     # --- Stage 3: Production Runner ---
+
+--------------------
+
+target frontend: failed to solve: process "/bin/sh -c npm run build" did not complete successfully: exit code: 1

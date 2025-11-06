@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { FiTrendingUp, FiUsers, FiAward, FiArrowRight, FiHome } from 'react-icons/fi';
+import { FiTrendingUp, FiUsers, FiAward, FiArrowRight, FiHome, FiCheckCircle } from 'react-icons/fi';
 import { COLORS } from '@/lib/theme';
 
 const features = [
