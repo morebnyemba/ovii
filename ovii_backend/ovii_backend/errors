@@ -1,100 +1,61 @@
-INFO 2025-11-06 08:58:22,470 cli 1 124950427457344 Starting server at tcp:port=8000:interface=0.0.0.0
-INFO 2025-11-06 08:58:22,471 server 1 124950427457344 HTTP/2 support enabled
-INFO 2025-11-06 08:58:22,471 server 1 124950427457344 Configuring endpoint tcp:port=8000:interface=0.0.0.0
-INFO 2025-11-06 08:58:22,472 server 1 124950427457344 Listening on TCP address 0.0.0.0:8000
-ERROR 2025-11-06 09:01:10,677 log 1 124950319777536 Internal Server Error: /api/agents/onboarding/
-Traceback (most recent call last):
-  File "/opt/venv/lib/python3.11/site-packages/asgiref/sync.py", line 552, in thread_handler
-    raise exc_info[1]
-  File "/opt/venv/lib/python3.11/site-packages/django/core/handlers/exception.py", line 42, in inner
-    response = await get_response(request)
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/opt/venv/lib/python3.11/site-packages/asgiref/sync.py", line 552, in thread_handler
-    raise exc_info[1]
-  File "/opt/venv/lib/python3.11/site-packages/django/core/handlers/base.py", line 253, in _get_response_async
-    response = await wrapped_callback(
-               ^^^^^^^^^^^^^^^^^^^^^^^
-  File "/opt/venv/lib/python3.11/site-packages/asgiref/sync.py", line 502, in __call__
-    ret = await asyncio.shield(exec_coro)
-          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/opt/venv/lib/python3.11/site-packages/asgiref/current_thread_executor.py", line 40, in run
-    result = self.fn(*self.args, **self.kwargs)
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/opt/venv/lib/python3.11/site-packages/asgiref/sync.py", line 556, in thread_handler
-    return func(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^
-  File "/opt/venv/lib/python3.11/site-packages/django/views/decorators/csrf.py", line 65, in _view_wrapper
-    return view_func(request, *args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/opt/venv/lib/python3.11/site-packages/django/views/generic/base.py", line 105, in view
-    return self.dispatch(request, *args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/opt/venv/lib/python3.11/site-packages/rest_framework/views.py", line 515, in dispatch
-    response = self.handle_exception(exc)
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/opt/venv/lib/python3.11/site-packages/rest_framework/views.py", line 475, in handle_exception
-    self.raise_uncaught_exception(exc)
-  File "/opt/venv/lib/python3.11/site-packages/rest_framework/views.py", line 486, in raise_uncaught_exception
-    raise exc
-  File "/opt/venv/lib/python3.11/site-packages/rest_framework/views.py", line 512, in dispatch
-    response = handler(request, *args, **kwargs)
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/opt/venv/lib/python3.11/site-packages/rest_framework/generics.py", line 194, in post
-    return self.create(request, *args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/opt/venv/lib/python3.11/site-packages/rest_framework/mixins.py", line 19, in create
-    self.perform_create(serializer)
-  File "/home/app/web/agents/views.py", line 47, in perform_create
-    user.save()
-  File "/opt/venv/lib/python3.11/site-packages/django/contrib/auth/models.py", line 555, in save
-    raise NotImplementedError(
-NotImplementedError: Django doesn't provide a DB representation for AnonymousUser.
-172.18.0.8:50464 - - [06/Nov/2025:09:01:10] "POST /api/agents/onboarding/" 500 145
-ERROR 2025-11-06 09:01:37,440 log 1 124950319777536 Internal Server Error: /api/agents/onboarding/
-Traceback (most recent call last):
-  File "/opt/venv/lib/python3.11/site-packages/asgiref/sync.py", line 552, in thread_handler
-    raise exc_info[1]
-  File "/opt/venv/lib/python3.11/site-packages/django/core/handlers/exception.py", line 42, in inner
-    response = await get_response(request)
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/opt/venv/lib/python3.11/site-packages/asgiref/sync.py", line 552, in thread_handler
-    raise exc_info[1]
-  File "/opt/venv/lib/python3.11/site-packages/django/core/handlers/base.py", line 253, in _get_response_async
-    response = await wrapped_callback(
-               ^^^^^^^^^^^^^^^^^^^^^^^
-  File "/opt/venv/lib/python3.11/site-packages/asgiref/sync.py", line 502, in __call__
-    ret = await asyncio.shield(exec_coro)
-          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/opt/venv/lib/python3.11/site-packages/asgiref/current_thread_executor.py", line 40, in run
-    result = self.fn(*self.args, **self.kwargs)
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/opt/venv/lib/python3.11/site-packages/asgiref/sync.py", line 556, in thread_handler
-    return func(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^
-  File "/opt/venv/lib/python3.11/site-packages/django/views/decorators/csrf.py", line 65, in _view_wrapper
-    return view_func(request, *args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/opt/venv/lib/python3.11/site-packages/django/views/generic/base.py", line 105, in view
-    return self.dispatch(request, *args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/opt/venv/lib/python3.11/site-packages/rest_framework/views.py", line 515, in dispatch
-    response = self.handle_exception(exc)
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/opt/venv/lib/python3.11/site-packages/rest_framework/views.py", line 475, in handle_exception
-    self.raise_uncaught_exception(exc)
-  File "/opt/venv/lib/python3.11/site-packages/rest_framework/views.py", line 486, in raise_uncaught_exception
-    raise exc
-  File "/opt/venv/lib/python3.11/site-packages/rest_framework/views.py", line 512, in dispatch
-    response = handler(request, *args, **kwargs)
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/opt/venv/lib/python3.11/site-packages/rest_framework/generics.py", line 194, in post
-    return self.create(request, *args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/opt/venv/lib/python3.11/site-packages/rest_framework/mixins.py", line 19, in create
-    self.perform_create(serializer)
-  File "/home/app/web/agents/views.py", line 47, in perform_create
-    user.save()
-  File "/opt/venv/lib/python3.11/site-packages/django/contrib/auth/models.py", line 555, in save
-    raise NotImplementedError(
-NotImplementedError: Django doesn't provide a DB representation for AnonymousUser.
-172.18.0.8:45696 - - [06/Nov/2025:09:01:37] "POST /api/agents/onboarding/" 500 145
+=> ERROR [frontend builder 5/5] RUN npm run build                                                                                                                           59.3s
+ => [celery_worker] resolving provenance for metadata file                                                                                                                    0.0s
+ => [backend] resolving provenance for metadata file                                                                                                                          0.0s
+ => [celery_beat] resolving provenance for metadata file                                                                                                                      0.0s
+------
+ > [frontend builder 5/5] RUN npm run build:
+0.975 
+0.975 > ovii-frontend@0.1.0 build
+0.975 > next build
+0.975 
+2.549  ⚠ `eslint` configuration in next.config.ts is no longer supported. See more info here: https://nextjs.org/docs/app/api-reference/cli/next#next-lint-options
+2.558  ⚠ Invalid next.config.ts options detected: 
+2.558  ⚠     Unrecognized key(s) in object: 'eslint'
+2.558  ⚠ See more info here: https://nextjs.org/docs/messages/invalid-next-config
+2.582    ▲ Next.js 16.0.1 (Turbopack)
+2.582 
+2.586  ⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+2.649    Creating an optimized production build ...
+55.73  ✓ Compiled successfully in 52s
+55.74    Skipping validation of types
+56.10    Collecting page data ...
+57.53    Generating static pages (0/30) ...
+58.91  ⨯ useSearchParams() should be wrapped in a suspense boundary at page "/login". Read more: https://nextjs.org/docs/messages/missing-suspense-with-csr-bailout
+58.91     at S (/app/.next/server/chunks/ssr/node_modules_next_9c24ba8d._.js:2:2111)
+58.91     at p (/app/.next/server/chunks/ssr/node_modules_next_9c24ba8d._.js:4:4847)
+58.91     at r (/app/.next/server/chunks/ssr/src_app_(auth)_login_page_tsx_8f90b54b._.js:1:678)
+58.91     at ir (/app/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.prod.js:2:84433)
+58.91     at ia (/app/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.prod.js:2:86252)
+58.91     at il (/app/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.prod.js:2:107981)
+58.91     at is (/app/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.prod.js:2:105399)
+58.91     at ii (/app/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.prod.js:2:84785)
+58.91     at ia (/app/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.prod.js:2:86301)
+58.91     at ia (/app/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.prod.js:2:104739)
+58.91 Error occurred prerendering page "/login". Read more: https://nextjs.org/docs/messages/prerender-error
+58.91 Export encountered an error on /(auth)/login/page: /login, exiting the build.
+58.96  ⨯ Next.js build worker exited with code: 1 and signal: null
+59.12 npm notice
+59.12 npm notice New major version of npm available! 10.8.2 -> 11.6.2
+59.12 npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.6.2
+59.12 npm notice To update run: npm install -g npm@11.6.2
+59.12 npm notice
+------
+Dockerfile:31
+
+--------------------
+
+  29 |     
+
+  30 |     # Build the Next.js application
+
+  31 | >>> RUN npm run build
+
+  32 |     
+
+  33 |     # --- Stage 3: Production Runner ---
+
+--------------------
+
+target frontend: failed to solve: process "/bin/sh -c npm run build" did not complete successfully: exit code: 1
+
+root@vmi2841471:~/ovii# 
