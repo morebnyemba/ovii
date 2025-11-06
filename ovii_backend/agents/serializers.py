@@ -12,6 +12,7 @@ from wallets.models import Transaction
 class AgentProfileSerializer(serializers.ModelSerializer):
     """Serializer to display an agent's profile details."""
     tier = serializers.StringRelatedField()
+    commission_rate = serializers.SerializerMethodField()
 
     class Meta:
         model = Agent
@@ -20,10 +21,16 @@ class AgentProfileSerializer(serializers.ModelSerializer):
             "business_name",
             "location",
             "tier",
+            "commission_rate",
             "is_approved",
             "created_at",
         ]
         read_only_fields = ["agent_code", "is_approved", "created_at"]
+
+    def get_commission_rate(self, obj):
+        if obj.tier:
+            return obj.tier.commission_rate
+        return None
 
 
 class AgentOnboardingSerializer(serializers.ModelSerializer):

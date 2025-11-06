@@ -25,6 +25,15 @@ export enum TransactionStatus {
 }
 
 // --- Interfaces Matching Your Backend Serializers ---
+export interface AgentProfile {
+  agent_code: string;
+  business_name: string;
+  location: string;
+  tier: string;
+  is_approved: boolean;
+  created_at: string;
+}
+
 export interface User {
   id: number;
   email: string | null;
@@ -47,6 +56,7 @@ export interface User {
   is_active: boolean;
   has_set_pin: boolean;
   verification_level: VerificationLevels;
+  agent_profile?: AgentProfile;
 }
 
 export interface Wallet {
