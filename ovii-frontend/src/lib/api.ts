@@ -2,7 +2,7 @@ import axios from 'axios';
 import { useUserStore } from './store/useUserStore';
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'https://api.ovii.it.com',
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'https://api.ovii.it.com/api',
   headers: {
     'Content-Type': 'application/json',
   },
