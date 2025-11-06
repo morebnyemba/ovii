@@ -232,7 +232,7 @@ export const useUserStore = create<UserState>()(
         }));
         try {
           // Assuming your backend supports pagination via query params
-          const response = await api.get(`/api/wallets/transactions/?page=${page}`);
+          const response = await api.get(`/wallets/transactions/?page=${page}`);
           if (response.data && Array.isArray(response.data.results)) {
             set({
               transactions: response.data.results, // Assuming results are in a 'results' array
