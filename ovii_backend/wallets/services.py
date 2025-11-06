@@ -11,6 +11,36 @@ from django.utils import timezone
 from django.conf import settings
 
 from .models import Wallet, Transaction, TransactionCharge, SystemWallet
+from .signals import transaction_completed
+
+
+class TransactionError(Exception):
+    """Custom exception for transaction failures."""
+
+    pass
+
+
+class TransactionLimitExceededError(Exception):
+    """Custom exception raised when a user exceeds their daily transaction limit."""
+
+    pass
+
+
+def get_transaction_charge(
+    transaction_type: str, user_role: str, amount: Decimal
+) -> TransactionCharge | None:
+    """
+    Determines the transaction charge to apply based on the transaction type,
+    user role, and amount.
+    """
+    # This is a placeholder for your business logic to determine the charge.
+    # You can have more complex rules here, e.g., based on the user's verification level.
+    charge_name = f"{transaction_type.lower()}_{user_role.lower()}"
+    try:
+        return TransactionCharge.objects.get(name=charge_name, is_active=True)
+    except TransactionCharge.DoesNotExist:
+        return None
+
 
 # ...
 
@@ -117,3 +147,4 @@ def create_transaction(
     transaction_completed.send(sender=Transaction, transaction=new_transaction)
 
     return new_transaction
+
