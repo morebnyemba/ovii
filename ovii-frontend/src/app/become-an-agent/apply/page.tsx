@@ -241,7 +241,13 @@ export default function BecomeAgentPage() {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<any>({});
   const router = useRouter();
-  const { user } = useUserStore();
+  const { user, isAuthenticated } = useUserStore();
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      router.push('/login?redirect=/become-an-agent/apply');
+    }
+  }, [isAuthenticated, router]);
 
   const steps = [
     { name: 'Personal Details', component: Step1PersonalDetails },

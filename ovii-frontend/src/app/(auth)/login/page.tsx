@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   FiPhone, 
@@ -64,6 +65,7 @@ export default function LoginPage() {
   const [particles, setParticles] = useState<Array<{id: number; x: number; y: number; size: number; duration: number}>>([]);
   
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { login } = useUserStore();
 
   // Ensure the CSRF token is fetched and set in the browser on component mount.
@@ -154,6 +156,12 @@ export default function LoginPage() {
       await login(user, tokens.access, tokens.refresh);
 
       setVerificationSuccess(true);
+
+      const redirectUrl = searchParams.get('redirect');
+      if (redirectUrl) {
+        setTimeout(() => router.push(redirectUrl), 1500);
+        return;
+      }
 
       // Check user role for redirection
       const userRole = useUserStore.getState().user?.role;

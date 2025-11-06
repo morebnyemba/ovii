@@ -1,55 +1,100 @@
- => => naming to docker.io/library/ovii_backend_image                                                                                                                         0.0s
- => ERROR [frontend builder 5/5] RUN npm run build                                                                                                                           64.3s
- => [celery_beat] resolving provenance for metadata file                                                                                                                      0.0s
- => [celery_worker] resolving provenance for metadata file                                                                                                                    0.0s
- => [backend] resolving provenance for metadata file                                                                                                                          0.0s
-------
- > [frontend builder 5/5] RUN npm run build:
-1.024 
-1.024 > ovii-frontend@0.1.0 build
-1.024 > next build
-1.024 
-2.785  ⚠ `eslint` configuration in next.config.ts is no longer supported. See more info here: https://nextjs.org/docs/app/api-reference/cli/next#next-lint-options
-2.797  ⚠ Invalid next.config.ts options detected: 
-2.797  ⚠     Unrecognized key(s) in object: 'eslint'
-2.797  ⚠ See more info here: https://nextjs.org/docs/messages/invalid-next-config
-2.827    ▲ Next.js 16.0.1 (Turbopack)
-2.827 
-2.831  ⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
-2.901    Creating an optimized production build ...
-59.92  ✓ Compiled successfully in 56s
-59.93    Skipping validation of types
-60.22    Collecting page data ...
-61.79    Generating static pages (0/30) ...
-63.68    Generating static pages (7/30) 
-63.70    Generating static pages (14/30) 
-63.97 Error occurred prerendering page "/become-an-agent". Read more: https://nextjs.org/docs/messages/prerender-error
-63.98 ReferenceError: FiCheckCircle is not defined
-63.98     at h (.next/server/chunks/ssr/[root-of-the-server]__fe95b609._.js:1:6466) {
-63.98   digest: '3528111857'
-63.98 }
-63.98 Export encountered an error on /become-an-agent/page: /become-an-agent, exiting the build.
-64.04  ⨯ Next.js build worker exited with code: 1 and signal: null
-64.17 npm notice
-64.17 npm notice New major version of npm available! 10.8.2 -> 11.6.2
-64.17 npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.6.2
-64.17 npm notice To update run: npm install -g npm@11.6.2
-64.17 npm notice
-------
-Dockerfile:31
-
---------------------
-
-  29 |     
-
-  30 |     # Build the Next.js application
-
-  31 | >>> RUN npm run build
-
-  32 |     
-
-  33 |     # --- Stage 3: Production Runner ---
-
---------------------
-
-target frontend: failed to solve: process "/bin/sh -c npm run build" did not complete successfully: exit code: 1
+INFO 2025-11-06 08:58:22,470 cli 1 124950427457344 Starting server at tcp:port=8000:interface=0.0.0.0
+INFO 2025-11-06 08:58:22,471 server 1 124950427457344 HTTP/2 support enabled
+INFO 2025-11-06 08:58:22,471 server 1 124950427457344 Configuring endpoint tcp:port=8000:interface=0.0.0.0
+INFO 2025-11-06 08:58:22,472 server 1 124950427457344 Listening on TCP address 0.0.0.0:8000
+ERROR 2025-11-06 09:01:10,677 log 1 124950319777536 Internal Server Error: /api/agents/onboarding/
+Traceback (most recent call last):
+  File "/opt/venv/lib/python3.11/site-packages/asgiref/sync.py", line 552, in thread_handler
+    raise exc_info[1]
+  File "/opt/venv/lib/python3.11/site-packages/django/core/handlers/exception.py", line 42, in inner
+    response = await get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.11/site-packages/asgiref/sync.py", line 552, in thread_handler
+    raise exc_info[1]
+  File "/opt/venv/lib/python3.11/site-packages/django/core/handlers/base.py", line 253, in _get_response_async
+    response = await wrapped_callback(
+               ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.11/site-packages/asgiref/sync.py", line 502, in __call__
+    ret = await asyncio.shield(exec_coro)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.11/site-packages/asgiref/current_thread_executor.py", line 40, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.11/site-packages/asgiref/sync.py", line 556, in thread_handler
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.11/site-packages/django/views/decorators/csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.11/site-packages/django/views/generic/base.py", line 105, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.11/site-packages/rest_framework/views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.11/site-packages/rest_framework/views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "/opt/venv/lib/python3.11/site-packages/rest_framework/views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "/opt/venv/lib/python3.11/site-packages/rest_framework/views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.11/site-packages/rest_framework/generics.py", line 194, in post
+    return self.create(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.11/site-packages/rest_framework/mixins.py", line 19, in create
+    self.perform_create(serializer)
+  File "/home/app/web/agents/views.py", line 47, in perform_create
+    user.save()
+  File "/opt/venv/lib/python3.11/site-packages/django/contrib/auth/models.py", line 555, in save
+    raise NotImplementedError(
+NotImplementedError: Django doesn't provide a DB representation for AnonymousUser.
+172.18.0.8:50464 - - [06/Nov/2025:09:01:10] "POST /api/agents/onboarding/" 500 145
+ERROR 2025-11-06 09:01:37,440 log 1 124950319777536 Internal Server Error: /api/agents/onboarding/
+Traceback (most recent call last):
+  File "/opt/venv/lib/python3.11/site-packages/asgiref/sync.py", line 552, in thread_handler
+    raise exc_info[1]
+  File "/opt/venv/lib/python3.11/site-packages/django/core/handlers/exception.py", line 42, in inner
+    response = await get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.11/site-packages/asgiref/sync.py", line 552, in thread_handler
+    raise exc_info[1]
+  File "/opt/venv/lib/python3.11/site-packages/django/core/handlers/base.py", line 253, in _get_response_async
+    response = await wrapped_callback(
+               ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.11/site-packages/asgiref/sync.py", line 502, in __call__
+    ret = await asyncio.shield(exec_coro)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.11/site-packages/asgiref/current_thread_executor.py", line 40, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.11/site-packages/asgiref/sync.py", line 556, in thread_handler
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.11/site-packages/django/views/decorators/csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.11/site-packages/django/views/generic/base.py", line 105, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.11/site-packages/rest_framework/views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.11/site-packages/rest_framework/views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "/opt/venv/lib/python3.11/site-packages/rest_framework/views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "/opt/venv/lib/python3.11/site-packages/rest_framework/views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.11/site-packages/rest_framework/generics.py", line 194, in post
+    return self.create(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.11/site-packages/rest_framework/mixins.py", line 19, in create
+    self.perform_create(serializer)
+  File "/home/app/web/agents/views.py", line 47, in perform_create
+    user.save()
+  File "/opt/venv/lib/python3.11/site-packages/django/contrib/auth/models.py", line 555, in save
+    raise NotImplementedError(
+NotImplementedError: Django doesn't provide a DB representation for AnonymousUser.
+172.18.0.8:45696 - - [06/Nov/2025:09:01:37] "POST /api/agents/onboarding/" 500 145

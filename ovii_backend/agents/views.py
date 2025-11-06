@@ -35,6 +35,7 @@ class AgentOnboardingView(generics.CreateAPIView):
 
     serializer_class = AgentOnboardingSerializer
     parser_classes = (MultiPartParser, FormParser)
+    permission_classes = [IsAuthenticated]
 
     def perform_create(self, serializer):
         """
