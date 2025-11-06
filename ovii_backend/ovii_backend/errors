@@ -1,44 +1,35 @@
-=> ERROR [frontend builder 5/5] RUN npm run build                                                                                                                           59.3s
- => [celery_worker] resolving provenance for metadata file                                                                                                                    0.0s
+ => ERROR [frontend builder 5/5] RUN npm run build                                                                                                                           57.0s
+ => [celery_beat] resolving provenance for metadata file                                                                                                                      0.1s
  => [backend] resolving provenance for metadata file                                                                                                                          0.0s
- => [celery_beat] resolving provenance for metadata file                                                                                                                      0.0s
+ => [celery_worker] resolving provenance for metadata file                                                                                                                    0.0s
 ------
  > [frontend builder 5/5] RUN npm run build:
-0.975 
-0.975 > ovii-frontend@0.1.0 build
-0.975 > next build
-0.975 
-2.549  ⚠ `eslint` configuration in next.config.ts is no longer supported. See more info here: https://nextjs.org/docs/app/api-reference/cli/next#next-lint-options
-2.558  ⚠ Invalid next.config.ts options detected: 
-2.558  ⚠     Unrecognized key(s) in object: 'eslint'
-2.558  ⚠ See more info here: https://nextjs.org/docs/messages/invalid-next-config
-2.582    ▲ Next.js 16.0.1 (Turbopack)
-2.582 
-2.586  ⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
-2.649    Creating an optimized production build ...
-55.73  ✓ Compiled successfully in 52s
-55.74    Skipping validation of types
-56.10    Collecting page data ...
-57.53    Generating static pages (0/30) ...
-58.91  ⨯ useSearchParams() should be wrapped in a suspense boundary at page "/login". Read more: https://nextjs.org/docs/messages/missing-suspense-with-csr-bailout
-58.91     at S (/app/.next/server/chunks/ssr/node_modules_next_9c24ba8d._.js:2:2111)
-58.91     at p (/app/.next/server/chunks/ssr/node_modules_next_9c24ba8d._.js:4:4847)
-58.91     at r (/app/.next/server/chunks/ssr/src_app_(auth)_login_page_tsx_8f90b54b._.js:1:678)
-58.91     at ir (/app/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.prod.js:2:84433)
-58.91     at ia (/app/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.prod.js:2:86252)
-58.91     at il (/app/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.prod.js:2:107981)
-58.91     at is (/app/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.prod.js:2:105399)
-58.91     at ii (/app/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.prod.js:2:84785)
-58.91     at ia (/app/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.prod.js:2:86301)
-58.91     at ia (/app/node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.prod.js:2:104739)
-58.91 Error occurred prerendering page "/login". Read more: https://nextjs.org/docs/messages/prerender-error
-58.91 Export encountered an error on /(auth)/login/page: /login, exiting the build.
-58.96  ⨯ Next.js build worker exited with code: 1 and signal: null
-59.12 npm notice
-59.12 npm notice New major version of npm available! 10.8.2 -> 11.6.2
-59.12 npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.6.2
-59.12 npm notice To update run: npm install -g npm@11.6.2
-59.12 npm notice
+1.005 
+1.005 > ovii-frontend@0.1.0 build
+1.005 > next build
+1.005 
+2.548  ⚠ `eslint` configuration in next.config.ts is no longer supported. See more info here: https://nextjs.org/docs/app/api-reference/cli/next#next-lint-options
+2.560  ⚠ Invalid next.config.ts options detected: 
+2.560  ⚠     Unrecognized key(s) in object: 'eslint'
+2.560  ⚠ See more info here: https://nextjs.org/docs/messages/invalid-next-config
+2.590    ▲ Next.js 16.0.1 (Turbopack)
+2.590 
+2.594  ⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+2.665    Creating an optimized production build ...
+53.47  ✓ Compiled successfully in 50s
+53.48    Skipping validation of types
+53.79    Collecting page data ...
+55.27    Generating static pages (0/30) ...
+56.59 Error occurred prerendering page "/login". Read more: https://nextjs.org/docs/messages/prerender-error
+56.60 Error: The default export is not a React Component in "/login/page"
+56.60     at ignore-listed frames
+56.60 Export encountered an error on /(auth)/login/page: /login, exiting the build.
+56.66  ⨯ Next.js build worker exited with code: 1 and signal: null
+56.81 npm notice
+56.81 npm notice New major version of npm available! 10.8.2 -> 11.6.2
+56.81 npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.6.2
+56.81 npm notice To update run: npm install -g npm@11.6.2
+56.81 npm notice
 ------
 Dockerfile:31
 

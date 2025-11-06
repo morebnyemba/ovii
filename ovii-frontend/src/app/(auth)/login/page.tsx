@@ -48,7 +48,15 @@ const COLORS = {
   }
 };
 
-function Login() {
+export default function LoginPageWrapper() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <LoginPage />
+    </Suspense>
+  );
+}
+
+function LoginPage() {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
