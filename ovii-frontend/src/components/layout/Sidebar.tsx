@@ -22,11 +22,11 @@ const userNavItems = [
 ];
 
 const agentNavItems = [
-  { name: 'Dashboard', href: '/agent/dashboard', icon: Wallet },
-  { name: 'Onboarding', href: '/agent/onboarding', icon: Users },
-  { name: 'Cash In/Out', href: '/agent/cash-in-out', icon: Briefcase },
-  { name: 'Commissions', href: '/agent/commissions', icon: DollarSign },
-  { name: 'Profile', href: '/agent/profile', icon: User },
+  { name: 'Dashboard', href: '/agents', icon: Wallet },
+  { name: 'Onboarding', href: '/become-an-agent/apply', icon: Users },
+  { name: 'Cash In/Out', href: '/agents/cash-in-out', icon: Briefcase },
+  { name: 'Commissions', href: '/agents/commissions', icon: DollarSign },
+  { name: 'Profile', href: '/agents/profile', icon: User },
 ];
 
 const SidebarContent = ({ setSidebarOpen }: { setSidebarOpen: (isOpen: boolean) => void }) => {
