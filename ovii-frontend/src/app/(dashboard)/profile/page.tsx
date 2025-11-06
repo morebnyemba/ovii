@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect } from 'react';
 import { useUserStore } from '@/lib/store/useUserStore';
 import { motion } from 'framer-motion';

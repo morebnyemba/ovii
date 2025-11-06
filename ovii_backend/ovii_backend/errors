@@ -1,14 +1,73 @@
-Failed to load resource: the server responded with a status of 404 ()Understand this error
-5The resource <URL> was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.Understand this warning
-1e114bce40587d7f.js:1 User profile refreshed.
-ff2fceb2231074e7.js:1 Uncaught TypeError: Cannot read properties of undefined (reading 'length')
-    at j (ff2fceb2231074e7.js:1:3597)
-    at ah (ff07fd46409b0e0a.js:19:61569)
-    at oY (ff07fd46409b0e0a.js:19:81844)
-    at it (ff07fd46409b0e0a.js:19:92907)
-    at sa (ff07fd46409b0e0a.js:19:135885)
-    at ff07fd46409b0e0a.js:19:135730
-    at sl (ff07fd46409b0e0a.js:19:135738)
-    at u3 (ff07fd46409b0e0a.js:19:131682)
-    at sR (ff07fd46409b0e0a.js:19:156981)
-    at MessagePort.O (ff07fd46409b0e0a.js:19:6590)Understand this error
+ => [celery_beat] resolving provenance for metadata file                                                                                                                      0.0s
+------
+ > [frontend builder 5/5] RUN npm run build:
+2.495 
+2.495 > ovii-frontend@0.1.0 build
+2.495 > next build
+2.495 
+5.832  ⚠ `eslint` configuration in next.config.ts is no longer supported. See more info here: https://nextjs.org/docs/app/api-reference/cli/next#next-lint-options
+5.844  ⚠ Invalid next.config.ts options detected: 
+5.844  ⚠     Unrecognized key(s) in object: 'eslint'
+5.844  ⚠ See more info here: https://nextjs.org/docs/messages/invalid-next-config
+5.905    ▲ Next.js 16.0.1 (Turbopack)
+5.905 
+5.912  ⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+6.023    Creating an optimized production build ...
+69.98 
+69.98 > Build error occurred
+69.99 Error: Turbopack build failed with 2 errors:
+69.99 ./src/app/(dashboard)/profile/page.tsx:1:20
+69.99 Ecmascript file had an error
+69.99 > 1 | import { useState, useEffect } from 'react';
+69.99     |                    ^^^^^^^^^
+69.99   2 | import { useUserStore } from '@/lib/store/useUserStore';
+69.99   3 | import { motion } from 'framer-motion';
+69.99   4 | import { FiUser, FiMail, FiPhone, FiCalendar, FiMapPin, FiShield, FiEdit, FiSave, FiX } from 'react-icons/fi';
+69.99 
+69.99 You're importing a component that needs `useEffect`. This React Hook only works in a Client Component. To fix, mark the file (or its parent) with the `"use client"` directive.
+69.99 
+69.99  Learn more: https://nextjs.org/docs/app/api-reference/directives/use-client
+69.99 
+69.99 
+69.99 
+69.99 
+69.99 ./src/app/(dashboard)/profile/page.tsx:1:10
+69.99 Ecmascript file had an error
+69.99 > 1 | import { useState, useEffect } from 'react';
+69.99     |          ^^^^^^^^
+69.99   2 | import { useUserStore } from '@/lib/store/useUserStore';
+69.99   3 | import { motion } from 'framer-motion';
+69.99   4 | import { FiUser, FiMail, FiPhone, FiCalendar, FiMapPin, FiShield, FiEdit, FiSave, FiX } from 'react-icons/fi';
+69.99 
+69.99 You're importing a component that needs `useState`. This React Hook only works in a Client Component. To fix, mark the file (or its parent) with the `"use client"` directive.
+69.99 
+69.99  Learn more: https://nextjs.org/docs/app/api-reference/directives/use-client
+69.99 
+69.99 
+69.99 
+69.99 
+69.99     at <unknown> (./src/app/(dashboard)/profile/page.tsx:1:20)
+69.99     at <unknown> (./src/app/(dashboard)/profile/page.tsx:1:10)
+70.13 npm notice
+70.13 npm notice New major version of npm available! 10.8.2 -> 11.6.2
+70.13 npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.6.2
+70.13 npm notice To update run: npm install -g npm@11.6.2
+70.13 npm notice
+------
+Dockerfile:31
+
+--------------------
+
+  29 |     
+
+  30 |     # Build the Next.js application
+
+  31 | >>> RUN npm run build
+
+  32 |     
+
+  33 |     # --- Stage 3: Production Runner ---
+
+--------------------
+
+target frontend: failed to solve: process "/bin/sh -c npm run build" did not complete successfully: exit code: 1
