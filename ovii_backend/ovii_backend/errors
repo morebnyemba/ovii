@@ -1,35 +1,40 @@
- => ERROR [frontend builder 5/5] RUN npm run build                                                                                                                           57.0s
- => [celery_beat] resolving provenance for metadata file                                                                                                                      0.1s
+ => ERROR [frontend builder 5/5] RUN npm run build                                                                                                                           60.5s
+ => [celery_worker] resolving provenance for metadata file                                                                                                                    0.1s
+ => [celery_beat] resolving provenance for metadata file                                                                                                                      0.0s
  => [backend] resolving provenance for metadata file                                                                                                                          0.0s
- => [celery_worker] resolving provenance for metadata file                                                                                                                    0.0s
 ------
  > [frontend builder 5/5] RUN npm run build:
-1.005 
-1.005 > ovii-frontend@0.1.0 build
-1.005 > next build
-1.005 
-2.548  ⚠ `eslint` configuration in next.config.ts is no longer supported. See more info here: https://nextjs.org/docs/app/api-reference/cli/next#next-lint-options
-2.560  ⚠ Invalid next.config.ts options detected: 
-2.560  ⚠     Unrecognized key(s) in object: 'eslint'
-2.560  ⚠ See more info here: https://nextjs.org/docs/messages/invalid-next-config
-2.590    ▲ Next.js 16.0.1 (Turbopack)
-2.590 
-2.594  ⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
-2.665    Creating an optimized production build ...
-53.47  ✓ Compiled successfully in 50s
-53.48    Skipping validation of types
-53.79    Collecting page data ...
-55.27    Generating static pages (0/30) ...
-56.59 Error occurred prerendering page "/login". Read more: https://nextjs.org/docs/messages/prerender-error
-56.60 Error: The default export is not a React Component in "/login/page"
-56.60     at ignore-listed frames
-56.60 Export encountered an error on /(auth)/login/page: /login, exiting the build.
-56.66  ⨯ Next.js build worker exited with code: 1 and signal: null
-56.81 npm notice
-56.81 npm notice New major version of npm available! 10.8.2 -> 11.6.2
-56.81 npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.6.2
-56.81 npm notice To update run: npm install -g npm@11.6.2
-56.81 npm notice
+2.138 
+2.138 > ovii-frontend@0.1.0 build
+2.138 > next build
+2.138 
+4.938  ⚠ `eslint` configuration in next.config.ts is no longer supported. See more info here: https://nextjs.org/docs/app/api-reference/cli/next#next-lint-options
+4.948  ⚠ Invalid next.config.ts options detected: 
+4.948  ⚠     Unrecognized key(s) in object: 'eslint'
+4.948  ⚠ See more info here: https://nextjs.org/docs/messages/invalid-next-config
+4.984    ▲ Next.js 16.0.1 (Turbopack)
+4.984 
+4.990  ⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+5.108    Creating an optimized production build ...
+56.26  ✓ Compiled successfully in 50s
+56.27    Skipping validation of types
+56.59    Collecting page data ...
+58.05    Generating static pages (0/30) ...
+59.84    Generating static pages (7/30) 
+59.88    Generating static pages (14/30) 
+60.09 Error occurred prerendering page "/become-an-agent/apply". Read more: https://nextjs.org/docs/messages/prerender-error
+60.10 ReferenceError: useEffect is not defined
+60.10     at o (.next/server/chunks/ssr/[root-of-the-server]__e0b85e1f._.js:9:10331) {
+60.10   digest: '1150778929'
+60.10 }
+60.11 Export encountered an error on /become-an-agent/apply/page: /become-an-agent/apply, exiting the build.
+60.15    Generating static pages (22/30) 
+60.18  ⨯ Next.js build worker exited with code: 1 and signal: null
+60.30 npm notice
+60.30 npm notice New major version of npm available! 10.8.2 -> 11.6.2
+60.30 npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.6.2
+60.30 npm notice To update run: npm install -g npm@11.6.2
+60.30 npm notice
 ------
 Dockerfile:31
 
@@ -48,5 +53,3 @@ Dockerfile:31
 --------------------
 
 target frontend: failed to solve: process "/bin/sh -c npm run build" did not complete successfully: exit code: 1
-
-root@vmi2841471:~/ovii# 
