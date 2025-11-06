@@ -14,7 +14,6 @@ from .serializers import (
 from .permissions import IsMobileVerifiedOrHigher
 from .services import (
     create_transaction,
-    get_transaction_charge,
     TransactionError,
     TransactionLimitExceededError,
 )
@@ -28,6 +27,8 @@ class GetTransactionChargeView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
+        from .services import get_transaction_charge
+
         transaction_type = request.query_params.get("transaction_type")
         amount_str = request.query_params.get("amount")
 
