@@ -6,6 +6,8 @@ import { motion } from 'framer-motion';
 import { FiUser, FiMail, FiPhone, FiCalendar, FiMapPin, FiShield, FiEdit, FiSave, FiX, FiBriefcase, FiAward, FiPercent } from 'react-icons/fi';
 import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
+import api from '@/lib/api';
+import toast from 'react-hot-toast';
 
 const COLORS = {
   indigo: '#1A1B4B',
@@ -111,9 +113,15 @@ export default function AgentProfilePage() {
 
   const handleSave = async () => {
     if (formData) {
-      // This will require a new API endpoint for updating agent profile
-      // For now, we'll just toggle editing off.
-      // await api.patch('/agents/profile/', formData);
+      try {
+        await api.patch('/agents/profile/', formData);
+        toast.success('Profile updated successfully!');
+        // Refresh user data to update the store
+        await useUserStore.getState().fetchUser();
+      } catch (error: any) {
+        const errorMessage = error.response?.data?.detail || 'Failed to update profile. Please try again.';
+        toast.error(errorMessage);
+      }
     }
     setIsEditing(false);
   };
