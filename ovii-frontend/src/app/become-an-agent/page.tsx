@@ -62,7 +62,7 @@ export default function AgentPage() {
           >
             Join our network of trusted agents and provide essential financial services to your community while growing your income.
           </p>
-          <Link href="/register">
+          <Link href="/become-an-agent/apply">
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}

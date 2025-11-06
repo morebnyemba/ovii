@@ -1,8 +1,14 @@
 from django.contrib import admin
 from django.contrib import messages
-from .models import Agent
+from .models import Agent, AgentTier
 from users.models import OviiUser
 from users.tasks import send_realtime_notification
+
+
+@admin.register(AgentTier)
+class AgentTierAdmin(admin.ModelAdmin):
+    list_display = ('name', 'commission_rate')
+    search_fields = ('name',)
 
 
 @admin.register(Agent)

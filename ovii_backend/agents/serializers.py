@@ -11,6 +11,7 @@ from wallets.models import Transaction
 
 class AgentProfileSerializer(serializers.ModelSerializer):
     """Serializer to display an agent's profile details."""
+    tier = serializers.StringRelatedField()
 
     class Meta:
         model = Agent
@@ -18,7 +19,7 @@ class AgentProfileSerializer(serializers.ModelSerializer):
             "agent_code",
             "business_name",
             "location",
-            "commission_rate",
+            "tier",
             "is_approved",
             "created_at",
         ]

@@ -9,6 +9,23 @@ from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 
 
+class AgentTier(models.Model):
+    """
+    Represents a tier for an agent, determining their commission rate.
+    """
+    name = models.CharField(_("tier name"), max_length=100, unique=True)
+    commission_rate = models.DecimalField(
+        _("commission rate"),
+        max_digits=5,
+        decimal_places=2,
+        default=0.00,
+        help_text=_("Commission rate for this tier."),
+    )
+
+    def __str__(self):
+        return self.name
+
+
 class Agent(models.Model):
     """
     Represents an Agent in the system, linked to an OviiUser.
@@ -36,12 +53,12 @@ class Agent(models.Model):
         max_length=255,
         help_text=_("Physical location or area of operation."),
     )
-    commission_rate = models.DecimalField(
-        _("commission rate"),
-        max_digits=5,
-        decimal_places=2,
-        default=0.00,
-        help_text=_("Commission rate for the agent."),
+    tier = models.ForeignKey(
+        AgentTier,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="agents",
     )
     is_approved = models.BooleanField(
         default=False,
