@@ -154,7 +154,14 @@ export default function LoginPage() {
       await login(user, tokens.access, tokens.refresh);
 
       setVerificationSuccess(true);
-      setTimeout(() => router.push('/dashboard'), 1500);
+
+      // Check user role for redirection
+      const userRole = useUserStore.getState().user?.role;
+      if (userRole === 'AGENT') {
+        setTimeout(() => router.push('/agents'), 1500);
+      } else {
+        setTimeout(() => router.push('/dashboard'), 1500);
+      }
     } catch (err: any) {
       triggerError(getApiErrorMessage(err));
     } finally {
