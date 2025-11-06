@@ -318,7 +318,7 @@ export default function BecomeAgentPage() {
     }
 
     try {
-      await api.post('/agents/onboard/', data, {
+      await api.post('/agents/onboarding/', data, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },

@@ -73,7 +73,7 @@ export default function LandingPage() {
     { name: 'How It Works', href: '#how-it-works' },
     { name: 'Testimonials', href: '#testimonials' },
     { name: 'Security', href: '#security' },
-    { name: 'Become an Agent', href: '/become-an-agent/apply' },
+    { name: 'Become an Agent', href: '/become-an-agent' },
   ];
 
 

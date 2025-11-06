@@ -78,6 +78,36 @@ export default function AgentPage() {
           </Link>
         </motion.section>
 
+        {/* Requirements Section */}
+        <motion.section
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3, duration: 0.6 }}
+          className="w-full py-16"
+        >
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-12" style={{ color: COLORS.indigo }}>
+            Requirements to Become an Agent
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            <div className="bg-white p-6 rounded-2xl shadow-md">
+              <h3 className="text-xl font-bold mb-4" style={{ color: COLORS.indigo }}>Personal Requirements</h3>
+              <ul className="space-y-2 text-left text-gray-600">
+                <li className="flex items-center"><FiCheckCircle className="text-green-500 mr-2" /> National ID or Passport</li>
+                <li className="flex items-center"><FiCheckCircle className="text-green-500 mr-2" /> Proof of Residence</li>
+                <li className="flex items-center"><FiCheckCircle className="text-green-500 mr-2" /> A smartphone with internet access</li>
+              </ul>
+            </div>
+            <div className="bg-white p-6 rounded-2xl shadow-md">
+              <h3 className="text-xl font-bold mb-4" style={{ color: COLORS.indigo }}>Business Requirements</h3>
+              <ul className="space-y-2 text-left text-gray-600">
+                <li className="flex items-center"><FiCheckCircle className="text-green-500 mr-2" /> A fixed, accessible business location</li>
+                <li className="flex items-center"><FiCheckCircle className="text-green-500 mr-2" /> Business Registration Certificate (optional)</li>
+                <li className="flex items-center"><FiCheckCircle className="text-green-500 mr-2" /> A minimum float amount</li>
+              </ul>
+            </div>
+          </div>
+        </motion.section>
+
         {/* Features Section */}
         <motion.section
           initial={{ opacity: 0 }}
