@@ -25,10 +25,12 @@ wheels/
 # Django
 *.log
 db.sqlite3
+*.sqlite3
 
 # User-uploaded media and collected static files
 /ovii_backend/media/
 /ovii_backend/static/
+/mediafiles/
 
 # Virtualenv
 venv/

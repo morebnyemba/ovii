@@ -39,11 +39,13 @@ def _create_and_send_notification(user, title, message):
         )
         send_sms_task.delay(sms_notification.id)
 
-    # Create Push notification (using phone number as device token placeholder)
+    # Create Push notification
+    # Note: In production, this should use actual device tokens from FCM/APNs.
+    # Currently using user ID as a placeholder for the simulated push service.
     push_notification = Notification.objects.create(
         recipient=user,
         channel=Notification.Channel.PUSH,
-        target=str(user.phone_number) if user.phone_number else str(user.id),
+        target=f"user_{user.id}",  # Placeholder - replace with actual device token in production
         title=title,
         message=message,
     )
