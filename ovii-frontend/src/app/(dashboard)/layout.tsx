@@ -3,7 +3,7 @@
 import React from 'react';
 import { Toaster } from 'react-hot-toast';
 import Link from 'next/link';
-import { Wallet, Landmark, History, User, LogOut, Menu, X } from 'lucide-react';
+import { Wallet, Landmark, History, User, LogOut, Menu, X, Gift } from 'lucide-react';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUserStore } from '@/lib/store/useUserStore';
@@ -33,6 +33,7 @@ export default function DashboardLayout({
     { name: 'Wallet', href: '/dashboard', icon: Wallet },
     { name: 'Send Money', href: '/send', icon: Landmark },
     { name: 'Transaction History', href: '/history', icon: History },
+    { name: 'Referrals', href: '/referrals', icon: Gift },
     { name: 'Profile', href: '/profile', icon: User },
   ];
 
