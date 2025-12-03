@@ -51,6 +51,10 @@ const COLORS = {
   }
 };
 
+// Referral code validation constants
+const REFERRAL_CODE_MAX_LENGTH = 10;
+const REFERRAL_CODE_PATTERN = /^[A-Z0-9]+$/;
+
 function RegisterPageContent() {
   // Form fields
   const [firstName, setFirstName] = useState('');
@@ -78,6 +82,12 @@ function RegisterPageContent() {
   const router = useRouter();
   const { login } = useUserStore();
 
+  // Validate and sanitize referral code
+  const sanitizeReferralCode = (code: string): string => {
+    const sanitized = code.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    return sanitized.slice(0, REFERRAL_CODE_MAX_LENGTH);
+  };
+
   // Ensure the CSRF token is fetched and set in the browser on component mount.
   useCsrf();
 
@@ -96,7 +106,10 @@ function RegisterPageContent() {
     // Check for referral code in URL parameters
     const refCode = searchParams?.get('ref');
     if (refCode) {
-      setReferralCode(refCode.toUpperCase());
+      const sanitized = sanitizeReferralCode(refCode);
+      if (sanitized && REFERRAL_CODE_PATTERN.test(sanitized)) {
+        setReferralCode(sanitized);
+      }
     }
   }, [searchParams]);
 
@@ -408,9 +421,9 @@ function RegisterPageContent() {
               id="referralCode" 
               type="text" 
               value={referralCode} 
-              onChange={(e) => setReferralCode(e.target.value.toUpperCase())} 
+              onChange={(e) => setReferralCode(sanitizeReferralCode(e.target.value))} 
               placeholder="Enter referral code" 
-              maxLength={10}
+              maxLength={REFERRAL_CODE_MAX_LENGTH}
               className="w-full rounded-xl border-0 bg-white/5 py-3 pl-10 pr-3 focus:outline-none focus:ring-2 backdrop-blur-sm transition duration-300 uppercase"
               style={{
                 color: COLORS.indigo,

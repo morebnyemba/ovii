@@ -57,6 +57,7 @@ export default function DashboardLayout({
       setNotifications(response.data);
       setUnreadCount(response.data.filter((n: Notification) => !n.is_read).length);
     } catch (error) {
+      // Silently fail for notification fetching - non-critical feature
       console.error('Failed to fetch notifications:', error);
     }
   }, [isAuthenticated]);
@@ -69,13 +70,21 @@ export default function DashboardLayout({
   }, [fetchNotifications]);
 
   const markAsRead = async (id: number) => {
+    // Optimistically update UI
+    const previousNotifications = notifications;
+    const previousUnreadCount = unreadCount;
+    
+    setNotifications(prev => 
+      prev.map(n => n.id === id ? { ...n, is_read: true } : n)
+    );
+    setUnreadCount(prev => Math.max(0, prev - 1));
+    
     try {
       await api.patch(`/notifications/notifications/${id}/`, { is_read: true });
-      setNotifications(prev => 
-        prev.map(n => n.id === id ? { ...n, is_read: true } : n)
-      );
-      setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (error) {
+      // Revert optimistic update on failure
+      setNotifications(previousNotifications);
+      setUnreadCount(previousUnreadCount);
       console.error('Failed to mark notification as read:', error);
     }
   };

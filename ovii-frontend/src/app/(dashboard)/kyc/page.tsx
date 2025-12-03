@@ -203,8 +203,12 @@ export default function KYCPage() {
       setSelectedDocType('');
       fetchDocuments();
       fetchUser();
-    } catch (error: any) {
-      const message = error.response?.data?.detail || 'Failed to upload document';
+    } catch (error: unknown) {
+      let message = 'Failed to upload document';
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { response?: { data?: { detail?: string } } };
+        message = axiosError.response?.data?.detail || message;
+      }
       toast.error(message);
     } finally {
       setUploading(false);
