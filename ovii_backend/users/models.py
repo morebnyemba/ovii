@@ -11,9 +11,18 @@ from django.contrib.auth.hashers import make_password, check_password
 from phonenumber_field.modelfields import PhoneNumberField
 from django.utils.translation import gettext_lazy as _
 from django.core.validators import FileExtensionValidator, ValidationError
+from decimal import Decimal
 import uuid
+import secrets
+import string
 from datetime import timedelta
 from django_countries.fields import CountryField
+
+
+def generate_referral_code(length=8):
+    """Generates a unique referral code."""
+    alphabet = string.ascii_uppercase + string.digits
+    return ''.join(secrets.choice(alphabet) for _ in range(length))
 
 def FileSizeValidator(value): # Custom validator for file size
     limit = 2 * 1024 * 1024  # 2MB
@@ -193,6 +202,26 @@ class OviiUser(AbstractUser):
         _("role"), max_length=20, choices=Role.choices, default=Role.CUSTOMER
     )
 
+    # Referral code for this user (unique per user)
+    referral_code = models.CharField(
+        _("referral code"),
+        max_length=10,
+        unique=True,
+        null=True,
+        blank=True,
+        help_text=_("Unique code that this user can share to refer others."),
+    )
+
+    # The user who referred this user (if any)
+    referred_by = models.ForeignKey(
+        "self",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="referrals",
+        help_text=_("The user who referred this user."),
+    )
+
     # Assign the custom manager to the `objects` attribute.
     objects = OviiUserManager()
 
@@ -207,6 +236,17 @@ class OviiUser(AbstractUser):
     def check_pin(self, raw_pin):
         """Checks a raw PIN against the stored hash."""
         return check_password(raw_pin, self.pin)
+
+    def generate_referral_code(self):
+        """Generates a unique referral code for this user."""
+        if not self.referral_code:
+            code = generate_referral_code()
+            # Ensure uniqueness
+            while OviiUser.objects.filter(referral_code=code).exists():
+                code = generate_referral_code()
+            self.referral_code = code
+            self.save(update_fields=["referral_code"])
+        return self.referral_code
 
 
 class OTPRequest(models.Model):
@@ -254,3 +294,81 @@ class KYCDocument(models.Model):
     )
     uploaded_at = models.DateTimeField(auto_now_add=True)
     reviewed_at = models.DateTimeField(null=True, blank=True)
+
+
+class Referral(models.Model):
+    """
+    Tracks referral relationships and bonus rewards.
+    """
+
+    class BonusStatus(models.TextChoices):
+        PENDING = "PENDING", _("Pending")
+        CREDITED = "CREDITED", _("Credited")
+        EXPIRED = "EXPIRED", _("Expired")
+
+    # The user who made the referral
+    referrer = models.ForeignKey(
+        OviiUser,
+        on_delete=models.CASCADE,
+        related_name="made_referrals",
+        help_text=_("The user who made the referral."),
+    )
+
+    # The user who was referred
+    referred = models.ForeignKey(
+        OviiUser,
+        on_delete=models.CASCADE,
+        related_name="received_referrals",
+        help_text=_("The user who was referred."),
+    )
+
+    # The referral code used
+    referral_code = models.CharField(
+        _("referral code used"),
+        max_length=10,
+        help_text=_("The referral code that was used."),
+    )
+
+    # Bonus amount for the referrer
+    referrer_bonus = models.DecimalField(
+        _("referrer bonus"),
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        help_text=_("Bonus amount credited to the referrer."),
+    )
+
+    # Bonus amount for the referred user
+    referred_bonus = models.DecimalField(
+        _("referred bonus"),
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        help_text=_("Bonus amount credited to the referred user."),
+    )
+
+    # Status of the referral bonus
+    bonus_status = models.CharField(
+        _("bonus status"),
+        max_length=10,
+        choices=BonusStatus.choices,
+        default=BonusStatus.PENDING,
+    )
+
+    # When the referral was created
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    # When the bonus was credited
+    credited_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        # Prevent duplicate referrals for the same referred user
+        constraints = [
+            models.UniqueConstraint(
+                fields=["referred"],
+                name="unique_referred_user",
+            )
+        ]
+
+    def __str__(self):
+        return f"Referral: {self.referrer} -> {self.referred}"

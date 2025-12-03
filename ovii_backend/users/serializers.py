@@ -8,7 +8,7 @@ from rest_framework import serializers
 from django.utils import timezone
 from phonenumber_field.serializerfields import PhoneNumberField
 from rest_framework_simplejwt.tokens import RefreshToken
-from .models import OviiUser, OTPRequest, KYCDocument, VerificationLevels
+from .models import OviiUser, OTPRequest, KYCDocument, VerificationLevels, Referral
 from .tasks import generate_and_log_otp, create_user_wallet
 from django_countries.serializer_fields import CountryField
 
@@ -19,6 +19,7 @@ class UserDetailSerializer(serializers.ModelSerializer):
     Used for the /me endpoint and admin user management.
     """
     country = CountryField(country_dict=True)
+    referral_count = serializers.SerializerMethodField()
 
     class Meta:
         model = OviiUser
@@ -43,6 +44,8 @@ class UserDetailSerializer(serializers.ModelSerializer):
             "is_active",
             "has_set_pin",
             "verification_level",
+            "referral_code",
+            "referral_count",
         ]
         # Make fields read-only that should not be updated by the user via this serializer.
         read_only_fields = [
@@ -56,7 +59,13 @@ class UserDetailSerializer(serializers.ModelSerializer):
             "is_active",
             "has_set_pin",
             "verification_level",
+            "referral_code",
+            "referral_count",
         ]
+
+    def get_referral_count(self, obj):
+        """Returns the count of successful referrals made by this user."""
+        return obj.referrals.count()
 
 
 class UserProfileUpdateSerializer(serializers.ModelSerializer):
@@ -133,12 +142,19 @@ class InitialRegistrationSerializer(serializers.Serializer):
     """
     Serializer for the first step of registration.
     Collects basic info, creates an inactive user, and triggers an OTP.
+    Optionally accepts a referral_code.
     """
 
     first_name = serializers.CharField(max_length=150)
     last_name = serializers.CharField(max_length=150)
     phone_number = PhoneNumberField()
     email = serializers.EmailField(required=False, allow_blank=True)
+    referral_code = serializers.CharField(
+        max_length=10,
+        required=False,
+        allow_blank=True,
+        help_text="Optional referral code from another user.",
+    )
     request_id = serializers.UUIDField(
         read_only=True,
         help_text="The unique ID for the OTP request. Send this back during verification.",
@@ -160,9 +176,27 @@ class InitialRegistrationSerializer(serializers.Serializer):
             )
         return value
 
+    def validate_referral_code(self, value):
+        """Check that the referral code is valid if provided."""
+        if value:
+            try:
+                referrer = OviiUser.objects.get(referral_code=value.upper())
+                return referrer
+            except OviiUser.DoesNotExist:
+                raise serializers.ValidationError("Invalid referral code.")
+        return None
+
     def create(self, validated_data):
+        # Extract referrer if referral code was provided
+        referrer = validated_data.pop("referral_code", None)
+
         # Create an inactive user first.
-        OviiUser.objects.create_user(is_active=False, **validated_data)
+        user = OviiUser.objects.create_user(is_active=False, **validated_data)
+
+        # If a valid referrer was found, set the referred_by relationship
+        if referrer:
+            user.referred_by = referrer
+            user.save(update_fields=["referred_by"])
 
         # Now, trigger the OTP generation for this phone number.
         phone_number = validated_data["phone_number"]
@@ -295,6 +329,17 @@ class UserRegistrationVerifySerializer(BaseOTPVerificationSerializer):
         user.verification_level = VerificationLevels.LEVEL_1
         user.save(update_fields=["is_active", "verification_level"])
 
+        # Create a Referral record if the user was referred
+        if user.referred_by:
+            from decimal import Decimal
+            Referral.objects.create(
+                referrer=user.referred_by,
+                referred=user,
+                referral_code=user.referred_by.referral_code,
+                referrer_bonus=Decimal("5.00"),  # Default bonus amounts
+                referred_bonus=Decimal("2.00"),
+            )
+
         # Asynchronously create the wallet and send a welcome notification.
         create_user_wallet.delay(user.id)
         otp_request.delete()
@@ -331,3 +376,118 @@ class KYCDocumentSerializer(serializers.ModelSerializer):
             "uploaded_at",
         ]
         read_only_fields = ["id", "status", "uploaded_at"]
+
+
+# --- Referral Serializers ---
+
+
+class ReferralSerializer(serializers.ModelSerializer):
+    """Serializer for viewing referral information."""
+
+    referrer_phone = serializers.CharField(source="referrer.phone_number", read_only=True)
+    referred_phone = serializers.CharField(source="referred.phone_number", read_only=True)
+    referred_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Referral
+        fields = [
+            "id",
+            "referrer_phone",
+            "referred_phone",
+            "referred_name",
+            "referral_code",
+            "referrer_bonus",
+            "referred_bonus",
+            "bonus_status",
+            "created_at",
+            "credited_at",
+        ]
+        read_only_fields = fields
+
+    def get_referred_name(self, obj):
+        """Returns the name of the referred user."""
+        return f"{obj.referred.first_name} {obj.referred.last_name}"
+
+
+class GenerateReferralCodeSerializer(serializers.Serializer):
+    """Serializer for generating a referral code."""
+
+    referral_code = serializers.CharField(read_only=True)
+
+
+# --- PIN Reset Serializers ---
+
+
+class RequestPINResetSerializer(serializers.Serializer):
+    """
+    Serializer for requesting a PIN reset. Uses OTP verification.
+    """
+
+    request_id = serializers.UUIDField(
+        read_only=True,
+        help_text="The unique ID for the OTP request. Send this back during verification.",
+    )
+
+    def create(self, validated_data):
+        user = self.context["request"].user
+        # Trigger the Celery task to generate and log the OTP
+        task_result = generate_and_log_otp.delay(str(user.phone_number))
+        request_id = task_result.get()
+        return {"request_id": request_id, "phone_number": str(user.phone_number)}
+
+
+class VerifyAndResetPINSerializer(BaseOTPVerificationSerializer):
+    """
+    Serializer for verifying OTP and resetting the transaction PIN.
+    """
+
+    new_pin = serializers.CharField(
+        write_only=True, style={"input_type": "password"}, min_length=4, max_length=4
+    )
+    new_pin_confirmation = serializers.CharField(
+        write_only=True, style={"input_type": "password"}, min_length=4, max_length=4
+    )
+
+    def validate(self, attrs):
+        # First, validate OTP
+        attrs = super().validate(attrs)
+
+        # Validate PIN match
+        if attrs["new_pin"] != attrs["new_pin_confirmation"]:
+            raise serializers.ValidationError(
+                {"new_pin_confirmation": "PINs do not match."}
+            )
+        if not attrs["new_pin"].isdigit():
+            raise serializers.ValidationError({"new_pin": "PIN must be numeric."})
+
+        # Verify the OTP belongs to the authenticated user
+        otp_request = attrs["otp_request"]
+        user = self.context["request"].user
+        if str(otp_request.phone_number) != str(user.phone_number):
+            raise serializers.ValidationError("OTP does not match your phone number.")
+
+        return attrs
+
+    def create(self, validated_data):
+        user = self.context["request"].user
+        otp_request = validated_data["otp_request"]
+
+        # Reset the PIN
+        user.set_pin(validated_data["new_pin"])
+        user.has_set_pin = True
+        user.save(update_fields=["pin", "has_set_pin"])
+
+        # Delete the used OTP
+        otp_request.delete()
+
+        # Issue new tokens with updated has_set_pin claim
+        refresh = RefreshToken.for_user(user)
+        refresh.access_token["has_set_pin"] = user.has_set_pin
+
+        return {
+            "detail": "PIN reset successfully.",
+            "tokens": {
+                "refresh": str(refresh),
+                "access": str(refresh.access_token),
+            },
+        }

@@ -9,6 +9,7 @@ from .models import (
     OTPRequest,
     VerificationLevels,
     DocumentStatus,
+    Referral,
 )
 from .tasks import send_realtime_notification
 
@@ -33,6 +34,7 @@ class OviiUserAdmin(UserAdmin):
         "id_number",
         "is_staff",
         "verification_level",
+        "referral_code",
     )
     # Register the custom admin action.
     actions = ["approve_identity_verification", "approve_address_verification"]
@@ -41,7 +43,7 @@ class OviiUserAdmin(UserAdmin):
     list_filter = ("is_staff", "is_active", "verification_level")
 
     # Fields that can be searched in the admin list view.
-    search_fields = ("phone_number", "email", "first_name", "last_name", "id_number")
+    search_fields = ("phone_number", "email", "first_name", "last_name", "id_number", "referral_code")
 
     # Default ordering for the user list.
     ordering = ("phone_number",)
@@ -90,6 +92,16 @@ class OviiUserAdmin(UserAdmin):
                     "user_permissions",
                     "verification_level",
                     "has_set_pin",
+                )
+            },
+        ),
+        # Referral information section
+        (
+            _("Referral Information"),
+            {
+                "fields": (
+                    "referral_code",
+                    "referred_by",
                 )
             },
         ),
@@ -242,3 +254,49 @@ class OTPRequestAdmin(admin.ModelAdmin):
     def is_expired_status(self, obj):
         """Custom method to display the expiration status in the admin list."""
         return obj.is_expired()
+
+
+@admin.register(Referral)
+class ReferralAdmin(admin.ModelAdmin):
+    """Admin configuration for referrals."""
+
+    list_display = (
+        "referrer",
+        "referred",
+        "referral_code",
+        "referrer_bonus",
+        "referred_bonus",
+        "bonus_status",
+        "created_at",
+        "credited_at",
+    )
+    list_filter = ("bonus_status", "created_at", "credited_at")
+    search_fields = (
+        "referrer__phone_number",
+        "referrer__email",
+        "referred__phone_number",
+        "referred__email",
+        "referral_code",
+    )
+    readonly_fields = ("created_at", "credited_at")
+    raw_id_fields = ("referrer", "referred")
+    actions = ["credit_referral_bonuses"]
+
+    @admin.action(description="Credit pending referral bonuses")
+    def credit_referral_bonuses(self, request, queryset):
+        """
+        Admin action to credit pending referral bonuses.
+        This would integrate with the wallet system in a production environment.
+        """
+        credited_count = 0
+        for referral in queryset.filter(bonus_status=Referral.BonusStatus.PENDING):
+            # In production, this would credit the wallet and create transactions
+            # For now, we just mark it as credited
+            referral.bonus_status = Referral.BonusStatus.CREDITED
+            referral.credited_at = timezone.now()
+            referral.save(update_fields=["bonus_status", "credited_at"])
+            credited_count += 1
+
+        self.message_user(
+            request, f"{credited_count} referral bonuses were credited successfully."
+        )

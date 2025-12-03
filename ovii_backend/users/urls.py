@@ -15,6 +15,12 @@ from .views import (
     UserLoginView,
     UserRegistrationStartView,
     UserRegistrationVerifyView,
+    GenerateReferralCodeView,
+    MyReferralCodeView,
+    MyReferralsView,
+    ReferralStatsView,
+    RequestPINResetView,
+    VerifyAndResetPINView,
 )
 
 # Create a router and register our viewsets with it.
@@ -40,6 +46,14 @@ urlpatterns = [
     # Authenticated User Endpoints
     path("me/", UserProfileView.as_view(), name="user-profile"),
     path("me/set-pin/", SetTransactionPINView.as_view(), name="user-set-pin"),
+    # PIN Reset Endpoints
+    path("me/pin/request-reset/", RequestPINResetView.as_view(), name="pin-reset-request"),
+    path("me/pin/reset/", VerifyAndResetPINView.as_view(), name="pin-reset-verify"),
+    # Referral Endpoints
+    path("me/referral-code/", MyReferralCodeView.as_view(), name="my-referral-code"),
+    path("me/referral-code/generate/", GenerateReferralCodeView.as_view(), name="generate-referral-code"),
+    path("me/referrals/", MyReferralsView.as_view(), name="my-referrals"),
+    path("me/referrals/stats/", ReferralStatsView.as_view(), name="referral-stats"),
     # Include the admin management URLs from the router.
     path("", include(router.urls)),
 ]
