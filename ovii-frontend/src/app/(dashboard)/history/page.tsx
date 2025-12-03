@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FiArrowUpRight, FiArrowDownLeft, FiLoader, FiAlertTriangle, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
+import { FiArrowUpRight, FiArrowDownLeft, FiAlertTriangle, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 import { useUserStore } from '@/lib/store/useUserStore';
 import Link from 'next/link';
 import Skeleton from 'react-loading-skeleton';
@@ -146,7 +146,32 @@ export default function HistoryPage() {
             transition={{ duration: 0.5, delay: 0.1 }}
             className="space-y-3"
           >
-            {transactions.map((tx, index) => (
+            {transactions.map((tx, index) => {
+              // Determine if this is an outgoing or incoming transaction based on type
+              // TRANSFER, WITHDRAWAL, PAYMENT, COMMISSION are outgoing (debit)
+              // DEPOSIT is incoming (credit)
+              const isOutgoing = ['TRANSFER', 'WITHDRAWAL', 'PAYMENT', 'COMMISSION'].includes(tx.transaction_type);
+              const isIncoming = tx.transaction_type === 'DEPOSIT';
+              
+              // Determine display text based on transaction type
+              const getTransactionLabel = () => {
+                switch (tx.transaction_type) {
+                  case 'TRANSFER':
+                    return `Sent to ${tx.receiver || 'Unknown'}`;
+                  case 'DEPOSIT':
+                    return `Received from ${tx.sender || 'Agent'}`;
+                  case 'WITHDRAWAL':
+                    return `Cash-out to ${tx.receiver || 'Agent'}`;
+                  case 'PAYMENT':
+                    return `Payment to ${tx.receiver || 'Merchant'}`;
+                  case 'COMMISSION':
+                    return 'Commission Fee';
+                  default:
+                    return tx.transaction_type;
+                }
+              };
+
+              return (
               <motion.div
                 key={tx.id}
                 initial={{ opacity: 0, x: -20 }}
@@ -157,10 +182,10 @@ export default function HistoryPage() {
                 <div className="flex items-center gap-4">
                   <div
                     className={`flex items-center justify-center w-10 h-10 rounded-full ${
-                      tx.transaction_type === 'TRANSFER' ? 'bg-red-100' : 'bg-green-100'
+                      isOutgoing ? 'bg-red-100' : 'bg-green-100'
                     }`}
                   >
-                    {tx.transaction_type === 'TRANSFER' ? (
+                    {isOutgoing ? (
                       <FiArrowUpRight style={{ color: COLORS.coral }} />
                     ) : (
                       <FiArrowDownLeft style={{ color: COLORS.mint }} />
@@ -168,8 +193,7 @@ export default function HistoryPage() {
                   </div>
                   <div>
                     <p className="font-semibold" style={{ color: COLORS.darkIndigo }}>
-                      {tx.transaction_type === 'TRANSFER' ? 'Sent to' : 'Received from'}{' '}
-                      {tx.receiver || 'Unknown'}
+                      {getTransactionLabel()}
                     </p>
                     <p className="text-sm text-gray-500">
                       {new Date(tx.timestamp).toLocaleDateString('en-US', {
@@ -188,10 +212,10 @@ export default function HistoryPage() {
                 <div className="text-right">
                   <p
                     className={`font-bold ${
-                      tx.transaction_type === 'TRANSFER' ? 'text-red-500' : 'text-green-500'
+                      isOutgoing ? 'text-red-500' : 'text-green-500'
                     }`}
                   >
-                    {tx.transaction_type === 'TRANSFER' ? '-' : '+'} {wallet?.currency}{' '}
+                    {isOutgoing ? '-' : '+'} {wallet?.currency}{' '}
                     {tx.amount}
                   </p>
                   <p
@@ -215,7 +239,8 @@ export default function HistoryPage() {
                   </p>
                 </div>
               </motion.div>
-            ))}
+              );
+            })}
           </motion.div>
 
           {/* Pagination */}

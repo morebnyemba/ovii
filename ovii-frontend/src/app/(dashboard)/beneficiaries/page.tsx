@@ -2,8 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiUserPlus, FiUser, FiPhone, FiLoader, FiCheckCircle, FiAlertTriangle, FiTrash2, FiArrowLeft } from 'react-icons/fi';
-import { useUserStore } from '@/lib/store/useUserStore';
+import { FiUserPlus, FiUser, FiPhone, FiLoader, FiCheckCircle, FiTrash2, FiArrowLeft } from 'react-icons/fi';
 import Link from 'next/link';
 import { z } from 'zod';
 
@@ -32,8 +31,6 @@ interface Beneficiary {
 }
 
 export default function BeneficiariesPage() {
-  const { user } = useUserStore();
-  
   // State for form fields
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -85,9 +82,13 @@ export default function BeneficiariesPage() {
     setBeneficiaries(beneficiaries.filter(b => b.id !== id));
   };
 
+  // Phone number formatting for Zimbabwe (+263 followed by 9 digits)
+  // Format: +263 7X XXX XXXX (total 12 digits + 3 spaces = 15 chars)
   const handlePhoneChange = (v: string) => {
     const cleaned = v.replace(/\D/g, '');
-    const match = cleaned.match(/^(\d{0,3})(\d{0,3})(\d{0,3})(\d{0,3})$/);
+    // Support up to 12 digits for Zimbabwe numbers (+263 + 9 digits)
+    const truncated = cleaned.slice(0, 12);
+    const match = truncated.match(/^(\d{0,3})(\d{0,2})(\d{0,3})(\d{0,4})$/);
     if (match) {
       const [, p1, p2, p3, p4] = match;
       const parts = [p1, p2, p3, p4].filter(Boolean);
@@ -182,7 +183,7 @@ export default function BeneficiariesPage() {
                       value={phone}
                       onChange={(e) => handlePhoneChange(e.target.value)}
                       placeholder="+263 712 345 678"
-                      maxLength={16}
+                      maxLength={15}
                       required
                       className={`w-full rounded-lg border-2 bg-transparent py-3 pl-10 pr-3 focus:outline-none focus:ring-2 focus:ring-offset-2 ${formErrors?.phone ? 'border-red-500' : 'border-mint'}`}
                       style={{ color: COLORS.indigo, backgroundColor: COLORS.white }}
