@@ -46,6 +46,11 @@ urlpatterns = [
         user_views.dashboard_chart_data,
         name="admin_chart_data",
     ),
+    path(
+        "admin/dashboard/enhanced-analytics/",
+        user_views.enhanced_dashboard_analytics,
+        name="admin_enhanced_analytics",
+    ),
 ]
 
 # Serve media files during development

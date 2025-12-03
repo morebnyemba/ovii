@@ -9,7 +9,7 @@ import datetime
 from django.http import JsonResponse
 from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models import Count, Sum
-from django.db.models.functions import TruncDay
+from django.db.models.functions import TruncDay, TruncWeek, TruncMonth
 from rest_framework import generics, viewsets, status, mixins
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
@@ -19,7 +19,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.throttling import AnonRateThrottle
 from wallets.permissions import IsMobileVerifiedOrHigher
 
-from .models import OviiUser, KYCDocument, VerificationLevels
+from .models import OviiUser, KYCDocument, VerificationLevels, Referral
 from wallets.models import Transaction
 from .serializers import (
     UserDetailSerializer,
@@ -31,6 +31,10 @@ from .serializers import (
     KYCDocumentSerializer,
     AdminUserManagementSerializer,
     UserProfileUpdateSerializer,
+    ReferralSerializer,
+    GenerateReferralCodeSerializer,
+    RequestPINResetSerializer,
+    VerifyAndResetPINSerializer,
 )
 
 # Get a logger instance for this file
@@ -389,4 +393,289 @@ def dashboard_chart_data(request):
         )
         return JsonResponse(
             {"detail": "An error occurred while generating chart data."}, status=500
+        )
+
+
+# --- Referral System Views ---
+
+
+class GenerateReferralCodeView(generics.GenericAPIView):
+    """
+    API view for a user to generate their unique referral code.
+    """
+
+    serializer_class = GenerateReferralCodeSerializer
+    permission_classes = [IsAuthenticated, IsMobileVerifiedOrHigher]
+
+    def post(self, request, *args, **kwargs):
+        user = request.user
+        try:
+            referral_code = user.generate_referral_code()
+            logger.info(f"Referral code generated for user: {user.id}")
+            return Response(
+                {"referral_code": referral_code},
+                status=status.HTTP_200_OK,
+            )
+        except Exception as e:
+            logger.error(
+                f"Failed to generate referral code for user {user.id}. Error: {e}",
+                exc_info=True,
+            )
+            return Response(
+                {"detail": "Failed to generate referral code."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+
+class MyReferralCodeView(APIView):
+    """
+    API view to get the authenticated user's referral code.
+    If the user doesn't have one, it generates one.
+    """
+
+    permission_classes = [IsAuthenticated, IsMobileVerifiedOrHigher]
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        if not user.referral_code:
+            user.generate_referral_code()
+        return Response(
+            {"referral_code": user.referral_code},
+            status=status.HTTP_200_OK,
+        )
+
+
+class MyReferralsView(generics.ListAPIView):
+    """
+    API view to list all referrals made by the authenticated user.
+    """
+
+    serializer_class = ReferralSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Referral.objects.filter(referrer=self.request.user).order_by("-created_at")
+
+
+class ReferralStatsView(APIView):
+    """
+    API view to get referral statistics for the authenticated user.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        referrals = Referral.objects.filter(referrer=user)
+        total_referrals = referrals.count()
+        credited_referrals = referrals.filter(
+            bonus_status=Referral.BonusStatus.CREDITED
+        ).count()
+        pending_referrals = referrals.filter(
+            bonus_status=Referral.BonusStatus.PENDING
+        ).count()
+        total_earnings = referrals.filter(
+            bonus_status=Referral.BonusStatus.CREDITED
+        ).aggregate(total=Sum("referrer_bonus"))["total"] or 0
+
+        return Response(
+            {
+                "referral_code": user.referral_code,
+                "total_referrals": total_referrals,
+                "credited_referrals": credited_referrals,
+                "pending_referrals": pending_referrals,
+                "total_earnings": total_earnings,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+# --- PIN Reset Views ---
+
+
+class RequestPINResetView(generics.GenericAPIView):
+    """
+    API view for an authenticated user to request a PIN reset.
+    Sends an OTP to the user's phone number.
+    """
+
+    serializer_class = RequestPINResetSerializer
+    permission_classes = [IsAuthenticated, IsMobileVerifiedOrHigher]
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        try:
+            serializer.is_valid(raise_exception=True)
+            response_data = serializer.save()
+            logger.info(f"PIN reset OTP requested for user: {request.user.id}")
+            return Response(response_data, status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.error(
+                f"Failed to request PIN reset for user {request.user.id}. Error: {e}",
+                exc_info=True,
+            )
+            return Response(
+                {"detail": "An unexpected error occurred."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+
+class VerifyAndResetPINView(generics.GenericAPIView):
+    """
+    API view to verify OTP and reset the transaction PIN.
+    """
+
+    serializer_class = VerifyAndResetPINSerializer
+    permission_classes = [IsAuthenticated, IsMobileVerifiedOrHigher]
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        try:
+            serializer.is_valid(raise_exception=True)
+            response_data = serializer.save()
+            logger.info(f"PIN reset successfully for user: {request.user.id}")
+            return Response(response_data, status=status.HTTP_200_OK)
+        except ValidationError as e:
+            logger.warning(
+                f"PIN reset failed for user {request.user.id}. Error: {e.detail}"
+            )
+            raise
+        except Exception as e:
+            logger.error(
+                f"Unexpected error resetting PIN for user {request.user.id}. Error: {e}",
+                exc_info=True,
+            )
+            return Response(
+                {"detail": "An unexpected error occurred."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+
+# --- Enhanced Analytics Dashboard Views ---
+
+
+@staff_member_required
+def enhanced_dashboard_analytics(request):
+    """
+    Provides enhanced analytics data for the admin dashboard.
+    Includes DAU/WAU/MAU metrics, KYC conversion rates, and more.
+    """
+    logger.info(f"Admin user {request.user.id} accessed enhanced dashboard analytics.")
+    try:
+        today = datetime.date.today()
+
+        # --- Active User Metrics ---
+        # Daily Active Users (DAU) - users who logged in today
+        dau = OviiUser.objects.filter(
+            last_login__date=today
+        ).count()
+
+        # Weekly Active Users (WAU) - users who logged in in the last 7 days
+        week_ago = today - datetime.timedelta(days=7)
+        wau = OviiUser.objects.filter(
+            last_login__date__gte=week_ago
+        ).count()
+
+        # Monthly Active Users (MAU) - users who logged in in the last 30 days
+        month_ago = today - datetime.timedelta(days=30)
+        mau = OviiUser.objects.filter(
+            last_login__date__gte=month_ago
+        ).count()
+
+        # Total registered users
+        total_users = OviiUser.objects.count()
+
+        # --- KYC Conversion Rates ---
+        level_0_count = OviiUser.objects.filter(verification_level=0).count()
+        level_1_count = OviiUser.objects.filter(verification_level=1).count()
+        level_2_count = OviiUser.objects.filter(verification_level=2).count()
+        level_3_count = OviiUser.objects.filter(verification_level=3).count()
+
+        # Calculate conversion rates
+        kyc_mobile_verified_rate = (
+            (level_1_count + level_2_count + level_3_count) / total_users * 100
+            if total_users > 0
+            else 0
+        )
+        kyc_identity_verified_rate = (
+            (level_2_count + level_3_count) / total_users * 100
+            if total_users > 0
+            else 0
+        )
+        kyc_fully_verified_rate = (
+            level_3_count / total_users * 100 if total_users > 0 else 0
+        )
+
+        # --- Referral Metrics ---
+        total_referrals = Referral.objects.count()
+        credited_referrals = Referral.objects.filter(
+            bonus_status=Referral.BonusStatus.CREDITED
+        ).count()
+        pending_referrals = Referral.objects.filter(
+            bonus_status=Referral.BonusStatus.PENDING
+        ).count()
+
+        # --- User Growth Trends (last 30 days) ---
+        signups_by_day = (
+            OviiUser.objects.filter(date_joined__date__gte=month_ago)
+            .annotate(day=TruncDay("date_joined"))
+            .values("day")
+            .annotate(count=Count("id"))
+            .order_by("day")
+        )
+        user_growth_data = {
+            "labels": [s["day"].strftime("%b %d") for s in signups_by_day],
+            "counts": [s["count"] for s in signups_by_day],
+        }
+
+        # --- Transaction Volume Trends (last 30 days) ---
+        transactions_by_day = (
+            Transaction.objects.filter(
+                timestamp__date__gte=month_ago,
+                status=Transaction.Status.COMPLETED,
+            )
+            .annotate(day=TruncDay("timestamp"))
+            .values("day")
+            .annotate(count=Count("id"), volume=Sum("amount"))
+            .order_by("day")
+        )
+        transaction_volume_data = {
+            "labels": [t["day"].strftime("%b %d") for t in transactions_by_day],
+            "counts": [t["count"] for t in transactions_by_day],
+            "volumes": [float(t["volume"] or 0) for t in transactions_by_day],
+        }
+
+        return JsonResponse(
+            {
+                "active_users": {
+                    "dau": dau,
+                    "wau": wau,
+                    "mau": mau,
+                    "total_users": total_users,
+                },
+                "kyc_metrics": {
+                    "level_0": level_0_count,
+                    "level_1": level_1_count,
+                    "level_2": level_2_count,
+                    "level_3": level_3_count,
+                    "mobile_verified_rate": round(kyc_mobile_verified_rate, 2),
+                    "identity_verified_rate": round(kyc_identity_verified_rate, 2),
+                    "fully_verified_rate": round(kyc_fully_verified_rate, 2),
+                },
+                "referral_metrics": {
+                    "total_referrals": total_referrals,
+                    "credited_referrals": credited_referrals,
+                    "pending_referrals": pending_referrals,
+                },
+                "user_growth_data": user_growth_data,
+                "transaction_volume_data": transaction_volume_data,
+            }
+        )
+    except Exception as e:
+        logger.error(
+            f"Failed to generate enhanced dashboard analytics. Error: {e}",
+            exc_info=True,
+        )
+        return JsonResponse(
+            {"detail": "An error occurred while generating analytics."}, status=500
         )
