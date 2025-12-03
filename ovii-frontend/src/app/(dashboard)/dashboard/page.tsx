@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { FiTrendingUp, FiSend, FiAlertTriangle, FiUser, FiUserPlus, FiDollarSign, FiArrowUpRight, FiArrowDownLeft, FiGift, FiShield } from 'react-icons/fi';
+import { FiTrendingUp, FiSend, FiAlertTriangle, FiUser, FiUserPlus, FiDollarSign, FiArrowUpRight, FiArrowDownLeft, FiGift, FiShield, FiCreditCard, FiBriefcase } from 'react-icons/fi';
 import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
 import { useUserStore } from '@/lib/store/useUserStore';
@@ -230,6 +230,26 @@ export default function DashboardPage() {
         <Card>
           <h2 className="font-bold text-lg" style={{ color: COLORS.indigo }}>Quick Actions</h2>
           <ul className="mt-4 space-y-4">
+            <li>
+              <Link 
+                href="/transfer" 
+                className="flex items-center gap-3 p-3 rounded-lg transition-colors hover:bg-indigo-50"
+                style={{ color: COLORS.darkIndigo }}
+              >
+                <FiCreditCard className="text-lg" style={{ color: COLORS.mint }} />
+                <span>Pay Merchant</span>
+              </Link>
+            </li>
+            <li>
+              <Link 
+                href="/cashout" 
+                className="flex items-center gap-3 p-3 rounded-lg transition-colors hover:bg-indigo-50"
+                style={{ color: COLORS.darkIndigo }}
+              >
+                <FiBriefcase className="text-lg" style={{ color: COLORS.coral }} />
+                <span>Cash Out</span>
+              </Link>
+            </li>
             <li>
               <Link 
                 href="/history" 
