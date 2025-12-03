@@ -48,6 +48,7 @@ DJANGO_APPS = [
 THIRD_PARTY_APPS = [
     "rest_framework",
     "rest_framework_simplejwt",
+    "drf_spectacular",
     "channels",
     "phonenumber_field",
     "django_celery_beat",
@@ -286,6 +287,31 @@ REST_FRAMEWORK = {
         "user": "1000/day",
         "otp.request": "5/hour",
     },
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+}
+
+# ------------------------------------------------------------------
+# 12.1 DRF-SPECTACULAR (OpenAPI/Swagger Documentation)
+# ------------------------------------------------------------------
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Ovii API",
+    "DESCRIPTION": "Ovii is a fintech wallet and payment gateway designed to provide a seamless, fast, and secure way for users in Zimbabwe and beyond to send, receive, and manage money.",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "CONTACT": {"email": "support@ovii.it.com"},
+    "LICENSE": {"name": "Proprietary"},
+    "TAGS": [
+        {"name": "Auth", "description": "Authentication and registration endpoints"},
+        {"name": "Users", "description": "User profile and management endpoints"},
+        {"name": "KYC", "description": "Know Your Customer document management"},
+        {"name": "Wallets", "description": "Wallet and transaction endpoints"},
+        {"name": "Referrals", "description": "Referral program endpoints"},
+        {"name": "Merchants", "description": "Merchant integration endpoints"},
+        {"name": "Agents", "description": "Agent cash-in/cash-out endpoints"},
+        {"name": "Notifications", "description": "Notification management endpoints"},
+    ],
+    "COMPONENT_SPLIT_REQUEST": True,
+    "SCHEMA_PATH_PREFIX": r"/api/",
 }
 
 # ------------------------------------------------------------------
@@ -380,6 +406,14 @@ TRANSACTION_LIMITS = {
     2: Decimal("1000.00"),
     3: Decimal("10000.00"),
 }
+
+# ------------------------------------------------------------------
+# 15.1 REFERRAL BONUS SETTINGS
+# ------------------------------------------------------------------
+# Amount credited to the user who made the referral
+REFERRAL_BONUS_REFERRER = Decimal("5.00")
+# Amount credited to the user who was referred
+REFERRAL_BONUS_REFERRED = Decimal("2.00")
 
 # ------------------------------------------------------------------
 # 16. JAZZMIN ADMIN THEME
