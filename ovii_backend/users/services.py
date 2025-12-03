@@ -78,10 +78,10 @@ def credit_referral_bonuses(referral_id: int) -> Referral:
                 wallet=referrer_wallet,
                 transaction_type=Transaction.TransactionType.COMMISSION,
                 amount=referral.referrer_bonus,
-                description=f"Referral bonus for referring {referral.referred.first_name} {referral.referred.last_name}",
+                description=f"Referral bonus (ref: {referral.id})",
                 status=Transaction.Status.COMPLETED,
             )
-            logger.info(f"Credited ${referral.referrer_bonus} referral bonus to user {referral.referrer.id}")
+            logger.info(f"Credited {referral.referrer_bonus} referral bonus to user {referral.referrer.id}")
         
         if referral.referred_bonus > Decimal("0.00"):
             referred_wallet.balance += referral.referred_bonus
@@ -92,10 +92,10 @@ def credit_referral_bonuses(referral_id: int) -> Referral:
                 wallet=referred_wallet,
                 transaction_type=Transaction.TransactionType.COMMISSION,
                 amount=referral.referred_bonus,
-                description=f"Welcome bonus for joining via referral from {referral.referrer.first_name} {referral.referrer.last_name}",
+                description=f"Welcome bonus (ref: {referral.id})",
                 status=Transaction.Status.COMPLETED,
             )
-            logger.info(f"Credited ${referral.referred_bonus} welcome bonus to user {referral.referred.id}")
+            logger.info(f"Credited {referral.referred_bonus} welcome bonus to user {referral.referred.id})")
         
         # Update referral status
         referral.bonus_status = Referral.BonusStatus.CREDITED

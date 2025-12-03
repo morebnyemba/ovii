@@ -20,6 +20,7 @@ from rest_framework.throttling import AnonRateThrottle
 from wallets.permissions import IsMobileVerifiedOrHigher
 
 from .models import OviiUser, KYCDocument, VerificationLevels, Referral
+from .tasks import process_referral_bonus
 from wallets.models import Transaction
 from .serializers import (
     UserDetailSerializer,
@@ -732,7 +733,6 @@ class ClaimReferralBonusView(APIView):
             )
         
         # Process the referral bonus asynchronously
-        from .tasks import process_referral_bonus
         process_referral_bonus.delay(referral.id)
         
         logger.info(f"Referral bonus claim initiated for user: {user.id}")

@@ -101,11 +101,11 @@ def process_referral_bonus(referral_id: int):
         # Send notifications to both users
         send_realtime_notification.delay(
             referral.referrer.id,
-            f"You earned ${referral.referrer_bonus} for referring {referral.referred.first_name}!"
+            f"You earned {referral.referrer_bonus} {referral.referrer.wallet.currency} for referring a friend!"
         )
         send_realtime_notification.delay(
             referral.referred.id,
-            f"You received a ${referral.referred_bonus} welcome bonus!"
+            f"You received a {referral.referred_bonus} {referral.referred.wallet.currency} welcome bonus!"
         )
         
         logger.info(f"Referral {referral_id} bonus processed successfully.")
