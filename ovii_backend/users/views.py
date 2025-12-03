@@ -54,7 +54,11 @@ class ApiRootView(APIView):
             {
                 "message": "Welcome to the Ovii API!",
                 "version": "1.0.0",
-                "docs": "/api/docs/",  # Example link to API documentation
+                "documentation": {
+                    "swagger": "/api/docs/",
+                    "redoc": "/api/redoc/",
+                    "openapi_schema": "/api/schema/",
+                },
             }
         )
 
@@ -681,4 +685,62 @@ def enhanced_dashboard_analytics(request):
         )
         return JsonResponse(
             {"detail": "An error occurred while generating analytics."}, status=500
+        )
+
+
+# --- Referral Bonus Credit Views ---
+
+
+class ClaimReferralBonusView(APIView):
+    """
+    API view for a user to claim their referral bonus.
+    The bonus is credited once the user has completed onboarding (set their PIN).
+    """
+
+    permission_classes = [IsAuthenticated, IsMobileVerifiedOrHigher]
+
+    def post(self, request, *args, **kwargs):
+        user = request.user
+        
+        # Check if user has set their PIN
+        if not user.has_set_pin:
+            return Response(
+                {"detail": "You must set your transaction PIN before claiming your referral bonus."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        
+        # Find the referral where this user was referred
+        try:
+            referral = Referral.objects.get(referred=user)
+        except Referral.DoesNotExist:
+            return Response(
+                {"detail": "No referral found for your account."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        
+        # Check if already claimed
+        if referral.bonus_status == Referral.BonusStatus.CREDITED:
+            return Response(
+                {"detail": "Your referral bonus has already been credited."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        
+        if referral.bonus_status == Referral.BonusStatus.EXPIRED:
+            return Response(
+                {"detail": "Your referral bonus has expired."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        
+        # Process the referral bonus asynchronously
+        from .tasks import process_referral_bonus
+        process_referral_bonus.delay(referral.id)
+        
+        logger.info(f"Referral bonus claim initiated for user: {user.id}")
+        return Response(
+            {
+                "detail": "Your referral bonus is being processed and will be credited shortly.",
+                "referrer_bonus": str(referral.referrer_bonus),
+                "referred_bonus": str(referral.referred_bonus),
+            },
+            status=status.HTTP_202_ACCEPTED,
         )

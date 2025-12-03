@@ -9,7 +9,7 @@ from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 import secrets
 import logging
-from .models import OTPRequest, OviiUser
+from .models import OTPRequest, OviiUser, Referral
 from wallets.models import Wallet
 
 # Get the custom logger
@@ -80,3 +80,63 @@ def send_realtime_notification(user_id: int, message: str):
     }
     async_to_sync(channel_layer.group_send)(room_group_name, event)
     return f"Notification sent to user {user_id}: '{message}'"
+
+
+@shared_task
+def process_referral_bonus(referral_id: int):
+    """
+    Processes a referral bonus asynchronously.
+    
+    This task credits the referral bonuses to both the referrer and referred user
+    after the referred user has completed their onboarding (e.g., set up their PIN).
+    
+    Args:
+        referral_id: The ID of the Referral to process.
+    """
+    from .services import credit_referral_bonuses, ReferralBonusError
+    
+    try:
+        referral = credit_referral_bonuses(referral_id)
+        
+        # Send notifications to both users
+        send_realtime_notification.delay(
+            referral.referrer.id,
+            f"You earned ${referral.referrer_bonus} for referring {referral.referred.first_name}!"
+        )
+        send_realtime_notification.delay(
+            referral.referred.id,
+            f"You received a ${referral.referred_bonus} welcome bonus!"
+        )
+        
+        logger.info(f"Referral {referral_id} bonus processed successfully.")
+        return f"Referral {referral_id} bonus processed successfully."
+    except ReferralBonusError as e:
+        logger.error(f"Failed to process referral {referral_id}: {e}")
+        return f"Failed to process referral {referral_id}: {e}"
+    except Exception as e:
+        logger.error(f"Unexpected error processing referral {referral_id}: {e}")
+        raise  # Re-raise for Celery retry logic
+
+
+@shared_task
+def process_pending_referral_bonuses():
+    """
+    Batch task to process all pending referral bonuses for eligible users.
+    
+    This task is designed to be run periodically (e.g., via Celery Beat) to
+    automatically credit referral bonuses when users become eligible.
+    """
+    from .services import check_referral_eligibility
+    
+    pending_referrals = Referral.objects.filter(
+        bonus_status=Referral.BonusStatus.PENDING
+    ).select_related("referred")
+    
+    processed_count = 0
+    for referral in pending_referrals:
+        if check_referral_eligibility(referral.referred):
+            process_referral_bonus.delay(referral.id)
+            processed_count += 1
+    
+    logger.info(f"Queued {processed_count} referral bonuses for processing.")
+    return f"Queued {processed_count} referral bonuses for processing."

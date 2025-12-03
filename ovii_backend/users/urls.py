@@ -21,6 +21,7 @@ from .views import (
     ReferralStatsView,
     RequestPINResetView,
     VerifyAndResetPINView,
+    ClaimReferralBonusView,
 )
 
 # Create a router and register our viewsets with it.
@@ -54,6 +55,7 @@ urlpatterns = [
     path("me/referral-code/generate/", GenerateReferralCodeView.as_view(), name="generate-referral-code"),
     path("me/referrals/", MyReferralsView.as_view(), name="my-referrals"),
     path("me/referrals/stats/", ReferralStatsView.as_view(), name="referral-stats"),
+    path("me/referrals/claim-bonus/", ClaimReferralBonusView.as_view(), name="claim-referral-bonus"),
     # Include the admin management URLs from the router.
     path("", include(router.urls)),
 ]
