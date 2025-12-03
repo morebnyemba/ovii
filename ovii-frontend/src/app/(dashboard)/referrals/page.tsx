@@ -173,7 +173,8 @@ export default function ReferralsPage() {
       setCopied(true);
       toast.success('Referral code copied!');
       setTimeout(() => setCopied(false), 2000);
-    } catch {
+    } catch (error) {
+      console.error('Failed to copy referral code:', error);
       toast.error('Failed to copy referral code');
     }
   };
@@ -181,17 +182,21 @@ export default function ReferralsPage() {
   const shareReferralCode = async () => {
     if (!stats?.referral_code) return;
     
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://ovii.it.com';
     const shareData = {
       title: 'Join Ovii',
       text: `Join Ovii using my referral code: ${stats.referral_code} and get a welcome bonus!`,
-      url: `https://ovii.it.com/register?ref=${stats.referral_code}`,
+      url: `${appUrl}/register?ref=${stats.referral_code}`,
     };
 
     if (navigator.share && navigator.canShare(shareData)) {
       try {
         await navigator.share(shareData);
-      } catch {
-        // User cancelled sharing, which is fine
+      } catch (error) {
+        // AbortError is thrown when user cancels - this is expected behavior
+        if (error instanceof Error && error.name !== 'AbortError') {
+          console.error('Share failed:', error);
+        }
       }
     } else {
       // Fallback to copy
