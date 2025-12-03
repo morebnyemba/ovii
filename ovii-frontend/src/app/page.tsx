@@ -74,6 +74,7 @@ export default function LandingPage() {
     { name: 'Testimonials', href: '#testimonials' },
     { name: 'Security', href: '#security' },
     { name: 'Become an Agent', href: '/become-an-agent' },
+    { name: 'Become a Merchant', href: '/become-a-merchant' },
   ];
 
 
@@ -188,18 +189,31 @@ export default function LandingPage() {
               ))}
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => router.push('/login')}
-                className="hidden sm:block px-6 py-2 rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl"
+                className="hidden sm:block px-5 py-2 rounded-xl font-semibold transition-all border-2"
+                style={{
+                  borderColor: COLORS.indigo,
+                  color: COLORS.indigo,
+                  backgroundColor: 'transparent',
+                }}
+              >
+                Login
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => router.push('/register')}
+                className="hidden sm:block px-5 py-2 rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl"
                 style={{
                   backgroundColor: COLORS.gold,
                   color: COLORS.indigo,
                 }}
               >
-                Get Started
+                Register
               </motion.button>
 
               {/* Mobile Menu Button */}
@@ -224,7 +238,7 @@ export default function LandingPage() {
           >
             <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
               <nav className="flex flex-col space-y-4">
-                {navItems.map((item) => ( // Changed from allNavLinks to navItems
+                {navItems.map((item) => (
                   <Link
                     key={item.name}
                     href={item.href}
@@ -235,21 +249,38 @@ export default function LandingPage() {
                     {item.name}
                   </Link>
                 ))}
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => {
-                    setIsMobileMenuOpen(false);
-                    router.push('/login');
-                  }}
-                  className="w-full mt-4 px-6 py-3 rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl"
-                  style={{
-                    backgroundColor: COLORS.gold,
-                    color: COLORS.indigo,
-                  }}
-                >
-                  Get Started
-                </motion.button>
+                <div className="border-t pt-4 mt-2 space-y-3">
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      router.push('/login');
+                    }}
+                    className="w-full px-6 py-3 rounded-xl font-semibold transition-all border-2"
+                    style={{
+                      borderColor: COLORS.indigo,
+                      color: COLORS.indigo,
+                    }}
+                  >
+                    Login
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      router.push('/register');
+                    }}
+                    className="w-full px-6 py-3 rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl"
+                    style={{
+                      backgroundColor: COLORS.gold,
+                      color: COLORS.indigo,
+                    }}
+                  >
+                    Register
+                  </motion.button>
+                </div>
               </nav>
             </div>
           </motion.div>
@@ -332,20 +363,21 @@ export default function LandingPage() {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => router.push('/login')}
+                onClick={() => router.push('/register')}
                 className="px-8 py-4 rounded-2xl font-bold text-lg shadow-2xl hover:shadow-3xl transition-all"
                 style={{
                   backgroundColor: COLORS.gold,
                   color: COLORS.indigo,
                 }}
               >
-                Start Banking Free
+                Get Started Free
                 <FiArrowRight className="inline ml-2" />
               </motion.button>
 
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
+                onClick={() => router.push('/login')}
                 className="px-8 py-4 rounded-2xl font-bold text-lg border-2 backdrop-blur-sm transition-all"
                 style={{
                   borderColor: COLORS.mint,
@@ -353,8 +385,7 @@ export default function LandingPage() {
                   backgroundColor: 'rgba(255, 255, 255, 0.1)',
                 }}
               >
-                <FiPlay className="inline mr-2" />
-                Watch Demo
+                Already have an account? Login
               </motion.button>
             </motion.div>
 
@@ -695,19 +726,34 @@ export default function LandingPage() {
             <p className="text-xl mb-8 opacity-90 max-w-2xl mx-auto">
               Join thousands of users who trust Ovii with their financial journey
             </p>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => router.push('/login')}
-              className="px-12 py-4 rounded-2xl font-bold text-lg shadow-2xl hover:shadow-3xl transition-all"
-              style={{
-                backgroundColor: COLORS.gold,
-                color: COLORS.indigo,
-              }}
-            >
-              Create Your Account Now
-              <FiArrowRight className="inline ml-2" />
-            </motion.button>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => router.push('/register')}
+                className="px-12 py-4 rounded-2xl font-bold text-lg shadow-2xl hover:shadow-3xl transition-all"
+                style={{
+                  backgroundColor: COLORS.gold,
+                  color: COLORS.indigo,
+                }}
+              >
+                Create Your Account
+                <FiArrowRight className="inline ml-2" />
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => router.push('/login')}
+                className="px-8 py-4 rounded-2xl font-bold text-lg border-2 transition-all"
+                style={{
+                  borderColor: COLORS.white,
+                  color: COLORS.white,
+                  backgroundColor: 'transparent',
+                }}
+              >
+                Login
+              </motion.button>
+            </div>
             <p className="mt-4 text-sm opacity-80">
               No credit card required • Free forever
             </p>
@@ -742,29 +788,140 @@ export default function LandingPage() {
               </p>
             </div>
             
-            {['Product', 'Company', 'Support', 'Legal'].map((category) => (
-              <div key={category}>
-                <h4 
-                  className="font-semibold mb-4"
-                  style={{ color: COLORS.white }}
-                >
-                  {category}
-                </h4>
-                <ul className="space-y-2">
-                  {['Features', 'Security', 'Pricing'].map((item) => (
-                    <li key={item}>
-                      <a 
-                        href="#"
-                        className="opacity-70 hover:opacity-100 transition-opacity"
-                        style={{ color: COLORS.white }}
-                      >
-                        {item}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+            {/* Product Links */}
+            <div>
+              <h4 
+                className="font-semibold mb-4"
+                style={{ color: COLORS.white }}
+              >
+                Product
+              </h4>
+              <ul className="space-y-2">
+                <li>
+                  <a 
+                    href="#features"
+                    className="opacity-70 hover:opacity-100 transition-opacity"
+                    style={{ color: COLORS.white }}
+                  >
+                    Features
+                  </a>
+                </li>
+                <li>
+                  <a 
+                    href="#security"
+                    className="opacity-70 hover:opacity-100 transition-opacity"
+                    style={{ color: COLORS.white }}
+                  >
+                    Security
+                  </a>
+                </li>
+                <li>
+                  <a 
+                    href="#how-it-works"
+                    className="opacity-70 hover:opacity-100 transition-opacity"
+                    style={{ color: COLORS.white }}
+                  >
+                    How It Works
+                  </a>
+                </li>
+              </ul>
+            </div>
+
+            {/* Get Started Links */}
+            <div>
+              <h4 
+                className="font-semibold mb-4"
+                style={{ color: COLORS.white }}
+              >
+                Get Started
+              </h4>
+              <ul className="space-y-2">
+                <li>
+                  <Link 
+                    href="/register"
+                    className="opacity-70 hover:opacity-100 transition-opacity"
+                    style={{ color: COLORS.white }}
+                  >
+                    Register
+                  </Link>
+                </li>
+                <li>
+                  <Link 
+                    href="/login"
+                    className="opacity-70 hover:opacity-100 transition-opacity"
+                    style={{ color: COLORS.white }}
+                  >
+                    Login
+                  </Link>
+                </li>
+                <li>
+                  <Link 
+                    href="/become-an-agent"
+                    className="opacity-70 hover:opacity-100 transition-opacity"
+                    style={{ color: COLORS.white }}
+                  >
+                    Become an Agent
+                  </Link>
+                </li>
+                <li>
+                  <Link 
+                    href="/become-a-merchant"
+                    className="opacity-70 hover:opacity-100 transition-opacity"
+                    style={{ color: COLORS.white }}
+                  >
+                    Become a Merchant
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            {/* Support Links */}
+            <div>
+              <h4 
+                className="font-semibold mb-4"
+                style={{ color: COLORS.white }}
+              >
+                Support
+              </h4>
+              <ul className="space-y-2">
+                <li>
+                  <a 
+                    href="#"
+                    className="opacity-70 hover:opacity-100 transition-opacity"
+                    style={{ color: COLORS.white }}
+                  >
+                    Help Center
+                  </a>
+                </li>
+                <li>
+                  <a 
+                    href="#"
+                    className="opacity-70 hover:opacity-100 transition-opacity"
+                    style={{ color: COLORS.white }}
+                  >
+                    Contact Us
+                  </a>
+                </li>
+                <li>
+                  <a 
+                    href="#"
+                    className="opacity-70 hover:opacity-100 transition-opacity"
+                    style={{ color: COLORS.white }}
+                  >
+                    Privacy Policy
+                  </a>
+                </li>
+                <li>
+                  <a 
+                    href="#"
+                    className="opacity-70 hover:opacity-100 transition-opacity"
+                    style={{ color: COLORS.white }}
+                  >
+                    Terms of Service
+                  </a>
+                </li>
+              </ul>
+            </div>
           </div>
           
           <div 

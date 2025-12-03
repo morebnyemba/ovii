@@ -3,7 +3,7 @@
 import React from 'react';
 import { Toaster } from 'react-hot-toast';
 import Link from 'next/link';
-import { Wallet, Landmark, History, User, LogOut, Menu, X, Gift, Shield, Bell } from 'lucide-react';
+import { Wallet, Landmark, History, User, LogOut, Menu, X, Gift, Shield, Bell, Store, Banknote, Users } from 'lucide-react';
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUserStore } from '@/lib/store/useUserStore';
@@ -44,7 +44,10 @@ export default function DashboardLayout({
   const navItems = [
     { name: 'Wallet', href: '/dashboard', icon: Wallet },
     { name: 'Send Money', href: '/send', icon: Landmark },
+    { name: 'Pay Merchant', href: '/transfer', icon: Store },
+    { name: 'Cash Out', href: '/cashout', icon: Banknote },
     { name: 'Transaction History', href: '/history', icon: History },
+    { name: 'Beneficiaries', href: '/beneficiaries', icon: Users },
     { name: 'Referrals', href: '/referrals', icon: Gift },
     { name: 'KYC Verification', href: '/kyc', icon: Shield },
     { name: 'Profile', href: '/profile', icon: User },
@@ -115,7 +118,7 @@ export default function DashboardLayout({
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-4 py-6">
+      <nav className="flex-1 px-4 py-6 overflow-y-auto">
         {navItems.map((item) => (
           <Link 
             key={item.name} 
@@ -124,8 +127,8 @@ export default function DashboardLayout({
             style={{ color: COLORS.white }}
             onClick={() => setSidebarOpen(false)}
           >
-            <item.icon className="w-5 h-5 mr-3" style={{ color: COLORS.mint }} />
-            <span>{item.name}</span>
+            <item.icon className="w-5 h-5 mr-3 flex-shrink-0" style={{ color: COLORS.mint }} />
+            <span className="truncate">{item.name}</span>
           </Link>
         ))}
       </nav>
