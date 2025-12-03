@@ -329,6 +329,17 @@ class UserRegistrationVerifySerializer(BaseOTPVerificationSerializer):
         user.verification_level = VerificationLevels.LEVEL_1
         user.save(update_fields=["is_active", "verification_level"])
 
+        # Create a Referral record if the user was referred
+        if user.referred_by:
+            from decimal import Decimal
+            Referral.objects.create(
+                referrer=user.referred_by,
+                referred=user,
+                referral_code=user.referred_by.referral_code,
+                referrer_bonus=Decimal("5.00"),  # Default bonus amounts
+                referred_bonus=Decimal("2.00"),
+            )
+
         # Asynchronously create the wallet and send a welcome notification.
         create_user_wallet.delay(user.id)
         otp_request.delete()

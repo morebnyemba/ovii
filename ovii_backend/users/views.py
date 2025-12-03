@@ -567,18 +567,21 @@ def enhanced_dashboard_analytics(request):
         # --- Active User Metrics ---
         # Daily Active Users (DAU) - users who logged in today
         dau = OviiUser.objects.filter(
+            last_login__isnull=False,
             last_login__date=today
         ).count()
 
         # Weekly Active Users (WAU) - users who logged in in the last 7 days
         week_ago = today - datetime.timedelta(days=7)
         wau = OviiUser.objects.filter(
+            last_login__isnull=False,
             last_login__date__gte=week_ago
         ).count()
 
         # Monthly Active Users (MAU) - users who logged in in the last 30 days
         month_ago = today - datetime.timedelta(days=30)
         mau = OviiUser.objects.filter(
+            last_login__isnull=False,
             last_login__date__gte=month_ago
         ).count()
 
