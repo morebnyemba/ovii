@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -14,8 +14,10 @@ import {
   FiMail,
   FiUser,
   FiEye,
-  FiEyeOff
+  FiEyeOff,
+  FiGift
 } from 'react-icons/fi';
+import { useSearchParams } from 'next/navigation';
 import api from '@/lib/api';
 import { useUserStore } from '@/lib/store/useUserStore';
 import { useCsrf } from '@/hooks/useCsrf';
@@ -49,14 +51,17 @@ const COLORS = {
   }
 };
 
-export default function RegisterPage() {
+function RegisterPageContent() {
   // Form fields
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [email, setEmail] = useState('');
+  const [referralCode, setReferralCode] = useState('');
   const [otp, setOtp] = useState('');
   const [showOtp, setShowOtp] = useState(false);
+
+  const searchParams = useSearchParams();
 
   // UI State
   const [loading, setLoading] = useState(false);
@@ -87,7 +92,13 @@ export default function RegisterPage() {
       duration: Math.random() * 20 + 10
     }));
     setParticles(newParticles);
-  }, []);
+
+    // Check for referral code in URL parameters
+    const refCode = searchParams?.get('ref');
+    if (refCode) {
+      setReferralCode(refCode.toUpperCase());
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -136,12 +147,24 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      const payload = {
+      const payload: {
+        first_name: string;
+        last_name: string;
+        phone_number: string;
+        email?: string;
+        referral_code?: string;
+      } = {
         first_name: firstName.trim(),
         last_name: lastName.trim(),
         phone_number: phoneNumber,
         email: email.trim() || undefined,
       };
+      
+      // Include referral code if provided
+      if (referralCode.trim()) {
+        payload.referral_code = referralCode.trim().toUpperCase();
+      }
+      
       const response = await api.post('/users/register/start/', payload);
       setRequestId(response.data.request_id);
       setStep(2);
@@ -362,6 +385,45 @@ export default function RegisterPage() {
             />
           </div>
         </div>
+      </motion.div>
+
+      {/* Referral Code */}
+      <motion.div 
+        initial={{ y: 10, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.65 }}
+        className="space-y-2"
+      >
+        <label htmlFor="referralCode" className="block text-sm font-medium" style={{ color: COLORS.indigo }}>
+          Referral Code (Optional)
+        </label>
+        <div className="relative group">
+          <div className="absolute inset-0 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-xl blur opacity-25 group-hover:opacity-50 transition duration-300"></div>
+          <div className="relative">
+            <FiGift
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-lg z-10"
+              style={{ color: COLORS.gold }}
+            />
+            <input 
+              id="referralCode" 
+              type="text" 
+              value={referralCode} 
+              onChange={(e) => setReferralCode(e.target.value.toUpperCase())} 
+              placeholder="Enter referral code" 
+              maxLength={10}
+              className="w-full rounded-xl border-0 bg-white/5 py-3 pl-10 pr-3 focus:outline-none focus:ring-2 backdrop-blur-sm transition duration-300 uppercase"
+              style={{
+                color: COLORS.indigo,
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+              }}
+            />
+          </div>
+        </div>
+        {referralCode && (
+          <p className="text-sm" style={{ color: COLORS.mint }}>
+            🎁 You&apos;ll receive a bonus when you complete registration!
+          </p>
+        )}
       </motion.div>
 
       {/* Error Message */}
@@ -792,5 +854,17 @@ export default function RegisterPage() {
         </motion.div>
       </motion.div>
     </motion.main>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center" style={{ backgroundColor: COLORS.darkIndigo }}>
+        <FiLoader className="animate-spin text-4xl" style={{ color: COLORS.gold }} />
+      </div>
+    }>
+      <RegisterPageContent />
+    </Suspense>
   );
 }

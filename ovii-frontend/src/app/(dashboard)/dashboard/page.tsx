@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { FiTrendingUp, FiSend, FiAlertTriangle, FiUser, FiUserPlus, FiDollarSign, FiArrowUpRight, FiArrowDownLeft, FiGift } from 'react-icons/fi';
+import { FiTrendingUp, FiSend, FiAlertTriangle, FiUser, FiUserPlus, FiDollarSign, FiArrowUpRight, FiArrowDownLeft, FiGift, FiShield } from 'react-icons/fi';
 import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
 import { useUserStore } from '@/lib/store/useUserStore';
@@ -258,6 +258,16 @@ export default function DashboardPage() {
               >
                 <FiGift className="text-lg" style={{ color: COLORS.gold }} />
                 <span>Invite Friends</span>
+              </Link>
+            </li>
+            <li>
+              <Link 
+                href="/kyc" 
+                className="flex items-center gap-3 p-3 rounded-lg transition-colors hover:bg-indigo-50"
+                style={{ color: COLORS.darkIndigo }}
+              >
+                <FiShield className="text-lg" style={{ color: COLORS.indigo }} />
+                <span>KYC Verification</span>
               </Link>
             </li>
             <li>
