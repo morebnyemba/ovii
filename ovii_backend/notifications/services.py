@@ -126,6 +126,7 @@ def create_in_app_notification(user, title, message):
     Helper function to create and send an in-app notification.
     This creates the notification record and triggers the WebSocket push.
     """
+    # Import tasks locally to avoid circular import (tasks module imports this module)
     from . import tasks
 
     notification = Notification.objects.create(

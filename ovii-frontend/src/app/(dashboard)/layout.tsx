@@ -186,7 +186,10 @@ export default function DashboardLayout({
                   <p className="font-semibold text-sm truncate" style={{ color: COLORS.indigo }}>
                     {notification.title}
                   </p>
-                  <p className={`text-sm text-gray-500 mt-1 ${isMobile ? 'line-clamp-2' : ''}`}>
+                  <p 
+                    className={`text-sm text-gray-500 mt-1 ${isMobile ? 'line-clamp-2' : ''}`}
+                    title={notification.message}
+                  >
                     {notification.message}
                   </p>
                   <p className="text-xs text-gray-400 mt-1">
