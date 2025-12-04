@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useCallback } from 'react';
 import { useUserStore } from '@/lib/store/useUserStore';
+import { useNotificationStore } from '@/lib/store/useNotificationStore';
 import toast from 'react-hot-toast';
 
 // This hook manages the WebSocket connection for real-time wallet updates.
@@ -12,6 +13,7 @@ export const useWalletSocket = () => {
   const isConnecting = useRef(false);
   const maxReconnectAttempts = 5;
   const { accessToken, fetchWallet, fetchTransactions } = useUserStore();
+  const { addNotification, fetchNotifications } = useNotificationStore();
 
   const connect = useCallback(() => {
     // Only establish connection if we have a user token and no active/connecting socket.
@@ -62,9 +64,13 @@ export const useWalletSocket = () => {
           fetchTransactions();
         }
 
-        // Handle notification-specific messages
-        if (parsedEvent?.type === 'notification') {
-          toast(parsedEvent.data?.title || 'New notification', {
+        // Handle notification-specific messages (new in-app notifications)
+        if (parsedEvent?.data?.type === 'notification' && parsedEvent?.data?.notification) {
+          const notification = parsedEvent.data.notification;
+          // Add the new notification to the store for immediate UI update
+          addNotification(notification);
+          // Show a toast for the new notification
+          toast(notification.title || 'New notification', {
             duration: 4000,
             icon: '📬',
           });
@@ -101,10 +107,14 @@ export const useWalletSocket = () => {
       console.error('Ovii: Real-time connection error.', error);
       isConnecting.current = false;
     };
-  }, [accessToken, fetchWallet, fetchTransactions]);
+  }, [accessToken, fetchWallet, fetchTransactions, addNotification]);
 
   useEffect(() => {
     connect();
+    // Fetch initial notifications when hook mounts
+    if (accessToken) {
+      fetchNotifications();
+    }
 
     // Cleanup on component unmount or when the user logs out.
     return () => {
@@ -121,5 +131,5 @@ export const useWalletSocket = () => {
       }
       isConnecting.current = false;
     };
-  }, [connect]);
+  }, [connect, accessToken, fetchNotifications]);
 };

@@ -3,12 +3,12 @@
 import React from 'react';
 import { Toaster } from 'react-hot-toast';
 import Link from 'next/link';
-import { Wallet, Landmark, History, User, LogOut, Menu, X, Gift, Shield, Bell, Store, Banknote, Users } from 'lucide-react';
-import { useState, useEffect, useCallback } from 'react';
+import { Wallet, Landmark, History, User, LogOut, Menu, X, Gift, Shield, Bell, Store, Banknote, Users, CheckCheck } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUserStore } from '@/lib/store/useUserStore';
+import { useNotificationStore } from '@/lib/store/useNotificationStore';
 import { WebSocketProvider } from '@/components/providers/WebSocketProvider';
-import api from '@/lib/api';
 
 // Ovii brand colors
 const COLORS = {
@@ -21,14 +21,6 @@ const COLORS = {
   darkIndigo: '#0F0F2D',
 };
 
-interface Notification {
-  id: number;
-  title: string;
-  message: string;
-  is_read: boolean;
-  created_at: string;
-}
-
 export default function DashboardLayout({
   children,
 }: {
@@ -36,10 +28,10 @@ export default function DashboardLayout({
 }) {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const notificationRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
-  const { logout, user, isAuthenticated } = useUserStore();
+  const { logout, user } = useUserStore();
+  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotificationStore();
 
   const navItems = [
     { name: 'Wallet', href: '/dashboard', icon: Wallet },
@@ -53,49 +45,53 @@ export default function DashboardLayout({
     { name: 'Profile', href: '/profile', icon: User },
   ];
 
-  const fetchNotifications = useCallback(async () => {
-    if (!isAuthenticated) return;
-    try {
-      const response = await api.get('/notifications/notifications/');
-      setNotifications(response.data);
-      setUnreadCount(response.data.filter((n: Notification) => !n.is_read).length);
-    } catch (error) {
-      // Silently fail for notification fetching - non-critical feature
-      console.error('Failed to fetch notifications:', error);
-    }
-  }, [isAuthenticated]);
-
+  // Close notifications dropdown when clicking outside
   useEffect(() => {
-    fetchNotifications();
-    // Refresh notifications every 30 seconds
-    const interval = setInterval(fetchNotifications, 30000);
-    return () => clearInterval(interval);
-  }, [fetchNotifications]);
+    const handleClickOutside = (event: MouseEvent) => {
+      if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
+        setShowNotifications(false);
+      }
+    };
 
-  const markAsRead = async (id: number) => {
-    // Optimistically update UI
-    const previousNotifications = notifications;
-    const previousUnreadCount = unreadCount;
-    
-    setNotifications(prev => 
-      prev.map(n => n.id === id ? { ...n, is_read: true } : n)
-    );
-    setUnreadCount(prev => Math.max(0, prev - 1));
-    
-    try {
-      await api.patch(`/notifications/notifications/${id}/`, { is_read: true });
-    } catch (error) {
-      // Revert optimistic update on failure
-      setNotifications(previousNotifications);
-      setUnreadCount(previousUnreadCount);
-      console.error('Failed to mark notification as read:', error);
-    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const handleMarkAsRead = async (id: number) => {
+    await markAsRead(id);
+  };
+
+  const handleMarkAllAsRead = async () => {
+    await markAllAsRead();
   };
 
   const handleLogout = async () => {
     logout();
     await fetch('/api/logout', { method: 'POST' });
     router.replace('/login');
+  };
+
+  const formatNotificationDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+    if (diffInSeconds < 60) {
+      return 'Just now';
+    } else if (diffInSeconds < 3600) {
+      const minutes = Math.floor(diffInSeconds / 60);
+      return `${minutes}m ago`;
+    } else if (diffInSeconds < 86400) {
+      const hours = Math.floor(diffInSeconds / 3600);
+      return `${hours}h ago`;
+    } else if (diffInSeconds < 604800) {
+      const days = Math.floor(diffInSeconds / 86400);
+      return `${days}d ago`;
+    } else {
+      return date.toLocaleDateString();
+    }
   };
 
   const SidebarContent = () => (
@@ -145,6 +141,72 @@ export default function DashboardLayout({
         </button>
       </div>
     </>
+  );
+
+  const NotificationDropdown = ({ isMobile = false }: { isMobile?: boolean }) => (
+    <div 
+      ref={notificationRef}
+      className={`${isMobile ? 'absolute top-16 right-4 left-4 md:hidden' : 'absolute right-0 mt-2 w-80'} max-h-96 overflow-y-auto rounded-xl shadow-xl z-50`}
+      style={{ backgroundColor: COLORS.white }}
+    >
+      <div className="p-4 border-b flex justify-between items-center" style={{ borderColor: COLORS.lightGray }}>
+        <h3 className="font-bold" style={{ color: COLORS.indigo }}>Notifications</h3>
+        <div className="flex items-center gap-2">
+          {unreadCount > 0 && (
+            <button 
+              onClick={handleMarkAllAsRead}
+              className="p-1.5 rounded-full hover:bg-gray-100 transition-colors"
+              title="Mark all as read"
+            >
+              <CheckCheck size={18} style={{ color: COLORS.mint }} />
+            </button>
+          )}
+          {isMobile && (
+            <button onClick={() => setShowNotifications(false)}>
+              <X size={20} style={{ color: COLORS.indigo }} />
+            </button>
+          )}
+        </div>
+      </div>
+      {notifications.length > 0 ? (
+        <div>
+          {notifications.slice(0, isMobile ? 5 : 10).map((notification) => (
+            <div 
+              key={notification.id}
+              onClick={() => handleMarkAsRead(notification.id)}
+              className={`p-4 border-b cursor-pointer hover:bg-gray-50 transition-colors ${!notification.is_read ? 'bg-blue-50' : ''}`}
+              style={{ borderColor: COLORS.lightGray }}
+            >
+              <div className="flex items-start gap-3">
+                <div 
+                  className="w-2 h-2 rounded-full mt-2 flex-shrink-0"
+                  style={{ backgroundColor: notification.is_read ? 'transparent' : COLORS.mint }}
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-sm truncate" style={{ color: COLORS.indigo }}>
+                    {notification.title}
+                  </p>
+                  <p 
+                    className={`text-sm text-gray-500 mt-1 ${isMobile ? 'line-clamp-2' : ''}`}
+                    title={notification.message}
+                  >
+                    {notification.message}
+                  </p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    {formatNotificationDate(notification.created_at)}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="p-8 text-center text-gray-500">
+          <Bell size={32} className="mx-auto mb-2 opacity-30" />
+          <p>No notifications yet</p>
+        </div>
+      )}
+    </div>
   );
 
   return (
@@ -211,50 +273,8 @@ export default function DashboardLayout({
                 )}
               </button>
               
-              {/* Notifications Dropdown */}
-              {showNotifications && (
-                <div 
-                  className="absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto rounded-xl shadow-xl z-50"
-                  style={{ backgroundColor: COLORS.white }}
-                >
-                  <div className="p-4 border-b" style={{ borderColor: COLORS.lightGray }}>
-                    <h3 className="font-bold" style={{ color: COLORS.indigo }}>Notifications</h3>
-                  </div>
-                  {notifications.length > 0 ? (
-                    <div>
-                      {notifications.slice(0, 10).map((notification) => (
-                        <div 
-                          key={notification.id}
-                          onClick={() => markAsRead(notification.id)}
-                          className={`p-4 border-b cursor-pointer hover:bg-gray-50 transition-colors ${!notification.is_read ? 'bg-blue-50' : ''}`}
-                          style={{ borderColor: COLORS.lightGray }}
-                        >
-                          <div className="flex items-start gap-3">
-                            <div 
-                              className={`w-2 h-2 rounded-full mt-2 flex-shrink-0`}
-                              style={{ backgroundColor: notification.is_read ? 'transparent' : COLORS.mint }}
-                            />
-                            <div className="flex-1">
-                              <p className="font-semibold text-sm" style={{ color: COLORS.indigo }}>
-                                {notification.title}
-                              </p>
-                              <p className="text-sm text-gray-500 mt-1">{notification.message}</p>
-                              <p className="text-xs text-gray-400 mt-1">
-                                {new Date(notification.created_at).toLocaleDateString()}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="p-8 text-center text-gray-500">
-                      <Bell size={32} className="mx-auto mb-2 opacity-30" />
-                      <p>No notifications yet</p>
-                    </div>
-                  )}
-                </div>
-              )}
+              {/* Desktop Notifications Dropdown */}
+              {showNotifications && <NotificationDropdown />}
             </div>
           </header>
 
@@ -298,37 +318,8 @@ export default function DashboardLayout({
 
           {/* Mobile Notifications Dropdown */}
           {showNotifications && (
-            <div 
-              className="absolute top-16 right-4 left-4 md:hidden max-h-80 overflow-y-auto rounded-xl shadow-xl z-50"
-              style={{ backgroundColor: COLORS.white }}
-            >
-              <div className="p-4 border-b flex justify-between items-center" style={{ borderColor: COLORS.lightGray }}>
-                <h3 className="font-bold" style={{ color: COLORS.indigo }}>Notifications</h3>
-                <button onClick={() => setShowNotifications(false)}>
-                  <X size={20} style={{ color: COLORS.indigo }} />
-                </button>
-              </div>
-              {notifications.length > 0 ? (
-                <div>
-                  {notifications.slice(0, 5).map((notification) => (
-                    <div 
-                      key={notification.id}
-                      onClick={() => markAsRead(notification.id)}
-                      className={`p-4 border-b cursor-pointer ${!notification.is_read ? 'bg-blue-50' : ''}`}
-                      style={{ borderColor: COLORS.lightGray }}
-                    >
-                      <p className="font-semibold text-sm" style={{ color: COLORS.indigo }}>
-                        {notification.title}
-                      </p>
-                      <p className="text-sm text-gray-500 mt-1 line-clamp-2">{notification.message}</p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="p-6 text-center text-gray-500">
-                  <p>No notifications</p>
-                </div>
-              )}
+            <div className="md:hidden">
+              <NotificationDropdown isMobile />
             </div>
           )}
 

@@ -7,6 +7,7 @@ class Notification(models.Model):
         EMAIL = "EMAIL", "Email"
         SMS = "SMS", "SMS"
         PUSH = "PUSH", "Push"
+        IN_APP = "IN_APP", "In-App"
 
     class Status(models.TextChoices):
         PENDING = "PENDING", "Pending"
@@ -28,6 +29,9 @@ class Notification(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
     sent_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
 
     def __str__(self):
         return f"{self.get_channel_display()} to {self.recipient}: {self.title}"
