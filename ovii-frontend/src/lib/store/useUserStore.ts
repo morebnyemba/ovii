@@ -166,6 +166,12 @@ export const useUserStore = create<UserState>()(
       },
 
       logout: () => {
+        // Import and clear notifications from the notification store
+        // This is done via a separate function call to avoid circular dependencies
+        import('./useNotificationStore').then(({ useNotificationStore }) => {
+          useNotificationStore.getState().clearNotifications();
+        });
+        
         set({
           accessToken: null,
           refreshToken: null,

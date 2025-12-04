@@ -11,17 +11,30 @@ from .signals import transaction_completed
 from merchants.tasks import send_payment_webhook
 from .models import Transaction
 from notifications.models import Notification
-from notifications.tasks import send_email_task, send_sms_task, send_push_task
+from notifications.tasks import send_email_task, send_sms_task, send_push_task, send_in_app_task
 
 logger = logging.getLogger(__name__)
 
 
 def _create_and_send_notification(user, title, message):
     """
-    Helper function to create notification records and trigger email, SMS, and push.
+    Helper function to create notification records and trigger email, SMS, push, and in-app.
     Each notification channel is wrapped in try-except to ensure one failure doesn't
     prevent other notifications from being sent.
     """
+    # Create In-App notification (for the notification dropdown)
+    try:
+        in_app_notification = Notification.objects.create(
+            recipient=user,
+            channel=Notification.Channel.IN_APP,
+            target=f"user_{user.id}",
+            title=title,
+            message=message,
+        )
+        send_in_app_task.delay(in_app_notification.id)
+    except Exception as e:
+        logger.error(f"Failed to create/send in-app notification for user {user.id}: {e}")
+
     # Create Email notification if user has email
     if user.email:
         try:
