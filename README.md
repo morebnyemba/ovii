@@ -28,6 +28,7 @@ Phase 3 (Scale):     ██░░░░░░░░░░░░░░░░░�
 - ✅ Merchant & Agent ecosystem
 - ✅ EcoCash & Paynow payment gateway integrations
 - ✅ Real-time WebSocket notifications
+- ✅ WhatsApp Business Cloud API integration for notifications and OTPs
 
 ---
 
@@ -77,6 +78,7 @@ This project is structured in clear phases to deliver value incrementally.
 -   ✅ **Merchant System**: Full onboarding, API keys, webhook support
 -   ✅ **Agent System**: Commission tiers, agent codes, approval workflow
 -   ✅ **Payment Gateways**: EcoCash (C2B/B2C) and Paynow integrations
+-   ✅ **WhatsApp Integration**: OTP delivery and transaction notifications via WhatsApp Business Cloud API
 -   ✅ **Transaction Charges**: Flexible percentage/fixed fee system
 
 ---
@@ -93,6 +95,7 @@ This project is structured in clear phases to deliver value incrementally.
 -   **Database**: SQLite (development), PostgreSQL (production)
 -   **Message Broker/Cache**: Redis
 -   **Phone Number Validation**: `django-phonenumber-field`
+-   **WhatsApp Integration**: `heyoo` SDK for WhatsApp Business Cloud API
 
 ### Frontend (`ovii-frontend`)
 
@@ -159,6 +162,19 @@ Follow these steps to set up and run the project locally for development.
         # On macOS/Linux
         celery -A ovii_backend worker -l info
         ```
+
+### WhatsApp Integration Setup (Optional)
+
+To enable WhatsApp notifications and OTP delivery:
+
+1.  **Configure WhatsApp credentials** in your `.env` file (see `.env.example`)
+2.  **Create and approve message templates** in Meta Business Manager
+3.  **View template definitions**:
+    ```bash
+    python manage.py sync_whatsapp_templates
+    ```
+
+For detailed setup instructions, see [WHATSAPP_INTEGRATION.md](WHATSAPP_INTEGRATION.md)
 
 ### Frontend Setup (`ovii-frontend`)
 
