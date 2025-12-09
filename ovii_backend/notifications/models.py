@@ -6,6 +6,7 @@ class Notification(models.Model):
     class Channel(models.TextChoices):
         EMAIL = "EMAIL", "Email"
         SMS = "SMS", "SMS"
+        WHATSAPP = "WHATSAPP", "WhatsApp"
         PUSH = "PUSH", "Push"
         IN_APP = "IN_APP", "In-App"
 

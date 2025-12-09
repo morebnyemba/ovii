@@ -1,7 +1,7 @@
 """
 Author: Moreblessing Nyemba +263787211325
 Date: 2024-05-21
-Description: Service layer for handling third-party integrations like EcoCash.
+Description: Service layer for handling third-party integrations like EcoCash and WhatsApp.
 """
 
 import requests
@@ -9,6 +9,7 @@ from django.conf import settings
 from decimal import Decimal
 import hashlib
 import logging
+from heyoo import WhatsApp
 
 logger = logging.getLogger(__name__)
 
@@ -154,3 +155,96 @@ class PaynowClient:
         expected_hash = self._generate_hash(values_string)
 
         return hash_to_verify.upper() == expected_hash
+
+
+class WhatsAppClient:
+    """
+    A client for interacting with the WhatsApp Business Cloud API.
+    Uses the heyoo SDK for simplified API interactions.
+    """
+
+    def __init__(self):
+        self.phone_number_id = settings.WHATSAPP_PHONE_NUMBER_ID
+        self.access_token = settings.WHATSAPP_ACCESS_TOKEN
+        self.api_version = settings.WHATSAPP_API_VERSION
+        
+        if not self.phone_number_id or not self.access_token:
+            logger.warning(
+                "WhatsApp credentials not configured. "
+                "Set WHATSAPP_PHONE_NUMBER_ID and WHATSAPP_ACCESS_TOKEN in settings."
+            )
+            self.client = None
+        else:
+            self.client = WhatsApp(
+                token=self.access_token,
+                phone_number_id=self.phone_number_id
+            )
+
+    def send_text_message(self, phone_number: str, message: str) -> dict:
+        """
+        Sends a simple text message via WhatsApp.
+        
+        Args:
+            phone_number: Recipient's phone number in international format (e.g., +263777123456)
+            message: The text message to send
+            
+        Returns:
+            dict: Response from WhatsApp API
+            
+        Raises:
+            Exception: If WhatsApp is not configured or message fails to send
+        """
+        if not self.client:
+            raise Exception("WhatsApp client not configured. Check credentials.")
+        
+        try:
+            # Remove '+' if present for API call
+            clean_number = phone_number.replace("+", "")
+            response = self.client.send_message(message=message, recipient_id=clean_number)
+            logger.info(f"WhatsApp message sent to {phone_number}")
+            return response
+        except Exception as e:
+            logger.error(f"Failed to send WhatsApp message to {phone_number}: {e}")
+            raise
+
+    def send_template_message(
+        self,
+        phone_number: str,
+        template_name: str,
+        language_code: str = "en",
+        components: list = None
+    ) -> dict:
+        """
+        Sends a pre-approved WhatsApp template message.
+        
+        Args:
+            phone_number: Recipient's phone number in international format
+            template_name: Name of the approved template
+            language_code: Language code for the template (default: "en")
+            components: List of template components (headers, body, buttons)
+            
+        Returns:
+            dict: Response from WhatsApp API
+            
+        Raises:
+            Exception: If WhatsApp is not configured or message fails to send
+        """
+        if not self.client:
+            raise Exception("WhatsApp client not configured. Check credentials.")
+        
+        try:
+            # Remove '+' if present for API call
+            clean_number = phone_number.replace("+", "")
+            response = self.client.send_template(
+                template=template_name,
+                recipient_id=clean_number,
+                lang=language_code,
+                components=components or []
+            )
+            logger.info(f"WhatsApp template '{template_name}' sent to {phone_number}")
+            return response
+        except Exception as e:
+            logger.error(
+                f"Failed to send WhatsApp template '{template_name}' to {phone_number}: {e}"
+            )
+            raise

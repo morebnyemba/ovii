@@ -11,7 +11,7 @@ from .signals import transaction_completed
 from merchants.tasks import send_payment_webhook
 from .models import Transaction
 from notifications.models import Notification
-from notifications.tasks import send_email_task, send_sms_task, send_push_task, send_in_app_task
+from notifications.tasks import send_email_task, send_sms_task, send_push_task, send_in_app_task, send_whatsapp_task
 
 logger = logging.getLogger(__name__)
 
@@ -49,19 +49,19 @@ def _create_and_send_notification(user, title, message):
         except Exception as e:
             logger.error(f"Failed to create/send email notification for user {user.id}: {e}")
 
-    # Create SMS notification
+    # Create WhatsApp notification (preferred over SMS)
     if user.phone_number:
         try:
-            sms_notification = Notification.objects.create(
+            whatsapp_notification = Notification.objects.create(
                 recipient=user,
-                channel=Notification.Channel.SMS,
+                channel=Notification.Channel.WHATSAPP,
                 target=str(user.phone_number),
                 title=title,
                 message=message,
             )
-            send_sms_task.delay(sms_notification.id)
+            send_whatsapp_task.delay(whatsapp_notification.id)
         except Exception as e:
-            logger.error(f"Failed to create/send SMS notification for user {user.id}: {e}")
+            logger.error(f"Failed to create/send WhatsApp notification for user {user.id}: {e}")
 
     # Create Push notification
     # Note: In production, this should use actual device tokens from FCM/APNs.
