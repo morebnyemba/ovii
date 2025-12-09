@@ -37,6 +37,7 @@ WHATSAPP_TEMPLATES = {
             "footer": "Ovii - Your Mobile Wallet",
             "buttons": []
         },
+        # Note: currency appears twice - once after amount, once after new_balance
         "variables": ["amount", "currency", "sender_name", "new_balance", "currency", "transaction_id"],
         "example": {
             "body_text": [["10.00", "USD", "John Doe", "110.00", "USD", "TXN123456"]]
@@ -54,6 +55,7 @@ WHATSAPP_TEMPLATES = {
             "footer": "Ovii - Your Mobile Wallet",
             "buttons": []
         },
+        # Note: currency appears twice - once after amount, once after new_balance
         "variables": ["amount", "currency", "recipient_name", "new_balance", "currency", "transaction_id"],
         "example": {
             "body_text": [["10.00", "USD", "Jane Smith", "90.00", "USD", "TXN123456"]]
@@ -88,6 +90,7 @@ WHATSAPP_TEMPLATES = {
             "footer": "Ovii - Your Mobile Wallet",
             "buttons": []
         },
+        # Note: currency appears twice - once after amount, once after new_balance
         "variables": ["amount", "currency", "new_balance", "currency", "transaction_id"],
         "example": {
             "body_text": [["50.00", "USD", "150.00", "USD", "TXN123456"]]
@@ -105,6 +108,7 @@ WHATSAPP_TEMPLATES = {
             "footer": "Ovii - Your Mobile Wallet",
             "buttons": []
         },
+        # Note: currency appears twice - once after amount, once after new_balance
         "variables": ["amount", "currency", "new_balance", "currency", "transaction_id"],
         "example": {
             "body_text": [["25.00", "USD", "75.00", "USD", "TXN123456"]]

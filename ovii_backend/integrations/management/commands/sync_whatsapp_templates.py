@@ -76,7 +76,7 @@ class Command(BaseCommand):
                 self.stdout.write('')
                 self.stdout.write(self.style.SUCCESS("  Variables:"))
                 for i, var in enumerate(template_data['variables'], start=1):
-                    self.stdout.write(f"    {{{{{{i}}}}}}: {var}")
+                    self.stdout.write(f"    {{{{{i}}}}}: {var}")
             
             # Display example
             if template_data.get('example'):
