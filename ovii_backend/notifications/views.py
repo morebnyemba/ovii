@@ -21,6 +21,8 @@ class NotificationViewSet(viewsets.ModelViewSet):
             tasks.send_email_task.delay(notification.id)
         elif notification.channel == Notification.Channel.SMS:
             tasks.send_sms_task.delay(notification.id)
+        elif notification.channel == Notification.Channel.WHATSAPP:
+            tasks.send_whatsapp_task.delay(notification.id)
         elif notification.channel == Notification.Channel.PUSH:
             tasks.send_push_task.delay(notification.id)
         elif notification.channel == Notification.Channel.IN_APP:

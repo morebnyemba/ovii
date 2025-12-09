@@ -19,16 +19,29 @@ logger = logging.getLogger("users.otp")
 @shared_task
 def generate_and_log_otp(phone_number):
     """
-    Generates a 6-digit OTP, saves it, and logs it for development.
-    In production, this task would be responsible for sending an email or SMS.
+    Generates a 6-digit OTP, saves it, and sends it via WhatsApp.
+    Falls back to logging if WhatsApp is not configured.
     """
     code = str(secrets.randbelow(900000) + 100000)  # 6-digit OTP
     otp_request = OTPRequest.objects.create(phone_number=phone_number, code=code)
 
-    # Log the OTP to the console for development purposes.
+    # Log the OTP to the console for development/debugging purposes.
     logger.info(
         f"OTP for {phone_number}: {code} (Request ID: {otp_request.request_id})"
     )
+
+    # Send OTP via WhatsApp
+    try:
+        from notifications.services import send_whatsapp_template
+        send_whatsapp_template(
+            phone_number=phone_number,
+            template_name="otp_verification",
+            variables={"code": code}
+        )
+        logger.info(f"OTP sent via WhatsApp to {phone_number}")
+    except Exception as e:
+        logger.error(f"Failed to send OTP via WhatsApp to {phone_number}: {e}")
+        # Continue execution even if WhatsApp fails - OTP is still logged
 
     return str(otp_request.request_id)
 

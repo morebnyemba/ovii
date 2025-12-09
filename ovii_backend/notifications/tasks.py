@@ -20,3 +20,8 @@ def send_push_task(notification_id):
 @shared_task
 def send_in_app_task(notification_id):
     services.send_in_app_notification(notification_id)
+
+
+@shared_task
+def send_whatsapp_task(notification_id):
+    services.send_whatsapp_notification(notification_id)

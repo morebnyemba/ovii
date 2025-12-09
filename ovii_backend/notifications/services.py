@@ -4,6 +4,8 @@ from django.utils import timezone
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from .models import Notification
+from integrations.services import WhatsAppClient
+from integrations.whatsapp_templates import format_template_components
 
 import logging
 
@@ -54,6 +56,74 @@ def send_sms_notification(notification_id):
         if "notification" in locals():
             notification.status = Notification.Status.FAILED
             notification.save()
+
+
+def send_whatsapp_notification(notification_id):
+    """
+    Send a notification via WhatsApp using the WhatsApp Business Cloud API.
+    This function sends either a template message or a plain text message.
+    """
+    try:
+        notification = Notification.objects.get(id=notification_id)
+        client = WhatsAppClient()
+        
+        # Send the message via WhatsApp
+        client.send_text_message(
+            phone_number=notification.target,
+            message=f"{notification.title}\n\n{notification.message}"
+        )
+        
+        notification.status = Notification.Status.SENT
+        notification.sent_at = timezone.now()
+        notification.save()
+        logger.info(f"WhatsApp notification {notification_id} sent successfully.")
+    except Notification.DoesNotExist:
+        logger.error(f"Notification with id {notification_id} does not exist.")
+    except Exception as e:
+        logger.error(f"Failed to send WhatsApp notification {notification_id}: {e}")
+        if "notification" in locals():
+            notification.status = Notification.Status.FAILED
+            notification.save()
+
+
+def send_whatsapp_template(
+    phone_number: str,
+    template_name: str,
+    variables: dict,
+    language_code: str = "en"
+) -> dict:
+    """
+    Send a pre-approved WhatsApp template message.
+    
+    Args:
+        phone_number: Recipient's phone number in international format
+        template_name: Name of the approved template
+        variables: Dictionary of template variables
+        language_code: Language code for the template (default: "en")
+        
+    Returns:
+        dict: Response from WhatsApp API
+    """
+    try:
+        client = WhatsAppClient()
+        components = format_template_components(template_name, variables)
+        
+        response = client.send_template_message(
+            phone_number=phone_number,
+            template_name=template_name,
+            language_code=language_code,
+            components=components
+        )
+        
+        logger.info(
+            f"WhatsApp template '{template_name}' sent successfully to {phone_number}"
+        )
+        return response
+    except Exception as e:
+        logger.error(
+            f"Failed to send WhatsApp template '{template_name}' to {phone_number}: {e}"
+        )
+        raise
 
 
 def send_push_notification(notification_id):

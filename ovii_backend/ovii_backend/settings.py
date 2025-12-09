@@ -459,3 +459,11 @@ PAYNOW_API_URL = os.getenv("PAYNOW_API_URL", "https://www.paynow.co.zw/interface
 PAYNOW_RESULT_URL = os.getenv("PAYNOW_RESULT_URL")
 # The URL to redirect the user to after they complete payment on the Paynow page.
 PAYNOW_RETURN_URL = os.getenv("PAYNOW_RETURN_URL")
+
+# ------------------------------------------------------------------
+# 19. WHATSAPP CLOUD API SETTINGS
+# ------------------------------------------------------------------
+WHATSAPP_PHONE_NUMBER_ID = os.getenv("WHATSAPP_PHONE_NUMBER_ID")
+WHATSAPP_ACCESS_TOKEN = os.getenv("WHATSAPP_ACCESS_TOKEN")
+WHATSAPP_API_VERSION = os.getenv("WHATSAPP_API_VERSION", "v18.0")
+WHATSAPP_WEBHOOK_VERIFY_TOKEN = os.getenv("WHATSAPP_WEBHOOK_VERIFY_TOKEN")
