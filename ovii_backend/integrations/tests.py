@@ -8,6 +8,7 @@ from django.test import TestCase
 from unittest.mock import patch, MagicMock
 from .services import WhatsAppClient
 from .whatsapp_templates import get_template_structure, format_template_components
+from .models import WhatsAppConfig
 
 
 class WhatsAppClientTestCase(TestCase):
@@ -18,21 +19,67 @@ class WhatsAppClientTestCase(TestCase):
         self.phone_number = "+263777123456"
         self.message = "Test message"
 
+    @patch('integrations.services.WhatsApp')
+    def test_whatsapp_client_initialization_from_database(self, mock_whatsapp):
+        """Test WhatsApp client initialization with credentials from database."""
+        # Create a WhatsApp config in the database
+        WhatsAppConfig.objects.create(
+            phone_number_id="test_db_phone_id",
+            access_token="test_db_token",
+            api_version="v18.0",
+            is_active=True
+        )
+        
+        client = WhatsAppClient()
+        
+        self.assertIsNotNone(client.client)
+        self.assertEqual(client.phone_number_id, "test_db_phone_id")
+        self.assertEqual(client.access_token, "test_db_token")
+        mock_whatsapp.assert_called_once_with(
+            token="test_db_token",
+            phone_number_id="test_db_phone_id"
+        )
+
     @patch('integrations.services.settings')
     @patch('integrations.services.WhatsApp')
-    def test_whatsapp_client_initialization(self, mock_whatsapp, mock_settings):
-        """Test WhatsApp client initialization with valid credentials."""
-        mock_settings.WHATSAPP_PHONE_NUMBER_ID = "test_phone_id"
-        mock_settings.WHATSAPP_ACCESS_TOKEN = "test_token"
+    def test_whatsapp_client_initialization_from_env(self, mock_whatsapp, mock_settings):
+        """Test WhatsApp client initialization with credentials from environment variables."""
+        mock_settings.WHATSAPP_PHONE_NUMBER_ID = "test_env_phone_id"
+        mock_settings.WHATSAPP_ACCESS_TOKEN = "test_env_token"
         mock_settings.WHATSAPP_API_VERSION = "v18.0"
         
         client = WhatsAppClient()
         
         self.assertIsNotNone(client.client)
+        self.assertEqual(client.phone_number_id, "test_env_phone_id")
+        self.assertEqual(client.access_token, "test_env_token")
         mock_whatsapp.assert_called_once_with(
-            token="test_token",
-            phone_number_id="test_phone_id"
+            token="test_env_token",
+            phone_number_id="test_env_phone_id"
         )
+
+    @patch('integrations.services.WhatsApp')
+    def test_whatsapp_client_database_precedence(self, mock_whatsapp):
+        """Test that database credentials take precedence over environment variables."""
+        # Create a WhatsApp config in the database
+        WhatsAppConfig.objects.create(
+            phone_number_id="test_db_phone_id",
+            access_token="test_db_token",
+            api_version="v19.0",
+            is_active=True
+        )
+        
+        with patch('integrations.services.settings') as mock_settings:
+            mock_settings.WHATSAPP_PHONE_NUMBER_ID = "test_env_phone_id"
+            mock_settings.WHATSAPP_ACCESS_TOKEN = "test_env_token"
+            mock_settings.WHATSAPP_API_VERSION = "v18.0"
+            
+            client = WhatsAppClient()
+            
+            # Database credentials should be used
+            self.assertEqual(client.phone_number_id, "test_db_phone_id")
+            self.assertEqual(client.access_token, "test_db_token")
+            self.assertEqual(client.api_version, "v19.0")
 
     @patch('integrations.services.settings')
     def test_whatsapp_client_no_credentials(self, mock_settings):
@@ -45,13 +92,16 @@ class WhatsAppClientTestCase(TestCase):
         
         self.assertIsNone(client.client)
 
-    @patch('integrations.services.settings')
     @patch('integrations.services.WhatsApp')
-    def test_send_text_message(self, mock_whatsapp, mock_settings):
+    def test_send_text_message(self, mock_whatsapp):
         """Test sending a text message via WhatsApp."""
-        mock_settings.WHATSAPP_PHONE_NUMBER_ID = "test_phone_id"
-        mock_settings.WHATSAPP_ACCESS_TOKEN = "test_token"
-        mock_settings.WHATSAPP_API_VERSION = "v18.0"
+        # Create a WhatsApp config in the database
+        WhatsAppConfig.objects.create(
+            phone_number_id="test_phone_id",
+            access_token="test_token",
+            api_version="v18.0",
+            is_active=True
+        )
         
         mock_client_instance = MagicMock()
         mock_whatsapp.return_value = mock_client_instance
@@ -66,13 +116,16 @@ class WhatsAppClientTestCase(TestCase):
         )
         self.assertIn("messages", response)
 
-    @patch('integrations.services.settings')
     @patch('integrations.services.WhatsApp')
-    def test_send_template_message(self, mock_whatsapp, mock_settings):
+    def test_send_template_message(self, mock_whatsapp):
         """Test sending a template message via WhatsApp."""
-        mock_settings.WHATSAPP_PHONE_NUMBER_ID = "test_phone_id"
-        mock_settings.WHATSAPP_ACCESS_TOKEN = "test_token"
-        mock_settings.WHATSAPP_API_VERSION = "v18.0"
+        # Create a WhatsApp config in the database
+        WhatsAppConfig.objects.create(
+            phone_number_id="test_phone_id",
+            access_token="test_token",
+            api_version="v18.0",
+            is_active=True
+        )
         
         mock_client_instance = MagicMock()
         mock_whatsapp.return_value = mock_client_instance
@@ -88,6 +141,75 @@ class WhatsAppClientTestCase(TestCase):
         
         mock_client_instance.send_template.assert_called_once()
         self.assertIn("messages", response)
+
+
+class WhatsAppConfigModelTestCase(TestCase):
+    """Test cases for WhatsAppConfig model."""
+
+    def test_create_whatsapp_config(self):
+        """Test creating a WhatsApp configuration."""
+        config = WhatsAppConfig.objects.create(
+            phone_number_id="test_phone_id",
+            access_token="test_token",
+            api_version="v18.0",
+            webhook_verify_token="test_verify_token",
+            is_active=True
+        )
+        
+        self.assertEqual(config.phone_number_id, "test_phone_id")
+        self.assertEqual(config.access_token, "test_token")
+        self.assertEqual(config.api_version, "v18.0")
+        self.assertTrue(config.is_active)
+
+    def test_only_one_active_config(self):
+        """Test that only one active configuration is allowed."""
+        # Create first active config
+        WhatsAppConfig.objects.create(
+            phone_number_id="test_phone_id_1",
+            access_token="test_token_1",
+            api_version="v18.0",
+            is_active=True
+        )
+        
+        # Try to create second active config - should raise ValidationError
+        config2 = WhatsAppConfig(
+            phone_number_id="test_phone_id_2",
+            access_token="test_token_2",
+            api_version="v18.0",
+            is_active=True
+        )
+        
+        with self.assertRaises(Exception):  # ValidationError is raised
+            config2.save()
+
+    def test_multiple_inactive_configs(self):
+        """Test that multiple inactive configurations are allowed."""
+        WhatsAppConfig.objects.create(
+            phone_number_id="test_phone_id_1",
+            access_token="test_token_1",
+            api_version="v18.0",
+            is_active=False
+        )
+        
+        config2 = WhatsAppConfig.objects.create(
+            phone_number_id="test_phone_id_2",
+            access_token="test_token_2",
+            api_version="v18.0",
+            is_active=False
+        )
+        
+        self.assertEqual(WhatsAppConfig.objects.filter(is_active=False).count(), 2)
+
+    def test_config_string_representation(self):
+        """Test the string representation of WhatsAppConfig."""
+        config = WhatsAppConfig.objects.create(
+            phone_number_id="123456789012345",
+            access_token="test_token",
+            api_version="v18.0",
+            is_active=True
+        )
+        
+        self.assertIn("123456789012345", str(config))
 
 
 class WhatsAppTemplatesTestCase(TestCase):
