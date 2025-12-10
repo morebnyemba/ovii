@@ -161,17 +161,46 @@ class WhatsAppClient:
     """
     A client for interacting with the WhatsApp Business Cloud API.
     Uses the heyoo SDK for simplified API interactions.
+    
+    Credentials are loaded from:
+    1. Database (WhatsAppConfig model) - preferred for runtime control
+    2. Environment variables (.env) - fallback for backward compatibility
     """
 
     def __init__(self):
-        self.phone_number_id = settings.WHATSAPP_PHONE_NUMBER_ID
-        self.access_token = settings.WHATSAPP_ACCESS_TOKEN
-        self.api_version = settings.WHATSAPP_API_VERSION
+        # Try to load credentials from database first
+        self.phone_number_id = None
+        self.access_token = None
+        self.api_version = None
+        
+        try:
+            from .models import WhatsAppConfig
+            config = WhatsAppConfig.objects.filter(is_active=True).first()
+            if config:
+                self.phone_number_id = config.phone_number_id
+                self.access_token = config.access_token
+                self.api_version = config.api_version
+                logger.info("WhatsApp credentials loaded from database")
+        except ImportError:
+            # Models not available (e.g., during initial migrations)
+            logger.debug("WhatsAppConfig model not available")
+        except Exception as e:
+            # Database errors or other issues (e.g., OperationalError during migrations)
+            logger.debug(f"Could not load WhatsApp config from database: {type(e).__name__}")
+        
+        # Fallback to environment variables if not found in database
+        if not self.phone_number_id or not self.access_token:
+            self.phone_number_id = settings.WHATSAPP_PHONE_NUMBER_ID
+            self.access_token = settings.WHATSAPP_ACCESS_TOKEN
+            self.api_version = settings.WHATSAPP_API_VERSION
+            if self.phone_number_id and self.access_token:
+                logger.info("WhatsApp credentials loaded from environment variables")
         
         if not self.phone_number_id or not self.access_token:
             logger.warning(
                 "WhatsApp credentials not configured. "
-                "Set WHATSAPP_PHONE_NUMBER_ID and WHATSAPP_ACCESS_TOKEN in settings."
+                "Configure in admin panel or set WHATSAPP_PHONE_NUMBER_ID and "
+                "WHATSAPP_ACCESS_TOKEN in settings."
             )
             self.client = None
         else:

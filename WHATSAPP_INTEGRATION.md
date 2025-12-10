@@ -24,7 +24,32 @@ You need:
 - A verified phone number for your WhatsApp Business Account
 - API access enabled in Meta Business Manager
 
-### 2. Configure Environment Variables
+### 2. Configuration Options
+
+**Ovii supports two ways to configure WhatsApp credentials:**
+
+#### Option A: Database Configuration (Recommended for Production)
+
+Configure WhatsApp credentials through the Django Admin panel for runtime control:
+
+1. Log in to the Django Admin panel at `/admin/`
+2. Navigate to **Integrations > WhatsApp Configurations**
+3. Click **Add WhatsApp Configuration**
+4. Fill in the required fields:
+   - **Phone Number ID**: Your WhatsApp Business Phone Number ID
+   - **Access Token**: Your WhatsApp Business API Access Token
+   - **API Version**: e.g., `v18.0` or `v19.0`
+   - **Webhook Verify Token**: (Optional) Your webhook verification token
+   - **Active**: Check to make this configuration active
+5. Click **Save**
+
+**Benefits of Database Configuration:**
+- Update credentials without restarting the application
+- Runtime control and easy credential rotation
+- Audit trail with created_at and updated_at timestamps
+- Only one active configuration allowed at a time
+
+#### Option B: Environment Variables (Backward Compatible)
 
 Add the following to your `.env` file:
 
@@ -41,6 +66,8 @@ WHATSAPP_API_VERSION=v18.0
 # Webhook Verification Token (set this in Meta developer console)
 WHATSAPP_WEBHOOK_VERIFY_TOKEN=your_webhook_verify_token
 ```
+
+**Note**: Database configuration takes precedence over environment variables. If no database configuration exists, the system falls back to environment variables.
 
 ### 3. Get Your Credentials
 
@@ -289,22 +316,37 @@ tail -f logs/ovii.log | grep -i whatsapp
 2. Implement exponential backoff
 3. Contact Meta for rate limit increase
 
+## Migrating to Database Configuration
+
+If you're currently using environment variables and want to migrate to database configuration:
+
+1. **Log in to Django Admin** and navigate to **Integrations > WhatsApp Configurations**
+2. **Create a new configuration** with your existing credentials from `.env`
+3. **Verify it works** by sending a test message
+4. **Remove credentials from `.env`** (optional, but recommended for security)
+5. The system will automatically use database credentials once available
+
+**Rollback**: If you need to revert, simply deactivate the database configuration or remove it, and the system will fall back to environment variables.
+
 ## Security
 
 ### Best Practices
 
-1. **Never commit access tokens**: Use environment variables
+1. **Use database configuration in production**: Provides better access control and audit trail
 2. **Rotate tokens regularly**: Generate new tokens every 60-90 days
 3. **Use System User tokens**: For production, not temporary tokens
 4. **Validate webhook signatures**: Verify incoming webhook authenticity
 5. **Monitor unusual activity**: Set up alerts for high failure rates
+6. **Restrict admin access**: Limit who can view/edit WhatsApp credentials
 
 ### Token Security
 
-- Store tokens in `.env` file (gitignored)
+- **Database storage**: Credentials are stored securely in the database with Django's built-in protection
+- **Environment variables**: If using `.env`, ensure the file is gitignored
 - Use different tokens for development and production
 - Restrict token permissions to minimum required
 - Never log tokens in application logs
+- Access tokens are write-only in the API (not exposed in GET responses)
 
 ## Cost Considerations
 
@@ -344,6 +386,14 @@ For issues with:
 - **Account Setup**: Contact Meta Business Support
 
 ## Changelog
+
+### Version 1.1.0 (2024-12-10)
+- **Added database configuration support**: WhatsApp credentials can now be stored in database
+- **Runtime credential updates**: Change credentials without restarting the application
+- **Admin interface**: Manage WhatsApp configurations through Django Admin
+- **Backward compatibility**: Environment variables still work as fallback
+- **Enhanced security**: Improved credential management and access control
+- **Better audit trail**: Track when credentials are created and updated
 
 ### Version 1.0.0 (2024-12-09)
 - Initial WhatsApp Cloud API integration
