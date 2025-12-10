@@ -181,8 +181,11 @@ class WhatsAppClient:
                 self.access_token = config.access_token
                 self.api_version = config.api_version
                 logger.info("WhatsApp credentials loaded from database")
+        except ImportError:
+            # Models not available (e.g., during initial migrations)
+            logger.debug("WhatsAppConfig model not available")
         except Exception as e:
-            # Log error type for debugging without exposing sensitive details
+            # Database errors or other issues (e.g., OperationalError during migrations)
             logger.debug(f"Could not load WhatsApp config from database: {type(e).__name__}")
         
         # Fallback to environment variables if not found in database
