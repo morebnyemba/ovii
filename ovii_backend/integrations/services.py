@@ -181,8 +181,8 @@ class WhatsAppClient:
                 self.access_token = config.access_token
                 self.api_version = config.api_version
                 logger.info("WhatsApp credentials loaded from database")
-        except Exception as e:
-            logger.debug(f"Could not load WhatsApp config from database: {e}")
+        except Exception:
+            logger.debug("Could not load WhatsApp config from database")
         
         # Fallback to environment variables if not found in database
         if not self.phone_number_id or not self.access_token:
