@@ -48,9 +48,13 @@ class WhatsAppConfigAdmin(admin.ModelAdmin):
     phone_number_id_display.short_description = "Phone Number ID"
     
     def has_delete_permission(self, request, obj=None):
-        """Allow deletion only if there's more than one configuration."""
+        """
+        Allow deletion only if:
+        - The config is inactive, OR
+        - There's at least one other active configuration
+        """
         if obj and obj.is_active:
-            # Check if there are other configurations
-            count = WhatsAppConfig.objects.count()
-            return count > 1
+            # Check if there are other active configurations
+            active_count = WhatsAppConfig.objects.filter(is_active=True).count()
+            return active_count > 1
         return True
