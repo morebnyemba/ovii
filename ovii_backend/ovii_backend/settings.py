@@ -463,6 +463,7 @@ PAYNOW_RETURN_URL = os.getenv("PAYNOW_RETURN_URL")
 # ------------------------------------------------------------------
 # 19. WHATSAPP CLOUD API SETTINGS
 # ------------------------------------------------------------------
+WHATSAPP_WABA_ID = os.getenv("WHATSAPP_WABA_ID")
 WHATSAPP_PHONE_NUMBER_ID = os.getenv("WHATSAPP_PHONE_NUMBER_ID")
 WHATSAPP_ACCESS_TOKEN = os.getenv("WHATSAPP_ACCESS_TOKEN")
 WHATSAPP_API_VERSION = os.getenv("WHATSAPP_API_VERSION", "v18.0")

@@ -15,6 +15,12 @@ class WhatsAppConfig(models.Model):
     Only one active configuration is allowed at a time.
     """
     
+    waba_id = models.CharField(
+        _("WhatsApp Business Account ID"),
+        max_length=255,
+        blank=True,
+        help_text=_("WhatsApp Business Account ID (WABA ID) from Meta Business Manager. Required for template sync.")
+    )
     phone_number_id = models.CharField(
         _("Phone Number ID"),
         max_length=255,
@@ -70,3 +76,69 @@ class WhatsAppConfig(models.Model):
         """Override save to ensure validation."""
         self.full_clean()
         super().save(*args, **kwargs)
+
+
+class WhatsAppTemplate(models.Model):
+    """
+    Tracks WhatsApp message templates and their sync status with Meta.
+    """
+    
+    STATUS_CHOICES = [
+        ('PENDING', _('Pending')),
+        ('APPROVED', _('Approved')),
+        ('REJECTED', _('Rejected')),
+        ('DISABLED', _('Disabled')),
+    ]
+    
+    name = models.CharField(
+        _("Template Name"),
+        max_length=512,
+        help_text=_("Name of the template")
+    )
+    category = models.CharField(
+        _("Category"),
+        max_length=50,
+        help_text=_("Template category (AUTHENTICATION, MARKETING, UTILITY)")
+    )
+    language = models.CharField(
+        _("Language"),
+        max_length=10,
+        default="en",
+        help_text=_("Template language code (e.g., en, en_US)")
+    )
+    status = models.CharField(
+        _("Status"),
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='PENDING',
+        help_text=_("Template approval status in Meta")
+    )
+    template_id = models.CharField(
+        _("Meta Template ID"),
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text=_("Template ID returned by Meta after creation")
+    )
+    last_synced_at = models.DateTimeField(
+        _("Last Synced At"),
+        blank=True,
+        null=True,
+        help_text=_("Last time this template was synced with Meta")
+    )
+    rejection_reason = models.TextField(
+        _("Rejection Reason"),
+        blank=True,
+        help_text=_("Reason for rejection if template was rejected by Meta")
+    )
+    created_at = models.DateTimeField(_("Created At"), auto_now_add=True)
+    updated_at = models.DateTimeField(_("Updated At"), auto_now=True)
+    
+    class Meta:
+        verbose_name = _("WhatsApp Template")
+        verbose_name_plural = _("WhatsApp Templates")
+        ordering = ["-created_at"]
+        unique_together = [['name', 'language']]
+    
+    def __str__(self):
+        return f"{self.name} ({self.language}) - {self.status}"

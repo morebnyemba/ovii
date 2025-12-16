@@ -172,11 +172,13 @@ class WhatsAppClient:
         self.phone_number_id = None
         self.access_token = None
         self.api_version = None
+        self.waba_id = None
         
         try:
             from .models import WhatsAppConfig
             config = WhatsAppConfig.objects.filter(is_active=True).first()
             if config:
+                self.waba_id = config.waba_id if hasattr(config, 'waba_id') else None
                 self.phone_number_id = config.phone_number_id
                 self.access_token = config.access_token
                 self.api_version = config.api_version
@@ -190,6 +192,7 @@ class WhatsAppClient:
         
         # Fallback to environment variables if not found in database
         if not self.phone_number_id or not self.access_token:
+            self.waba_id = settings.WHATSAPP_WABA_ID
             self.phone_number_id = settings.WHATSAPP_PHONE_NUMBER_ID
             self.access_token = settings.WHATSAPP_ACCESS_TOKEN
             self.api_version = settings.WHATSAPP_API_VERSION
@@ -276,4 +279,107 @@ class WhatsAppClient:
             logger.error(
                 f"Failed to send WhatsApp template '{template_name}' to {phone_number}: {e}"
             )
+            raise
+
+    def create_template(self, template_data: dict) -> dict:
+        """
+        Creates a WhatsApp message template in Meta via Graph API.
+        
+        Args:
+            template_data: Dictionary containing template definition with keys:
+                - name: Template name (lowercase, numbers, underscores only)
+                - category: One of AUTHENTICATION, MARKETING, UTILITY
+                - language: Language code (e.g., en_US, en)
+                - components: List of template components (HEADER, BODY, FOOTER, BUTTONS)
+                
+        Returns:
+            dict: Response from Meta Graph API containing template ID and status
+            
+        Raises:
+            Exception: If template creation fails or WABA_ID is not configured
+        """
+        if not self.waba_id:
+            raise Exception(
+                "WABA_ID not configured. Set WHATSAPP_WABA_ID in settings or "
+                "add waba_id to WhatsApp configuration in admin panel."
+            )
+        
+        if not self.access_token:
+            raise Exception("WhatsApp access token not configured.")
+        
+        url = f"https://graph.facebook.com/{self.api_version}/{self.waba_id}/message_templates"
+        headers = {
+            "Authorization": f"Bearer {self.access_token}",
+            "Content-Type": "application/json"
+        }
+        
+        try:
+            response = requests.post(url, json=template_data, headers=headers, timeout=30)
+            response.raise_for_status()
+            result = response.json()
+            logger.info(f"Template '{template_data.get('name')}' created successfully in Meta")
+            return result
+        except requests.exceptions.HTTPError as e:
+            # Extract error details from response
+            status_code = e.response.status_code if e.response else None
+            error_data = {}
+            
+            try:
+                error_data = e.response.json() if e.response else {}
+            except:
+                error_data = {"message": e.response.text if e.response else str(e)}
+            
+            error_code = error_data.get("error", {}).get("code") if isinstance(error_data.get("error"), dict) else None
+            error_message = error_data.get("error", {}).get("message") if isinstance(error_data.get("error"), dict) else error_data.get("message", str(e))
+            
+            logger.error(f"Failed to create template '{template_data.get('name')}': HTTP {status_code}, {error_message}")
+            
+            # Create structured exception with status code and error code
+            exception = Exception(f"Meta API error: {error_message}")
+            exception.status_code = status_code
+            exception.error_code = error_code
+            exception.is_duplicate = status_code == 400 and (error_code == 100 or "already exists" in error_message.lower())
+            raise exception
+        except Exception as e:
+            logger.error(f"Failed to create template '{template_data.get('name')}': {e}")
+            raise
+
+    def get_template_status(self, template_name: str) -> dict:
+        """
+        Retrieves the status of a template from Meta.
+        
+        Args:
+            template_name: Name of the template to check
+            
+        Returns:
+            dict: Template status information from Meta
+            
+        Raises:
+            Exception: If status check fails
+        """
+        if not self.waba_id:
+            raise Exception("WABA_ID not configured.")
+        
+        if not self.access_token:
+            raise Exception("WhatsApp access token not configured.")
+        
+        url = f"https://graph.facebook.com/{self.api_version}/{self.waba_id}/message_templates"
+        headers = {
+            "Authorization": f"Bearer {self.access_token}"
+        }
+        params = {
+            "name": template_name
+        }
+        
+        try:
+            response = requests.get(url, headers=headers, params=params, timeout=30)
+            response.raise_for_status()
+            result = response.json()
+            return result
+        except requests.exceptions.HTTPError as e:
+            error_message = e.response.text if e.response else str(e)
+            logger.error(f"Failed to get template status for '{template_name}': {error_message}")
+            raise Exception(f"Meta API error: {error_message}")
+        except Exception as e:
+            logger.error(f"Failed to get template status for '{template_name}': {e}")
             raise

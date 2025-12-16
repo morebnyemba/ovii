@@ -36,6 +36,7 @@ Configure WhatsApp credentials through the Django Admin panel for runtime contro
 2. Navigate to **Integrations > WhatsApp Configurations**
 3. Click **Add WhatsApp Configuration**
 4. Fill in the required fields:
+   - **WABA ID**: Your WhatsApp Business Account ID (required for template sync)
    - **Phone Number ID**: Your WhatsApp Business Phone Number ID
    - **Access Token**: Your WhatsApp Business API Access Token
    - **API Version**: e.g., `v18.0` or `v19.0`
@@ -48,12 +49,16 @@ Configure WhatsApp credentials through the Django Admin panel for runtime contro
 - Runtime control and easy credential rotation
 - Audit trail with created_at and updated_at timestamps
 - Only one active configuration allowed at a time
+- Supports automated template sync with WABA_ID
 
 #### Option B: Environment Variables (Backward Compatible)
 
 Add the following to your `.env` file:
 
 ```bash
+# WhatsApp Business Account ID (WABA ID) - Required for template sync
+WHATSAPP_WABA_ID=your_waba_id
+
 # WhatsApp Business Account Phone Number ID (from Meta Business Manager)
 WHATSAPP_PHONE_NUMBER_ID=your_phone_number_id
 
@@ -70,6 +75,14 @@ WHATSAPP_WEBHOOK_VERIFY_TOKEN=your_webhook_verify_token
 **Note**: Database configuration takes precedence over environment variables. If no database configuration exists, the system falls back to environment variables.
 
 ### 3. Get Your Credentials
+
+#### WABA ID (WhatsApp Business Account ID)
+1. Go to https://business.facebook.com/
+2. Navigate to WhatsApp Manager
+3. Select your WhatsApp Business Account
+4. The WABA ID is shown in the URL or in the account details
+5. Format: Usually a long numeric ID (e.g., `102290129340398`)
+
 
 #### Phone Number ID
 1. Go to https://business.facebook.com/
@@ -95,19 +108,78 @@ pip install -r requirements.txt
 
 ## Message Templates
 
-WhatsApp requires pre-approved message templates for sending notifications. Templates must be created in Meta Business Manager before use.
+WhatsApp requires pre-approved message templates for sending notifications. Ovii now supports **automatic template synchronization** to Meta via the Graph API.
+
+### Automated Template Sync (Recommended)
+
+Ovii can automatically create and sync templates to Meta Business Manager:
+
+#### Prerequisites
+1. Configure your **WABA_ID** (WhatsApp Business Account ID):
+   - Option A: Add to `.env` file: `WHATSAPP_WABA_ID=your_waba_id`
+   - Option B: Add to Django Admin under **Integrations > WhatsApp Configurations**
+
+2. Ensure you have a valid **access token** with permissions:
+   - `whatsapp_business_management`
+   - `whatsapp_business_messaging`
+
+#### Sync All Templates to Meta
+
+```bash
+# Sync all templates to Meta (creates them via Graph API)
+python manage.py sync_whatsapp_templates
+
+# Sync a specific template
+python manage.py sync_whatsapp_templates --template=otp_verification
+
+# Check approval status of templates
+python manage.py sync_whatsapp_templates --check-status
+```
+
+#### Display Templates Without Syncing
+
+```bash
+# View templates in text format (without syncing)
+python manage.py sync_whatsapp_templates --display-only
+
+# View templates in JSON format
+python manage.py sync_whatsapp_templates --display-only --format=json
+```
+
+#### What Happens During Sync?
+
+1. **Template Creation**: Each template is automatically created in Meta via the Graph API
+2. **Status Tracking**: Templates are tracked in the database with status (PENDING, APPROVED, REJECTED)
+3. **Approval Process**: Templates are submitted to Meta for review (usually 24-48 hours)
+4. **Error Handling**: If a template already exists or fails, the error is logged
+
+**Note**: After sync, templates are in PENDING status until Meta approves them. Use `--check-status` to monitor approval progress.
+
+### Manual Template Creation (Alternative)
+
+If you prefer to create templates manually or automatic sync fails:
+
+1. Go to https://business.facebook.com/wa/manage/message-templates/
+2. Click "Create Template"
+3. Use the output from `python manage.py sync_whatsapp_templates --display-only` as a guide
+4. Enter the template name (must match exactly)
+5. Select the category (AUTHENTICATION or MARKETING)
+6. Add the message body with variables (use `{{1}}`, `{{2}}`, etc.)
+7. Add footer text if needed
+8. Submit for approval
+9. Wait 24-48 hours for Meta approval
 
 ### View Available Templates
 
 Run the management command to see all defined templates:
 
 ```bash
-python manage.py sync_whatsapp_templates
+python manage.py sync_whatsapp_templates --display-only
 ```
 
 For JSON output:
 ```bash
-python manage.py sync_whatsapp_templates --format=json
+python manage.py sync_whatsapp_templates --display-only --format=json
 ```
 
 ### Template Categories
@@ -141,16 +213,29 @@ python manage.py sync_whatsapp_templates --format=json
 #### 6. Onboarding
 - **welcome_message**: Welcome new users
 
-### Creating Templates in Meta
+### Template Sync Management
 
-1. Go to https://business.facebook.com/wa/manage/message-templates/
-2. Click "Create Template"
-3. Enter the template name (must match exactly)
-4. Select the category (AUTHENTICATION or MARKETING)
-5. Add the message body with variables (use `{{1}}`, `{{2}}`, etc.)
-6. Add footer text if needed
-7. Submit for approval
-8. Wait 24-48 hours for Meta approval
+#### Check Template Status
+Monitor the approval status of your templates:
+
+```bash
+# Check status of all templates
+python manage.py sync_whatsapp_templates --check-status
+
+# Check status of a specific template
+python manage.py sync_whatsapp_templates --check-status --template=otp_verification
+```
+
+#### Template Status Values
+- **PENDING**: Template created but awaiting Meta approval
+- **APPROVED**: Template approved and ready to use
+- **REJECTED**: Template rejected by Meta (check rejection reason in admin)
+- **DISABLED**: Template was previously approved but has been disabled
+
+#### View Template Sync Status in Admin
+1. Log in to Django Admin at `/admin/`
+2. Navigate to **Integrations > WhatsApp Templates**
+3. View sync status, template IDs, and rejection reasons
 
 **Note**: Templates must be approved before they can be used in production.
 

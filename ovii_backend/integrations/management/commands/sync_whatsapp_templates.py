@@ -1,20 +1,25 @@
 """
 Author: Moreblessing Nyemba +263787211325
 Date: 2024-12-09
+Updated: 2024-12-16
 Description: Management command to sync WhatsApp message templates with Meta.
 
-This command displays the template definitions that need to be created in Meta Business Manager.
-Templates must be created manually in the Meta Business Manager at:
-https://business.facebook.com/wa/manage/message-templates/
+This command can:
+1. Display templates (--display-only) - shows templates without syncing
+2. Sync templates to Meta (default) - creates/updates templates via Graph API
+3. Check template status (--check-status) - retrieves approval status from Meta
 """
 
-from django.core.management.base import BaseCommand
-from integrations.whatsapp_templates import get_all_templates
+from django.core.management.base import BaseCommand, CommandError
+from django.utils import timezone
+from integrations.whatsapp_templates import get_all_templates, convert_template_to_meta_format
+from integrations.services import WhatsAppClient
+from integrations.models import WhatsAppTemplate
 import json
 
 
 class Command(BaseCommand):
-    help = "Display WhatsApp message templates for syncing with Meta Business Manager"
+    help = "Sync WhatsApp message templates with Meta Business Manager via Graph API"
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -22,13 +27,52 @@ class Command(BaseCommand):
             type=str,
             default='text',
             choices=['text', 'json'],
-            help='Output format: text or json',
+            help='Output format: text or json (for --display-only)',
+        )
+        parser.add_argument(
+            '--display-only',
+            action='store_true',
+            help='Display templates without syncing to Meta',
+        )
+        parser.add_argument(
+            '--check-status',
+            action='store_true',
+            help='Check approval status of templates from Meta',
+        )
+        parser.add_argument(
+            '--template',
+            type=str,
+            help='Sync only a specific template by name',
         )
 
     def handle(self, *args, **options):
         templates = get_all_templates()
         output_format = options['format']
+        display_only = options['display_only']
+        check_status = options['check_status']
+        specific_template = options.get('template')
 
+        # Filter to specific template if requested
+        if specific_template:
+            if specific_template not in templates:
+                raise CommandError(f"Template '{specific_template}' not found")
+            templates = {specific_template: templates[specific_template]}
+
+        # Display only mode (original behavior)
+        if display_only:
+            self._display_templates(templates, output_format)
+            return
+
+        # Check status mode
+        if check_status:
+            self._check_template_status(templates)
+            return
+
+        # Sync templates to Meta (new behavior)
+        self._sync_templates_to_meta(templates)
+
+    def _display_templates(self, templates, output_format):
+        """Display templates in text or JSON format."""
         if output_format == 'json':
             self.stdout.write(json.dumps(templates, indent=2))
             return
@@ -39,10 +83,10 @@ class Command(BaseCommand):
         self.stdout.write('')
         
         self.stdout.write(self.style.WARNING(
-            'These templates must be created and approved in Meta Business Manager.'
+            'These templates can be synced to Meta Business Manager automatically.'
         ))
         self.stdout.write(self.style.WARNING(
-            'URL: https://business.facebook.com/wa/manage/message-templates/'
+            'Run: python manage.py sync_whatsapp_templates (without --display-only)'
         ))
         self.stdout.write('')
         self.stdout.write(self.style.WARNING('=' * 80))
@@ -91,11 +135,163 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS('Total templates: ' + str(len(templates))))
         self.stdout.write('')
-        self.stdout.write(self.style.WARNING('NEXT STEPS:'))
-        self.stdout.write('1. Log in to Meta Business Manager')
-        self.stdout.write('2. Navigate to WhatsApp Manager > Message Templates')
-        self.stdout.write('3. Create each template with the exact name and structure shown above')
-        self.stdout.write('4. Submit templates for approval')
-        self.stdout.write('5. Wait for Meta to approve the templates (usually 24-48 hours)')
-        self.stdout.write('6. Once approved, templates can be used in the application')
+
+    def _sync_templates_to_meta(self, templates):
+        """Sync templates to Meta via Graph API."""
+        self.stdout.write(self.style.SUCCESS('=' * 80))
+        self.stdout.write(self.style.SUCCESS('SYNCING TEMPLATES TO META'))
+        self.stdout.write(self.style.SUCCESS('=' * 80))
         self.stdout.write('')
+
+        try:
+            client = WhatsAppClient()
+            if not client.waba_id:
+                raise CommandError(
+                    "WABA_ID not configured. Please set WHATSAPP_WABA_ID in .env or "
+                    "add waba_id to WhatsApp configuration in admin panel."
+                )
+        except Exception as e:
+            raise CommandError(f"Failed to initialize WhatsApp client: {e}")
+
+        success_count = 0
+        failed_count = 0
+        skipped_count = 0
+
+        for template_name, template_data in templates.items():
+            self.stdout.write(f"Processing template: {template_name}")
+            
+            try:
+                # Convert to Meta format
+                meta_payload = convert_template_to_meta_format(template_name)
+                
+                # Check if template already exists in database
+                db_template, created = WhatsAppTemplate.objects.get_or_create(
+                    name=template_name,
+                    language=template_data['language'],
+                    defaults={
+                        'category': template_data['category'],
+                        'status': 'PENDING',
+                    }
+                )
+                
+                # Skip if already approved
+                if db_template.status == 'APPROVED' and not created:
+                    self.stdout.write(
+                        self.style.WARNING(f"  ⏭  Template already approved, skipping...")
+                    )
+                    skipped_count += 1
+                    continue
+                
+                # Create template in Meta
+                try:
+                    response = client.create_template(meta_payload)
+                    
+                    # Update database record
+                    db_template.template_id = response.get('id')
+                    db_template.status = response.get('status', 'PENDING').upper()
+                    db_template.last_synced_at = timezone.now()
+                    db_template.save()
+                    
+                    self.stdout.write(
+                        self.style.SUCCESS(f"  ✓ Template created successfully (ID: {response.get('id')})")
+                    )
+                    self.stdout.write(
+                        self.style.WARNING(f"    Status: {response.get('status', 'PENDING')}")
+                    )
+                    success_count += 1
+                    
+                except Exception as api_error:
+                    error_msg = str(api_error)
+                    
+                    # Check if template already exists using status code/error code
+                    is_duplicate = getattr(api_error, 'is_duplicate', False)
+                    
+                    if is_duplicate:
+                        db_template.status = 'PENDING'  # Assume it's pending approval
+                        db_template.last_synced_at = timezone.now()
+                        db_template.save()
+                        self.stdout.write(
+                            self.style.WARNING(f"  ⚠  Template already exists in Meta")
+                        )
+                        skipped_count += 1
+                    else:
+                        # Real error
+                        db_template.rejection_reason = error_msg[:500]  # Truncate if too long
+                        db_template.save()
+                        self.stdout.write(
+                            self.style.ERROR(f"  ✗ Failed: {error_msg}")
+                        )
+                        failed_count += 1
+                
+            except Exception as e:
+                self.stdout.write(
+                    self.style.ERROR(f"  ✗ Error processing template: {e}")
+                )
+                failed_count += 1
+            
+            self.stdout.write('')
+
+        # Summary
+        self.stdout.write(self.style.SUCCESS('=' * 80))
+        self.stdout.write(self.style.SUCCESS('SYNC SUMMARY'))
+        self.stdout.write(self.style.SUCCESS('=' * 80))
+        self.stdout.write(f"Total templates: {len(templates)}")
+        self.stdout.write(self.style.SUCCESS(f"✓ Successfully synced: {success_count}"))
+        self.stdout.write(self.style.WARNING(f"⏭  Skipped: {skipped_count}"))
+        self.stdout.write(self.style.ERROR(f"✗ Failed: {failed_count}"))
+        self.stdout.write('')
+        
+        if success_count > 0:
+            self.stdout.write(self.style.WARNING('NOTE: Templates are pending approval by Meta.'))
+            self.stdout.write(self.style.WARNING('Approval usually takes 24-48 hours.'))
+            self.stdout.write(self.style.WARNING('Use --check-status to check approval status.'))
+            self.stdout.write('')
+
+    def _check_template_status(self, templates):
+        """Check template approval status from Meta."""
+        self.stdout.write(self.style.SUCCESS('=' * 80))
+        self.stdout.write(self.style.SUCCESS('CHECKING TEMPLATE STATUS'))
+        self.stdout.write(self.style.SUCCESS('=' * 80))
+        self.stdout.write('')
+
+        try:
+            client = WhatsAppClient()
+            if not client.waba_id:
+                raise CommandError("WABA_ID not configured.")
+        except Exception as e:
+            raise CommandError(f"Failed to initialize WhatsApp client: {e}")
+
+        for template_name, template_data in templates.items():
+            self.stdout.write(f"Template: {template_name}")
+            
+            try:
+                # Get status from Meta
+                status_response = client.get_template_status(template_name)
+                
+                # Update database if template exists
+                db_templates = WhatsAppTemplate.objects.filter(
+                    name=template_name,
+                    language=template_data['language']
+                )
+                
+                if status_response.get('data'):
+                    for template_info in status_response['data']:
+                        status = template_info.get('status', 'UNKNOWN').upper()
+                        template_id = template_info.get('id')
+                        
+                        self.stdout.write(f"  Status: {status}")
+                        self.stdout.write(f"  Template ID: {template_id}")
+                        
+                        # Update database
+                        if db_templates.exists():
+                            db_template = db_templates.first()
+                            db_template.status = status
+                            db_template.template_id = template_id
+                            db_template.save()
+                else:
+                    self.stdout.write(self.style.WARNING("  Not found in Meta"))
+                
+            except Exception as e:
+                self.stdout.write(self.style.ERROR(f"  Error: {e}"))
+            
+            self.stdout.write('')

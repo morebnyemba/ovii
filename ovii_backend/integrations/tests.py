@@ -259,3 +259,207 @@ class WhatsAppTemplatesTestCase(TestCase):
         """Test formatting with invalid template name."""
         with self.assertRaises(ValueError):
             format_template_components("invalid_template", {})
+
+
+class WhatsAppTemplateSyncTestCase(TestCase):
+    """Test cases for WhatsApp template sync functionality."""
+
+    def setUp(self):
+        """Set up test fixtures."""
+        from .models import WhatsAppTemplate
+        self.waba_id = "123456789"
+        self.access_token = "test_token"
+        self.template_name = "otp_verification"
+
+    @patch('integrations.services.WhatsApp')
+    def test_whatsapp_client_loads_waba_id_from_database(self, mock_whatsapp):
+        """Test WhatsApp client loads WABA_ID from database."""
+        WhatsAppConfig.objects.create(
+            waba_id=self.waba_id,
+            phone_number_id="test_phone_id",
+            access_token=self.access_token,
+            api_version="v18.0",
+            is_active=True
+        )
+        
+        client = WhatsAppClient()
+        
+        self.assertEqual(client.waba_id, self.waba_id)
+        self.assertEqual(client.access_token, self.access_token)
+
+    @patch('integrations.services.requests.post')
+    @patch('integrations.services.WhatsApp')
+    def test_create_template_success(self, mock_whatsapp, mock_post):
+        """Test successful template creation via Meta API."""
+        # Setup
+        WhatsAppConfig.objects.create(
+            waba_id=self.waba_id,
+            phone_number_id="test_phone_id",
+            access_token=self.access_token,
+            api_version="v18.0",
+            is_active=True
+        )
+        
+        mock_response = MagicMock()
+        mock_response.json.return_value = {
+            "id": "template_12345",
+            "status": "PENDING",
+            "category": "AUTHENTICATION"
+        }
+        mock_response.raise_for_status = MagicMock()
+        mock_post.return_value = mock_response
+        
+        # Test
+        client = WhatsAppClient()
+        template_data = {
+            "name": "test_template",
+            "category": "AUTHENTICATION",
+            "language": "en_US",
+            "components": [{"type": "BODY", "text": "Test message"}]
+        }
+        result = client.create_template(template_data)
+        
+        # Assert
+        self.assertEqual(result["id"], "template_12345")
+        self.assertEqual(result["status"], "PENDING")
+        mock_post.assert_called_once()
+        
+        # Verify API call
+        call_args = mock_post.call_args
+        self.assertIn(self.waba_id, call_args[0][0])
+        self.assertIn("message_templates", call_args[0][0])
+
+    @patch('integrations.services.WhatsApp')
+    def test_create_template_no_waba_id(self, mock_whatsapp):
+        """Test template creation fails without WABA_ID."""
+        WhatsAppConfig.objects.create(
+            waba_id="",
+            phone_number_id="test_phone_id",
+            access_token=self.access_token,
+            api_version="v18.0",
+            is_active=True
+        )
+        
+        client = WhatsAppClient()
+        template_data = {"name": "test"}
+        
+        with self.assertRaises(Exception) as context:
+            client.create_template(template_data)
+        
+        self.assertIn("WABA_ID not configured", str(context.exception))
+
+    @patch('integrations.services.requests.post')
+    @patch('integrations.services.WhatsApp')
+    def test_create_template_api_error(self, mock_whatsapp, mock_post):
+        """Test template creation handles API errors."""
+        WhatsAppConfig.objects.create(
+            waba_id=self.waba_id,
+            phone_number_id="test_phone_id",
+            access_token=self.access_token,
+            api_version="v18.0",
+            is_active=True
+        )
+        
+        mock_response = MagicMock()
+        mock_response.raise_for_status.side_effect = Exception("API Error")
+        mock_response.text = "Error details"
+        mock_post.return_value = mock_response
+        
+        client = WhatsAppClient()
+        template_data = {"name": "test"}
+        
+        with self.assertRaises(Exception):
+            client.create_template(template_data)
+
+    @patch('integrations.services.requests.get')
+    @patch('integrations.services.WhatsApp')
+    def test_get_template_status(self, mock_whatsapp, mock_get):
+        """Test retrieving template status from Meta."""
+        WhatsAppConfig.objects.create(
+            waba_id=self.waba_id,
+            phone_number_id="test_phone_id",
+            access_token=self.access_token,
+            api_version="v18.0",
+            is_active=True
+        )
+        
+        mock_response = MagicMock()
+        mock_response.json.return_value = {
+            "data": [{
+                "id": "template_12345",
+                "name": "test_template",
+                "status": "APPROVED"
+            }]
+        }
+        mock_response.raise_for_status = MagicMock()
+        mock_get.return_value = mock_response
+        
+        client = WhatsAppClient()
+        result = client.get_template_status("test_template")
+        
+        self.assertIn("data", result)
+        self.assertEqual(result["data"][0]["status"], "APPROVED")
+        mock_get.assert_called_once()
+
+    def test_convert_template_to_meta_format(self):
+        """Test conversion of internal template format to Meta format."""
+        from .whatsapp_templates import convert_template_to_meta_format
+        
+        result = convert_template_to_meta_format("otp_verification")
+        
+        # Check required fields
+        self.assertEqual(result["name"], "otp_verification")
+        self.assertEqual(result["category"], "AUTHENTICATION")
+        self.assertEqual(result["language"], "en_US")
+        self.assertIn("components", result)
+        
+        # Check components
+        components = result["components"]
+        body_component = next(c for c in components if c["type"] == "BODY")
+        self.assertIn("{{1}}", body_component["text"])
+        
+        # Check footer
+        footer_component = next((c for c in components if c["type"] == "FOOTER"), None)
+        self.assertIsNotNone(footer_component)
+
+    def test_convert_template_invalid_name(self):
+        """Test conversion with invalid template name."""
+        from .whatsapp_templates import convert_template_to_meta_format
+        
+        with self.assertRaises(ValueError):
+            convert_template_to_meta_format("invalid_template_name")
+
+    def test_whatsapp_template_model_creation(self):
+        """Test WhatsAppTemplate model creation."""
+        from .models import WhatsAppTemplate
+        
+        template = WhatsAppTemplate.objects.create(
+            name="test_template",
+            category="MARKETING",
+            language="en",
+            status="PENDING"
+        )
+        
+        self.assertEqual(template.name, "test_template")
+        self.assertEqual(template.status, "PENDING")
+        self.assertIsNone(template.template_id)
+        self.assertIsNone(template.last_synced_at)
+
+    def test_whatsapp_template_unique_constraint(self):
+        """Test unique constraint on template name and language."""
+        from .models import WhatsAppTemplate
+        from django.db import IntegrityError
+        
+        WhatsAppTemplate.objects.create(
+            name="test_template",
+            category="MARKETING",
+            language="en"
+        )
+        
+        # Try to create duplicate
+        with self.assertRaises(IntegrityError):
+            WhatsAppTemplate.objects.create(
+                name="test_template",
+                category="MARKETING",
+                language="en"
+            )
