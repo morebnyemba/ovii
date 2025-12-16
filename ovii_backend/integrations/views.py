@@ -10,7 +10,9 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from decimal import Decimal
 from django.db import transaction
+from django.conf import settings
 import logging
+import secrets
 
 from wallets.models import Transaction, Wallet
 from wallets.permissions import IsMobileVerifiedOrHigher
@@ -20,6 +22,7 @@ from .tasks import process_ecocash_withdrawal
 from .serializers import (
     PaynowTopUpRequestSerializer,
 )  # This import will now work correctly
+from .models import WhatsAppConfig
 
 
 class EcoCashWithdrawalSerializer(serializers.Serializer):
@@ -201,3 +204,192 @@ class PaynowWebhookView(APIView):
                     )
 
         return Response(status=status.HTTP_200_OK)
+
+
+class WhatsAppWebhookView(APIView):
+    """
+    Webhook endpoint for WhatsApp Business Cloud API.
+    
+    This endpoint:
+    1. Verifies webhook during Meta setup (GET request)
+    2. Receives webhook notifications from Meta (POST request)
+    
+    Setup in Meta Business Manager:
+    - Webhook URL: https://yourdomain.com/api/integrations/webhooks/whatsapp/
+    - Verify Token: Set in WHATSAPP_WEBHOOK_VERIFY_TOKEN env var or WhatsAppConfig
+    - Subscribe to: messages, message_status (recommended)
+    """
+
+    permission_classes = []  # Publicly accessible
+
+    def get(self, request, *args, **kwargs):
+        """
+        Webhook verification endpoint (required by Meta).
+        
+        Meta will make a GET request during webhook setup with:
+        - hub.mode: 'subscribe'
+        - hub.verify_token: Your verification token
+        - hub.challenge: Random string to echo back
+        """
+        mode = request.query_params.get("hub.mode")
+        token = request.query_params.get("hub.verify_token")
+        challenge = request.query_params.get("hub.challenge")
+
+        # Validate required parameters
+        if not challenge:
+            logging.warning("WhatsApp webhook verification: missing challenge parameter")
+            return Response(
+                {"detail": "Missing challenge parameter"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Get verify token from database or environment
+        verify_token = None
+        try:
+            config = WhatsAppConfig.objects.filter(is_active=True).first()
+            if config:
+                verify_token = config.webhook_verify_token
+        except Exception:
+            pass
+        
+        # Fallback to environment variable
+        if not verify_token:
+            verify_token = getattr(settings, 'WHATSAPP_WEBHOOK_VERIFY_TOKEN', None)
+
+        # Use constant-time comparison to prevent timing attacks
+        token_match = False
+        if verify_token and token:
+            try:
+                # Ensure both strings are the same type and use constant-time comparison
+                token_match = secrets.compare_digest(
+                    str(token).encode('utf-8'),
+                    str(verify_token).encode('utf-8')
+                )
+            except Exception as e:
+                logging.error(f"Error comparing tokens: {e}")
+                token_match = False
+
+        if mode == "subscribe" and token_match:
+            logging.info("WhatsApp webhook verified successfully")
+            # Return the challenge exactly as received (as string/int based on Meta's format)
+            # Meta documentation shows it can be either, so return as-is
+            return Response(challenge, status=status.HTTP_200_OK)
+        else:
+            logging.warning(
+                f"WhatsApp webhook verification failed. Mode: {mode}, Token provided: {bool(token)}"
+            )
+            return Response(
+                {"detail": "Verification failed"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+            )
+
+    def post(self, request, *args, **kwargs):
+        """
+        Receives webhook notifications from WhatsApp.
+        
+        Common notification types:
+        - messages: Incoming messages from users
+        - message_status: Delivery/read receipts
+        - messaging_product: WhatsApp Business API events
+        """
+        data = request.data
+        
+        try:
+            # Log the webhook for debugging
+            logging.info(f"WhatsApp webhook received: {data}")
+            
+            # Extract webhook data
+            # Format: https://developers.facebook.com/docs/whatsapp/cloud-api/webhooks/components
+            if "entry" in data:
+                for entry in data.get("entry", []):
+                    for change in entry.get("changes", []):
+                        value = change.get("value", {})
+                        
+                        # Handle incoming messages
+                        if "messages" in value:
+                            messages = value.get("messages", [])
+                            for message in messages:
+                                self._handle_incoming_message(message, value)
+                        
+                        # Handle message status updates (delivered, read, failed)
+                        if "statuses" in value:
+                            statuses = value.get("statuses", [])
+                            for status_update in statuses:
+                                self._handle_status_update(status_update)
+            
+            # Return 200 OK to acknowledge receipt
+            return Response({"status": "received"}, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logging.error(f"Error processing WhatsApp webhook: {e}", exc_info=True)
+            # Still return 200 to prevent Meta from retrying
+            return Response({"status": "error"}, status=status.HTTP_200_OK)
+
+    def _handle_incoming_message(self, message, value):
+        """
+        Process incoming WhatsApp messages.
+        
+        Note: For most cases, Ovii sends template messages (one-way notifications).
+        If you want to support two-way messaging, implement logic here.
+        """
+        message_type = message.get("type")
+        from_number = message.get("from")
+        message_id = message.get("id")
+        timestamp = message.get("timestamp")
+        
+        logging.info(
+            f"Incoming WhatsApp message from {from_number}: "
+            f"Type={message_type}, ID={message_id}"
+        )
+        
+        # Example: Handle text messages
+        if message_type == "text":
+            text_body = message.get("text", {}).get("body", "")
+            logging.info(f"Message text: {text_body}")
+            
+            # TODO: Implement your business logic here
+            # For example:
+            # - Parse commands (e.g., "BALANCE", "HELP")
+            # - Store messages in database
+            # - Trigger automated responses
+            # - Create support tickets
+        
+        # Handle other message types (image, document, etc.)
+        # Refer to: https://developers.facebook.com/docs/whatsapp/cloud-api/webhooks/components
+
+    def _handle_status_update(self, status_update):
+        """
+        Process message delivery status updates.
+        
+        Status types:
+        - sent: Message sent to WhatsApp server
+        - delivered: Message delivered to user's device
+        - read: User read the message
+        - failed: Message delivery failed
+        """
+        message_id = status_update.get("id")
+        status_value = status_update.get("status")
+        timestamp = status_update.get("timestamp")
+        recipient = status_update.get("recipient_id")
+        
+        logging.info(
+            f"WhatsApp message status update: "
+            f"ID={message_id}, Status={status_value}, Recipient={recipient}"
+        )
+        
+        # TODO: Update notification status in database
+        # Example:
+        # try:
+        #     from notifications.models import Notification
+        #     notification = Notification.objects.get(
+        #         channel=Notification.Channel.WHATSAPP,
+        #         external_id=message_id
+        #     )
+        #     if status_value == "delivered":
+        #         notification.status = Notification.Status.SENT
+        #     elif status_value == "failed":
+        #         notification.status = Notification.Status.FAILED
+        #     notification.save()
+        # except Notification.DoesNotExist:
+        #     pass

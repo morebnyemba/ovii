@@ -427,6 +427,364 @@ If you're currently using environment variables and want to migrate to database 
 
 **Rollback**: If you need to revert, simply deactivate the database configuration or remove it, and the system will fall back to environment variables.
 
+## Webhook Configuration
+
+### Overview
+
+WhatsApp Business Cloud API uses webhooks to notify your application about:
+- Incoming messages from users
+- Message delivery status (sent, delivered, read, failed)
+- Account updates and events
+
+### Webhook Endpoint
+
+Your WhatsApp webhook URL is:
+```
+https://your-domain.com/api/integrations/webhooks/whatsapp/
+```
+
+**For production**: Replace `your-domain.com` with your actual domain (e.g., `api.ovii.it.com`)
+
+**For development/testing**: You can use ngrok or similar tools to expose your local server:
+```bash
+ngrok http 8000
+# Use the HTTPS URL provided by ngrok
+```
+
+### Configuration Steps
+
+#### Step 1: Set Verify Token
+
+The webhook requires a verify token for security. Choose one method:
+
+**Option A: Via Django Admin (Recommended)**
+
+1. Navigate to `https://your-domain.com/admin/`
+2. Go to **Integrations > WhatsApp Configurations**
+3. Edit the active configuration
+4. Set **Webhook Verify Token** to a secure random string (e.g., `ovii_webhook_2024_secure_token`)
+5. Click **Save**
+
+**Option B: Via Environment Variables**
+
+Add to your `.env` file:
+```bash
+WHATSAPP_WEBHOOK_VERIFY_TOKEN=ovii_webhook_2024_secure_token
+```
+
+⚠️ **Important**: Use a strong, random token. You can generate one with:
+```bash
+python -c "import secrets; print(secrets.token_urlsafe(32))"
+```
+
+#### Step 2: Configure Webhook in Meta Business Manager
+
+1. **Access Meta Developer Portal**
+   - Go to https://developers.facebook.com/apps/
+   - Select your WhatsApp Business app
+
+2. **Navigate to Webhook Settings**
+   - In the left sidebar, click **WhatsApp > Configuration**
+   - Find the **Webhook** section
+   - Click **Edit**
+
+3. **Configure Webhook**
+   - **Callback URL**: Enter your webhook URL
+     ```
+     https://your-domain.com/api/integrations/webhooks/whatsapp/
+     ```
+   - **Verify Token**: Enter the same token from Step 1
+     ```
+     ovii_webhook_2024_secure_token
+     ```
+   - Click **Verify and Save**
+
+4. **Subscribe to Webhook Fields**
+   
+   After verification, subscribe to these fields:
+   - ✅ **messages** - Receive incoming messages (recommended)
+   - ✅ **message_status** - Track delivery/read status (recommended)
+   - ☐ **messaging_handovers** - For customer service handoffs (optional)
+   - ☐ **message_echoes** - Echo sent messages (optional)
+
+   Click **Subscribe** for each field you want to enable.
+
+#### Step 3: Verify Webhook
+
+Test that your webhook is configured correctly:
+
+**Via Meta Console**
+1. In the Webhook section, click **Test** button
+2. Select a field (e.g., `messages`)
+3. Click **Send Test Request**
+4. Check your application logs
+
+**Via Application Logs**
+```bash
+docker compose logs -f backend | grep -i whatsapp
+```
+
+You should see:
+```
+INFO WhatsApp webhook received: {...}
+```
+
+**Manual Test with cURL**
+```bash
+# Test GET (verification)
+curl "https://your-domain.com/api/integrations/webhooks/whatsapp/?hub.mode=subscribe&hub.verify_token=ovii_webhook_2024_secure_token&hub.challenge=123456789"
+
+# Should return: 123456789
+
+# Test POST (webhook notification)
+curl -X POST https://your-domain.com/api/integrations/webhooks/whatsapp/ \
+  -H "Content-Type: application/json" \
+  -d '{"entry": [{"changes": [{"value": {"messages": []}}]}]}'
+
+# Should return: {"status": "received"}
+```
+
+### Webhook Events
+
+The webhook receives different types of events:
+
+#### 1. Incoming Messages
+
+```json
+{
+  "entry": [{
+    "changes": [{
+      "value": {
+        "messages": [{
+          "from": "263777123456",
+          "id": "wamid.xxx",
+          "timestamp": "1234567890",
+          "type": "text",
+          "text": {
+            "body": "Hello Ovii"
+          }
+        }]
+      }
+    }]
+  }]
+}
+```
+
+#### 2. Message Status Updates
+
+```json
+{
+  "entry": [{
+    "changes": [{
+      "value": {
+        "statuses": [{
+          "id": "wamid.xxx",
+          "status": "delivered",
+          "timestamp": "1234567890",
+          "recipient_id": "263777123456"
+        }]
+      }
+    }]
+  }]
+}
+```
+
+### Implementation Details
+
+The webhook view (`WhatsAppWebhookView`) automatically:
+
+1. **Verifies webhook** (GET request during setup)
+2. **Receives notifications** (POST requests from Meta)
+3. **Logs all events** for debugging
+4. **Returns 200 OK** to acknowledge receipt
+
+Current implementation logs events for monitoring. To enable two-way messaging or status tracking, update the `_handle_incoming_message()` and `_handle_status_update()` methods in `integrations/views.py`.
+
+### Monitoring Webhook Activity
+
+**View Webhook Logs**
+```bash
+# Real-time monitoring
+docker compose logs -f backend | grep -i "whatsapp webhook"
+
+# Recent webhook events
+docker compose logs --tail=100 backend | grep -i "whatsapp webhook"
+
+# Search for specific message
+docker compose logs backend | grep -i "message from +263777123456"
+```
+
+**Common Log Messages**
+- `WhatsApp webhook verified successfully` - Verification completed
+- `WhatsApp webhook received:` - Incoming webhook notification
+- `Incoming WhatsApp message from...` - User sent a message
+- `WhatsApp message status update:` - Delivery status changed
+
+### Troubleshooting Webhook Issues
+
+#### Issue: Webhook Verification Failed
+
+**Symptoms**: Meta shows "Verification Failed" error
+
+**Solutions**:
+1. Check verify token matches exactly (case-sensitive)
+2. Ensure webhook URL is accessible from internet
+3. Check application logs for error messages
+4. Verify Django ALLOWED_HOSTS includes your domain
+5. Test webhook URL manually with cURL
+
+**Debug Commands**:
+```bash
+# Check if webhook endpoint is accessible
+curl -I https://your-domain.com/api/integrations/webhooks/whatsapp/
+
+# Check Django settings
+docker compose exec backend python manage.py shell
+>>> from django.conf import settings
+>>> print(settings.ALLOWED_HOSTS)
+>>> print(settings.WHATSAPP_WEBHOOK_VERIFY_TOKEN)
+
+# Check WhatsAppConfig
+>>> from integrations.models import WhatsAppConfig
+>>> config = WhatsAppConfig.objects.filter(is_active=True).first()
+>>> print(config.webhook_verify_token if config else "No config")
+```
+
+#### Issue: Webhook Not Receiving Events
+
+**Symptoms**: No logs when messages are sent/received
+
+**Solutions**:
+1. Verify webhook fields are subscribed in Meta console
+2. Check webhook URL is correct
+3. Ensure application is running and accessible
+4. Review firewall/security group settings
+5. Check Nginx/proxy configuration
+
+**Verification**:
+```bash
+# Send test message via WhatsApp
+# Then check logs immediately
+docker compose logs --tail=50 backend | grep -i whatsapp
+
+# Check if webhook endpoint returns 200
+curl -X POST https://your-domain.com/api/integrations/webhooks/whatsapp/ \
+  -H "Content-Type: application/json" \
+  -d '{"entry":[]}'
+```
+
+#### Issue: Webhook Returns Errors
+
+**Symptoms**: Meta shows webhook failing
+
+**Solutions**:
+1. Webhook must return 200 OK within 10 seconds
+2. Fix any application errors causing crashes
+3. Ensure database is accessible
+4. Check for memory/resource issues
+
+**Debug**:
+```bash
+# Monitor errors in real-time
+docker compose logs -f backend | grep -E "(ERROR|CRITICAL)"
+
+# Check application health
+docker compose exec backend python manage.py check
+
+# Test webhook processing
+docker compose exec backend python manage.py shell
+>>> from integrations.views import WhatsAppWebhookView
+>>> view = WhatsAppWebhookView()
+>>> # Test with sample data
+```
+
+### Security Considerations
+
+1. **Verify Token Security**
+   - Use a strong, random token (32+ characters)
+   - Never expose token in client-side code
+   - Rotate token regularly (every 90 days)
+
+2. **Webhook Signature Verification** (Optional Enhancement)
+   - Meta can sign webhook requests with HMAC
+   - Verify signature to ensure requests are from Meta
+   - Prevent replay attacks
+
+3. **Rate Limiting**
+   - Implement rate limiting on webhook endpoint
+   - Prevent abuse and DoS attacks
+   - Monitor unusual activity patterns
+
+4. **HTTPS Required**
+   - Webhook URL must use HTTPS
+   - Valid SSL certificate required
+   - Meta rejects HTTP webhooks
+
+### Development vs. Production
+
+**Development**
+```bash
+# Use ngrok for local testing
+ngrok http 8000
+
+# Update webhook URL in Meta console
+https://abc123.ngrok.io/api/integrations/webhooks/whatsapp/
+
+# Monitor ngrok requests
+# Visit http://127.0.0.1:4040 for request inspector
+```
+
+**Production**
+```bash
+# Use your production domain
+https://api.ovii.it.com/api/integrations/webhooks/whatsapp/
+
+# Ensure HTTPS is configured
+# Verify SSL certificate is valid
+# Configure proper domain in ALLOWED_HOSTS
+```
+
+### Webhook Best Practices
+
+1. **Always Return 200 OK**
+   - Even if processing fails
+   - Prevents Meta from retrying indefinitely
+   - Log errors for later review
+
+2. **Process Asynchronously**
+   - Use Celery tasks for heavy processing
+   - Keep webhook response time under 5 seconds
+   - Queue messages for later processing
+
+3. **Idempotent Processing**
+   - Use message IDs to prevent duplicates
+   - Store processed message IDs
+   - Handle retry scenarios gracefully
+
+4. **Comprehensive Logging**
+   - Log all webhook events
+   - Include message IDs and timestamps
+   - Use structured logging for easier analysis
+
+5. **Error Handling**
+   - Catch and log all exceptions
+   - Return 200 even on errors
+   - Set up alerts for repeated failures
+
+### Next Steps
+
+After configuring the webhook:
+
+1. **Test message delivery** - Send a template and verify webhook receives status updates
+2. **Monitor webhook activity** - Check logs regularly for any issues
+3. **Configure status tracking** - Update notification statuses based on webhook events
+4. **Enable two-way messaging** - Implement logic to handle incoming user messages (optional)
+5. **Set up alerts** - Monitor webhook failures and unusual patterns
+
+For more information, see:
+- [WhatsApp Webhook Documentation](https://developers.facebook.com/docs/whatsapp/cloud-api/webhooks)
+- [Deployment Commands](./DEPLOYMENT_COMMANDS.md)
+
 ## Security
 
 ### Best Practices

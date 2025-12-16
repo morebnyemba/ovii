@@ -16,6 +16,13 @@ from integrations.whatsapp_templates import get_all_templates, convert_template_
 from integrations.services import WhatsAppClient
 from integrations.models import WhatsAppTemplate
 import json
+import logging
+import requests
+
+# Constants
+MAX_REJECTION_REASON_LENGTH = 500  # Maximum length for rejection reason in database
+
+logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
@@ -136,6 +143,34 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS('Total templates: ' + str(len(templates))))
         self.stdout.write('')
 
+    def _normalize_language_code(self, lang_code):
+        """
+        Normalize language code for comparison.
+        Handles variations like 'en', 'en_US', 'en-US'.
+        Returns the base language code (e.g., 'en').
+        """
+        if not lang_code:
+            return ''
+        # Replace hyphens with underscores for consistency
+        normalized = lang_code.replace('-', '_')
+        # Split on underscore and take the first part (base language)
+        return normalized.split('_')[0].lower()
+    
+    def _languages_match(self, lang1, lang2):
+        """
+        Check if two language codes match.
+        Matches base language codes regardless of regional variants.
+        Examples:
+        - 'en' matches 'en_US' -> True
+        - 'en_US' matches 'en' -> True
+        - 'en_US' matches 'en_GB' -> True (both are English)
+        - 'en' matches 'es' -> False
+        """
+        base1 = self._normalize_language_code(lang1)
+        base2 = self._normalize_language_code(lang2)
+        return base1 == base2
+
+
     def _sync_templates_to_meta(self, templates):
         """Sync templates to Meta via Graph API."""
         self.stdout.write(self.style.SUCCESS('=' * 80))
@@ -161,10 +196,7 @@ class Command(BaseCommand):
             self.stdout.write(f"Processing template: {template_name}")
             
             try:
-                # Convert to Meta format
-                meta_payload = convert_template_to_meta_format(template_name)
-                
-                # Check if template already exists in database
+                # Get or create database record
                 db_template, created = WhatsAppTemplate.objects.get_or_create(
                     name=template_name,
                     language=template_data['language'],
@@ -174,13 +206,86 @@ class Command(BaseCommand):
                     }
                 )
                 
-                # Skip if already approved
-                if db_template.status == 'APPROVED' and not created:
+                # First, check if template exists in Meta
+                self.stdout.write(f"  Checking template status in Meta...")
+                try:
+                    status_response = client.get_template_status(template_name)
+                    templates_in_meta = status_response.get('data', [])
+                    
+                    if templates_in_meta:
+                        # Template exists in Meta
+                        # Find the matching language version
+                        matching_template = None
+                        for meta_template in templates_in_meta:
+                            meta_lang = meta_template.get('language', '')
+                            template_lang = template_data['language']
+                            
+                            # Use helper method for proper language matching
+                            if self._languages_match(meta_lang, template_lang):
+                                matching_template = meta_template
+                                break
+                        
+                        if matching_template:
+                            template_id = matching_template.get('id')
+                            template_status = matching_template.get('status', 'UNKNOWN').upper()
+                            
+                            # Update database with current Meta status
+                            db_template.template_id = template_id
+                            db_template.status = template_status
+                            db_template.last_synced_at = timezone.now()
+                            db_template.save()
+                            
+                            # Check if we should skip or update
+                            if template_status == 'APPROVED':
+                                self.stdout.write(
+                                    self.style.SUCCESS(f"  ✓ Template already exists in Meta and is APPROVED")
+                                )
+                                self.stdout.write(f"    Template ID: {template_id}")
+                                skipped_count += 1
+                                self.stdout.write('')
+                                continue
+                            elif template_status == 'PENDING':
+                                self.stdout.write(
+                                    self.style.WARNING(f"  ⏭  Template already exists and is PENDING approval")
+                                )
+                                self.stdout.write(f"    Template ID: {template_id}")
+                                skipped_count += 1
+                                self.stdout.write('')
+                                continue
+                            elif template_status == 'REJECTED':
+                                self.stdout.write(
+                                    self.style.WARNING(f"  ⚠  Template exists but was REJECTED. Will attempt to create new version...")
+                                )
+                                # Continue to creation attempt for rejected templates
+                            else:
+                                self.stdout.write(
+                                    self.style.WARNING(f"  ℹ  Template exists with status: {template_status}. Will attempt to create/update...")
+                                )
+                                # Continue to creation attempt for unknown statuses
+                        else:
+                            self.stdout.write(f"  Template not found for language '{template_data['language']}', will create...")
+                    else:
+                        self.stdout.write(f"  Template does not exist in Meta, will create...")
+                    
+                except (requests.RequestException, ValueError, KeyError) as check_error:
+                    # If checking fails, log it but continue with creation attempt
+                    error_type = type(check_error).__name__
+                    logger.warning(f"Template status check failed for '{template_name}': {error_type} - {check_error}")
                     self.stdout.write(
-                        self.style.WARNING(f"  ⏭  Template already approved, skipping...")
+                        self.style.WARNING(f"  ⚠  Could not check template status: {error_type}")
                     )
-                    skipped_count += 1
-                    continue
+                    self.stdout.write(f"  Proceeding with creation attempt...")
+                except Exception as check_error:
+                    # Catch-all for unexpected errors
+                    error_type = type(check_error).__name__
+                    logger.error(f"Unexpected error checking template '{template_name}': {error_type} - {check_error}")
+                    self.stdout.write(
+                        self.style.WARNING(f"  ⚠  Unexpected error: {error_type}")
+                    )
+                    self.stdout.write(f"  Proceeding with creation attempt...")
+                
+                # Convert to Meta format and create (only if we didn't skip above)
+                meta_payload = convert_template_to_meta_format(template_name)
                 
                 # Create template in Meta
                 try:
@@ -207,25 +312,40 @@ class Command(BaseCommand):
                     is_duplicate = getattr(api_error, 'is_duplicate', False)
                     
                     if is_duplicate:
-                        db_template.status = 'PENDING'  # Assume it's pending approval
+                        # Handle race condition: template may have been created between 
+                        # our status check and creation attempt
                         db_template.last_synced_at = timezone.now()
                         db_template.save()
                         self.stdout.write(
-                            self.style.WARNING(f"  ⚠  Template already exists in Meta")
+                            self.style.WARNING(f"  ⚠  Template already exists in Meta (race condition)")
+                        )
+                        self.stdout.write(
+                            self.style.WARNING(f"    Run sync again to update status from Meta")
                         )
                         skipped_count += 1
                     else:
-                        # Real error
-                        db_template.rejection_reason = error_msg[:500]  # Truncate if too long
+                        # Real error - store truncated rejection reason
+                        db_template.rejection_reason = error_msg[:MAX_REJECTION_REASON_LENGTH]
                         db_template.save()
                         self.stdout.write(
                             self.style.ERROR(f"  ✗ Failed: {error_msg}")
                         )
                         failed_count += 1
                 
-            except Exception as e:
+            except (ValueError, KeyError) as e:
+                # Handle data/parsing errors
+                error_type = type(e).__name__
+                logger.error(f"Data error processing template '{template_name}': {error_type} - {e}")
                 self.stdout.write(
-                    self.style.ERROR(f"  ✗ Error processing template: {e}")
+                    self.style.ERROR(f"  ✗ Data error ({error_type}): {e}")
+                )
+                failed_count += 1
+            except Exception as e:
+                # Catch-all for unexpected errors
+                error_type = type(e).__name__
+                logger.error(f"Unexpected error processing template '{template_name}': {error_type} - {e}")
+                self.stdout.write(
+                    self.style.ERROR(f"  ✗ Unexpected error ({error_type}): {e}")
                 )
                 failed_count += 1
             
