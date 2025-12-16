@@ -161,10 +161,7 @@ class Command(BaseCommand):
             self.stdout.write(f"Processing template: {template_name}")
             
             try:
-                # Convert to Meta format
-                meta_payload = convert_template_to_meta_format(template_name)
-                
-                # Check if template already exists in database
+                # Get or create database record
                 db_template, created = WhatsAppTemplate.objects.get_or_create(
                     name=template_name,
                     language=template_data['language'],
@@ -174,15 +171,74 @@ class Command(BaseCommand):
                     }
                 )
                 
-                # Skip if already approved
-                if db_template.status == 'APPROVED' and not created:
+                # First, check if template exists in Meta
+                self.stdout.write(f"  Checking template status in Meta...")
+                try:
+                    status_response = client.get_template_status(template_name)
+                    templates_in_meta = status_response.get('data', [])
+                    
+                    if templates_in_meta:
+                        # Template exists in Meta
+                        # Find the matching language version
+                        matching_template = None
+                        for meta_template in templates_in_meta:
+                            meta_lang = meta_template.get('language', '')
+                            # Match language (e.g., "en" matches "en_US")
+                            if meta_lang.startswith(template_data['language']):
+                                matching_template = meta_template
+                                break
+                        
+                        if matching_template:
+                            template_id = matching_template.get('id')
+                            template_status = matching_template.get('status', 'UNKNOWN').upper()
+                            
+                            # Update database with current Meta status
+                            db_template.template_id = template_id
+                            db_template.status = template_status
+                            db_template.last_synced_at = timezone.now()
+                            db_template.save()
+                            
+                            # Check if we should skip or update
+                            if template_status == 'APPROVED':
+                                self.stdout.write(
+                                    self.style.SUCCESS(f"  ✓ Template already exists in Meta and is APPROVED")
+                                )
+                                self.stdout.write(f"    Template ID: {template_id}")
+                                skipped_count += 1
+                                self.stdout.write('')
+                                continue
+                            elif template_status == 'PENDING':
+                                self.stdout.write(
+                                    self.style.WARNING(f"  ⏭  Template already exists and is PENDING approval")
+                                )
+                                self.stdout.write(f"    Template ID: {template_id}")
+                                skipped_count += 1
+                                self.stdout.write('')
+                                continue
+                            elif template_status == 'REJECTED':
+                                self.stdout.write(
+                                    self.style.WARNING(f"  ⚠  Template exists but was REJECTED. Will attempt to create new version...")
+                                )
+                            else:
+                                self.stdout.write(
+                                    self.style.WARNING(f"  ℹ  Template exists with status: {template_status}")
+                                )
+                        else:
+                            self.stdout.write(f"  Template not found for language '{template_data['language']}'")
+                    else:
+                        self.stdout.write(f"  Template does not exist in Meta, will create...")
+                    
+                except Exception as check_error:
+                    # If checking fails, log it but continue with creation attempt
                     self.stdout.write(
-                        self.style.WARNING(f"  ⏭  Template already approved, skipping...")
+                        self.style.WARNING(f"  ⚠  Could not check template status: {str(check_error)}")
                     )
-                    skipped_count += 1
-                    continue
+                    self.stdout.write(f"  Proceeding with creation attempt...")
                 
-                # Create template in Meta
+                # Convert to Meta format
+                meta_payload = convert_template_to_meta_format(template_name)
+                
+                # Create template in Meta (if not already approved/pending)
                 try:
                     response = client.create_template(meta_payload)
                     
@@ -207,11 +263,12 @@ class Command(BaseCommand):
                     is_duplicate = getattr(api_error, 'is_duplicate', False)
                     
                     if is_duplicate:
-                        db_template.status = 'PENDING'  # Assume it's pending approval
+                        # This shouldn't happen often now since we check first,
+                        # but handle it gracefully
                         db_template.last_synced_at = timezone.now()
                         db_template.save()
                         self.stdout.write(
-                            self.style.WARNING(f"  ⚠  Template already exists in Meta")
+                            self.style.WARNING(f"  ⚠  Template already exists in Meta (detected on creation)")
                         )
                         skipped_count += 1
                     else:
