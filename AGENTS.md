@@ -25,6 +25,7 @@
 "People don't need banks; they need flow." - Provide seamless, mobile-first financial services for creators, freelancers, vendors, and everyday users.
 
 ### Project Maturity
+This is a production-ready fintech platform with the following completion status:
 - **Phase 1 (MVP)**: ✅ Complete - All core wallet operations functional
 - **Phase 2 (Growth)**: 🟡 85% Complete - KYC, referrals, merchant/agent systems operational
 - **Phase 3 (Scale)**: 🔜 10% Complete - Foundation laid for expansion
@@ -69,7 +70,7 @@ ovii/
 2. **User Login**: Phone number → OTP generation → OTP verification → JWT token issuance
 3. **Transaction Authorization**: Requires separate Transaction PIN (6-digit numeric)
 
-**Important**: Regular users do NOT have passwords. Only admin/staff users use password-based authentication.
+**Important**: Regular users do NOT have passwords. Authentication is phone-based using OTP for enhanced security and user convenience. Only admin/staff users use traditional password-based authentication for accessing the Django admin panel.
 
 ### Transaction Flow
 ```
@@ -129,7 +130,8 @@ Each level has corresponding transaction limits enforced at the application leve
 wallet = Wallet.objects.get(user=user)
 
 # ❌ Avoid: Raw SQL queries (unless absolutely necessary)
-# Use raw SQL only for complex queries that can't be expressed in ORM
+# Use raw SQL only for complex queries that can't be expressed in ORM,
+# such as window functions, complex aggregations, or database-specific features
 
 # ✅ Good: Use select_related for foreign keys
 transactions = Transaction.objects.select_related('sender', 'receiver').all()
