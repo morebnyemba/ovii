@@ -151,6 +151,14 @@ npm test  # If test scripts are configured
 - **Error Handling**: Implement proper error handling and user feedback
 - **Validation**: Validate all inputs, especially financial transactions
 
+## Additional Resources
+
+For detailed architectural decisions, business logic, coding patterns, and troubleshooting guides, please refer to:
+- **[AGENTS.md](../AGENTS.md)** - Comprehensive agent context with architecture, data flow, and best practices
+- **[README.md](../README.md)** - Project overview and development progress
+- **[WHATSAPP_INTEGRATION.md](../WHATSAPP_INTEGRATION.md)** - WhatsApp Business API integration guide
+- **[ROADMAP_ASSESSMENT.md](../ROADMAP_ASSESSMENT.md)** - Detailed project roadmap and progress tracking
+
 ## Intellectual Property
 
 This software and all its components are the intellectual property of Ovii. Unauthorized copying, distribution, or use is strictly prohibited.
