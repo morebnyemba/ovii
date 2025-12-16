@@ -16,6 +16,13 @@ from integrations.whatsapp_templates import get_all_templates, convert_template_
 from integrations.services import WhatsAppClient
 from integrations.models import WhatsAppTemplate
 import json
+import logging
+import requests
+
+# Constants
+MAX_REJECTION_REASON_LENGTH = 500  # Maximum length for rejection reason in database
+
+logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
@@ -136,6 +143,34 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS('Total templates: ' + str(len(templates))))
         self.stdout.write('')
 
+    def _normalize_language_code(self, lang_code):
+        """
+        Normalize language code for comparison.
+        Handles variations like 'en', 'en_US', 'en-US'.
+        Returns the base language code (e.g., 'en').
+        """
+        if not lang_code:
+            return ''
+        # Replace hyphens with underscores for consistency
+        normalized = lang_code.replace('-', '_')
+        # Split on underscore and take the first part (base language)
+        return normalized.split('_')[0].lower()
+    
+    def _languages_match(self, lang1, lang2):
+        """
+        Check if two language codes match.
+        Matches base language codes regardless of regional variants.
+        Examples:
+        - 'en' matches 'en_US' -> True
+        - 'en_US' matches 'en' -> True
+        - 'en_US' matches 'en_GB' -> True (both are English)
+        - 'en' matches 'es' -> False
+        """
+        base1 = self._normalize_language_code(lang1)
+        base2 = self._normalize_language_code(lang2)
+        return base1 == base2
+
+
     def _sync_templates_to_meta(self, templates):
         """Sync templates to Meta via Graph API."""
         self.stdout.write(self.style.SUCCESS('=' * 80))
@@ -185,11 +220,8 @@ class Command(BaseCommand):
                             meta_lang = meta_template.get('language', '')
                             template_lang = template_data['language']
                             
-                            # Bidirectional language matching
-                            # Matches: "en" <-> "en_US", "en_US" <-> "en", "en_US" <-> "en_US"
-                            if (meta_lang.startswith(template_lang) or 
-                                template_lang.startswith(meta_lang) or 
-                                meta_lang == template_lang):
+                            # Use helper method for proper language matching
+                            if self._languages_match(meta_lang, template_lang):
                                 matching_template = meta_template
                                 break
                         
@@ -235,10 +267,20 @@ class Command(BaseCommand):
                     else:
                         self.stdout.write(f"  Template does not exist in Meta, will create...")
                     
-                except Exception as check_error:
+                except (requests.RequestException, ValueError, KeyError) as check_error:
                     # If checking fails, log it but continue with creation attempt
+                    error_type = type(check_error).__name__
+                    logger.warning(f"Template status check failed for '{template_name}': {error_type} - {check_error}")
                     self.stdout.write(
-                        self.style.WARNING(f"  ⚠  Could not check template status: {str(check_error)}")
+                        self.style.WARNING(f"  ⚠  Could not check template status: {error_type}")
+                    )
+                    self.stdout.write(f"  Proceeding with creation attempt...")
+                except Exception as check_error:
+                    # Catch-all for unexpected errors
+                    error_type = type(check_error).__name__
+                    logger.error(f"Unexpected error checking template '{template_name}': {error_type} - {check_error}")
+                    self.stdout.write(
+                        self.style.WARNING(f"  ⚠  Unexpected error: {error_type}")
                     )
                     self.stdout.write(f"  Proceeding with creation attempt...")
                 
@@ -282,17 +324,28 @@ class Command(BaseCommand):
                         )
                         skipped_count += 1
                     else:
-                        # Real error
-                        db_template.rejection_reason = error_msg[:500]  # Truncate if too long
+                        # Real error - store truncated rejection reason
+                        db_template.rejection_reason = error_msg[:MAX_REJECTION_REASON_LENGTH]
                         db_template.save()
                         self.stdout.write(
                             self.style.ERROR(f"  ✗ Failed: {error_msg}")
                         )
                         failed_count += 1
                 
-            except Exception as e:
+            except (ValueError, KeyError) as e:
+                # Handle data/parsing errors
+                error_type = type(e).__name__
+                logger.error(f"Data error processing template '{template_name}': {error_type} - {e}")
                 self.stdout.write(
-                    self.style.ERROR(f"  ✗ Error processing template: {e}")
+                    self.style.ERROR(f"  ✗ Data error ({error_type}): {e}")
+                )
+                failed_count += 1
+            except Exception as e:
+                # Catch-all for unexpected errors
+                error_type = type(e).__name__
+                logger.error(f"Unexpected error processing template '{template_name}': {error_type} - {e}")
+                self.stdout.write(
+                    self.style.ERROR(f"  ✗ Unexpected error ({error_type}): {e}")
                 )
                 failed_count += 1
             
