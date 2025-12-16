@@ -318,3 +318,85 @@ def format_template_components(template_name: str, variables: dict) -> list:
             components.append({"type": "body", "parameters": parameters})
 
     return components
+
+
+def convert_template_to_meta_format(template_name: str) -> dict:
+    """
+    Convert our internal template format to Meta's Graph API format.
+    
+    Args:
+        template_name: Name of the template to convert
+        
+    Returns:
+        dict: Template in Meta's Graph API format
+        
+    Raises:
+        ValueError: If template is not found
+    """
+    template = WHATSAPP_TEMPLATES.get(template_name)
+    if not template:
+        raise ValueError(f"Template '{template_name}' not found")
+    
+    # Convert language code format (en -> en_US if needed)
+    language_code = template["language"]
+    if "_" not in language_code:
+        # Map common language codes to Meta's format
+        language_mapping = {
+            "en": "en_US",
+            "es": "es_ES",
+            "fr": "fr_FR",
+            "de": "de_DE",
+            "pt": "pt_BR",
+            "zh": "zh_CN",
+        }
+        language_code = language_mapping.get(language_code, f"{language_code}_US")
+    
+    components = []
+    structure = template["structure"]
+    
+    # Add HEADER component if present
+    if structure.get("header"):
+        components.append({
+            "type": "HEADER",
+            "format": "TEXT",
+            "text": structure["header"]
+        })
+    
+    # Add BODY component (required)
+    if structure.get("body"):
+        body_component = {
+            "type": "BODY",
+            "text": structure["body"]
+        }
+        
+        # Add example values for variables if present
+        if template.get("example") and template["example"].get("body_text"):
+            body_component["example"] = {
+                "body_text": template["example"]["body_text"]
+            }
+        
+        components.append(body_component)
+    
+    # Add FOOTER component if present
+    if structure.get("footer"):
+        components.append({
+            "type": "FOOTER",
+            "text": structure["footer"]
+        })
+    
+    # Add BUTTONS component if present
+    if structure.get("buttons") and len(structure["buttons"]) > 0:
+        components.append({
+            "type": "BUTTONS",
+            "buttons": structure["buttons"]
+        })
+    
+    # Build final payload
+    payload = {
+        "name": template["name"],
+        "category": template["category"],
+        "language": language_code,
+        "components": components
+    }
+    
+    return payload
