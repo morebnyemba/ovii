@@ -203,8 +203,10 @@ class Command(BaseCommand):
                 except Exception as api_error:
                     error_msg = str(api_error)
                     
-                    # Check if template already exists in Meta
-                    if "already exists" in error_msg.lower() or "duplicate" in error_msg.lower():
+                    # Check if template already exists using status code/error code
+                    is_duplicate = getattr(api_error, 'is_duplicate', False)
+                    
+                    if is_duplicate:
                         db_template.status = 'PENDING'  # Assume it's pending approval
                         db_template.last_synced_at = timezone.now()
                         db_template.save()

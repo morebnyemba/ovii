@@ -17,19 +17,19 @@ class Migration(migrations.Migration):
             model_name='whatsappconfig',
             name='waba_id',
             field=models.CharField(
+                blank=True,
                 default='',
-                help_text='WhatsApp Business Account ID (WABA ID) from Meta Business Manager',
+                help_text='WhatsApp Business Account ID (WABA ID) from Meta Business Manager. Required for template sync.',
                 max_length=255,
                 verbose_name='WhatsApp Business Account ID'
             ),
-            preserve_default=False,
         ),
         # Create WhatsAppTemplate model
         migrations.CreateModel(
             name='WhatsAppTemplate',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(help_text='Unique name of the template', max_length=512, unique=True, verbose_name='Template Name')),
+                ('name', models.CharField(help_text='Name of the template', max_length=512, verbose_name='Template Name')),
                 ('category', models.CharField(help_text='Template category (AUTHENTICATION, MARKETING, UTILITY)', max_length=50, verbose_name='Category')),
                 ('language', models.CharField(default='en', help_text='Template language code (e.g., en, en_US)', max_length=10, verbose_name='Language')),
                 ('status', models.CharField(choices=[('PENDING', 'Pending'), ('APPROVED', 'Approved'), ('REJECTED', 'Rejected'), ('DISABLED', 'Disabled')], default='PENDING', help_text='Template approval status in Meta', max_length=20, verbose_name='Status')),

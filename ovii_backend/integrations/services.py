@@ -320,9 +320,26 @@ class WhatsAppClient:
             logger.info(f"Template '{template_data.get('name')}' created successfully in Meta")
             return result
         except requests.exceptions.HTTPError as e:
-            error_message = e.response.text if e.response else str(e)
-            logger.error(f"Failed to create template '{template_data.get('name')}': {error_message}")
-            raise Exception(f"Meta API error: {error_message}")
+            # Extract error details from response
+            status_code = e.response.status_code if e.response else None
+            error_data = {}
+            
+            try:
+                error_data = e.response.json() if e.response else {}
+            except:
+                error_data = {"message": e.response.text if e.response else str(e)}
+            
+            error_code = error_data.get("error", {}).get("code") if isinstance(error_data.get("error"), dict) else None
+            error_message = error_data.get("error", {}).get("message") if isinstance(error_data.get("error"), dict) else error_data.get("message", str(e))
+            
+            logger.error(f"Failed to create template '{template_data.get('name')}': HTTP {status_code}, {error_message}")
+            
+            # Create structured exception with status code and error code
+            exception = Exception(f"Meta API error: {error_message}")
+            exception.status_code = status_code
+            exception.error_code = error_code
+            exception.is_duplicate = status_code == 400 and (error_code == 100 or "already exists" in error_message.lower())
+            raise exception
         except Exception as e:
             logger.error(f"Failed to create template '{template_data.get('name')}': {e}")
             raise

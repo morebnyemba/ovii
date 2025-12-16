@@ -18,7 +18,8 @@ class WhatsAppConfig(models.Model):
     waba_id = models.CharField(
         _("WhatsApp Business Account ID"),
         max_length=255,
-        help_text=_("WhatsApp Business Account ID (WABA ID) from Meta Business Manager")
+        blank=True,
+        help_text=_("WhatsApp Business Account ID (WABA ID) from Meta Business Manager. Required for template sync.")
     )
     phone_number_id = models.CharField(
         _("Phone Number ID"),
@@ -92,8 +93,7 @@ class WhatsAppTemplate(models.Model):
     name = models.CharField(
         _("Template Name"),
         max_length=512,
-        unique=True,
-        help_text=_("Unique name of the template")
+        help_text=_("Name of the template")
     )
     category = models.CharField(
         _("Category"),
