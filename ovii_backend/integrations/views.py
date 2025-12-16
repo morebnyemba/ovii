@@ -10,6 +10,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from decimal import Decimal
 from django.db import transaction
+from django.conf import settings
 import logging
 
 from wallets.models import Transaction, Wallet
@@ -20,6 +21,7 @@ from .tasks import process_ecocash_withdrawal
 from .serializers import (
     PaynowTopUpRequestSerializer,
 )  # This import will now work correctly
+from .models import WhatsAppConfig
 
 
 class EcoCashWithdrawalSerializer(serializers.Serializer):
@@ -235,22 +237,29 @@ class WhatsAppWebhookView(APIView):
         # Get verify token from database or environment
         verify_token = None
         try:
-            from .models import WhatsAppConfig
             config = WhatsAppConfig.objects.filter(is_active=True).first()
-            if config and hasattr(config, 'webhook_verify_token'):
+            if config:
                 verify_token = config.webhook_verify_token
         except Exception:
             pass
         
         # Fallback to environment variable
         if not verify_token:
-            from django.conf import settings
             verify_token = getattr(settings, 'WHATSAPP_WEBHOOK_VERIFY_TOKEN', None)
 
         if mode == "subscribe" and token == verify_token:
             logging.info("WhatsApp webhook verified successfully")
             # Return the challenge to complete verification
-            return Response(int(challenge), status=status.HTTP_200_OK)
+            # Validate that challenge is a valid integer before converting
+            try:
+                challenge_int = int(challenge) if challenge else 0
+                return Response(challenge_int, status=status.HTTP_200_OK)
+            except (ValueError, TypeError):
+                logging.error(f"Invalid challenge value received: {challenge}")
+                return Response(
+                    {"detail": "Invalid challenge parameter"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
         else:
             logging.warning(
                 f"WhatsApp webhook verification failed. Mode: {mode}, Token match: {token == verify_token}"
