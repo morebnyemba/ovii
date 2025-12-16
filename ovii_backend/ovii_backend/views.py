@@ -65,6 +65,24 @@ class EcoCashTopUpRequestView(generics.GenericAPIView):
             # If the request to EcoCash fails, mark our transaction as failed.
             pending_transaction.status = Transaction.Status.FAILED
             pending_transaction.save()
+            
+            # Send WhatsApp notification for failed deposit
+            if user.phone_number:
+                try:
+                    from notifications.services import send_whatsapp_template
+                    send_whatsapp_template(
+                        phone_number=str(user.phone_number),
+                        template_name="deposit_failed",
+                        variables={
+                            "amount": str(amount),
+                            "currency": user.wallet.currency,
+                            "reason": "Could not connect to payment service",
+                            "transaction_id": str(pending_transaction.id)
+                        }
+                    )
+                except Exception as whatsapp_error:
+                    logging.error(f"Failed to send WhatsApp deposit failure notification: {whatsapp_error}")
+            
             return Response(
                 {
                     "detail": "Could not initiate top-up request. Please try again later."

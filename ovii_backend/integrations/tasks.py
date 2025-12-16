@@ -55,6 +55,24 @@ def process_ecocash_withdrawal(self, user_id: int, amount_str: str):
         send_realtime_notification.delay(
             user_id, f"Your withdrawal of ${amount} failed due to: {e}"
         )
+        
+        # Send WhatsApp notification for failed withdrawal
+        if user.phone_number:
+            try:
+                from notifications.services import send_whatsapp_template
+                send_whatsapp_template(
+                    phone_number=str(user.phone_number),
+                    template_name="withdrawal_failed",
+                    variables={
+                        "amount": str(amount),
+                        "currency": user.wallet.currency,
+                        "reason": str(e),
+                        "transaction_id": "N/A"
+                    }
+                )
+            except Exception as whatsapp_error:
+                logger.error(f"Failed to send WhatsApp withdrawal failure notification: {whatsapp_error}")
+        
         return
 
     # 2. Attempt to send funds via EcoCash API
@@ -86,10 +104,29 @@ def process_ecocash_withdrawal(self, user_id: int, amount_str: str):
                 transaction_type=Transaction.TransactionType.DEPOSIT,  # This is a reversal/refund
                 description=f"Reversal for failed withdrawal TXN ID: {internal_tx.id}",
             )
+            
+            # Send real-time notification
             send_realtime_notification.delay(
                 user_id,
                 f"Your withdrawal of ${amount} failed and the funds have been returned to your wallet.",
             )
+            
+            # Send WhatsApp notification for failed withdrawal
+            if user.phone_number:
+                try:
+                    from notifications.services import send_whatsapp_template
+                    send_whatsapp_template(
+                        phone_number=str(user.phone_number),
+                        template_name="withdrawal_failed",
+                        variables={
+                            "amount": str(amount),
+                            "currency": user.wallet.currency,
+                            "reason": "External service unavailable",
+                            "transaction_id": str(internal_tx.id)
+                        }
+                    )
+                except Exception as whatsapp_error:
+                    logger.error(f"Failed to send WhatsApp withdrawal failure notification: {whatsapp_error}")
         except Exception as revert_exc:
             # Critical error: funds are in suspense. Needs manual intervention.
             logger.critical(

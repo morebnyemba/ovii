@@ -118,13 +118,27 @@ python manage.py sync_whatsapp_templates --format=json
 - **Variables**: code
 - **Example**: "Your Ovii verification code is: 123456..."
 
-#### 2. Transaction Notifications
+#### 2. Transaction Notifications - Success
 - **transaction_received**: Money received notification
 - **transaction_sent**: Money sent notification
 - **deposit_confirmed**: Deposit confirmation
 - **withdrawal_processed**: Withdrawal confirmation
+- **payment_received**: Merchant payment received
+- **payment_sent**: Customer payment to merchant
 
-#### 3. Onboarding
+#### 3. Transaction Notifications - Failures
+- **transaction_failed**: Generic transaction failure notification
+- **deposit_failed**: Deposit/top-up failure notification
+- **withdrawal_failed**: Withdrawal failure notification
+
+#### 4. KYC & Verification
+- **kyc_approved**: KYC document approved notification
+- **kyc_rejected**: KYC document rejected notification
+
+#### 5. Referral Program
+- **referral_bonus_credited**: Referral bonus credited notification
+
+#### 6. Onboarding
 - **welcome_message**: Welcome new users
 
 ### Creating Templates in Meta

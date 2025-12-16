@@ -113,6 +113,145 @@ WHATSAPP_TEMPLATES = {
         "example": {
             "body_text": [["25.00", "USD", "75.00", "USD", "TXN123456"]]
         }
+    },
+    
+    "transaction_failed": {
+        "name": "transaction_failed",
+        "category": "MARKETING",
+        "language": "en",
+        "description": "Notification when a transaction fails",
+        "structure": {
+            "header": None,
+            "body": "Your transaction of {{1}} {{2}} has failed.\n\nReason: {{3}}\n\nTransaction ID: {{4}}\n\nYour balance remains unchanged. Please try again or contact support if the issue persists.",
+            "footer": "Ovii - Your Mobile Wallet",
+            "buttons": []
+        },
+        "variables": ["amount", "currency", "reason", "transaction_id"],
+        "example": {
+            "body_text": [["50.00", "USD", "Insufficient funds", "TXN123456"]]
+        }
+    },
+    
+    "deposit_failed": {
+        "name": "deposit_failed",
+        "category": "MARKETING",
+        "language": "en",
+        "description": "Notification when a deposit fails",
+        "structure": {
+            "header": None,
+            "body": "Your deposit of {{1}} {{2}} has failed.\n\nReason: {{3}}\n\nTransaction ID: {{4}}\n\nPlease contact support if you need assistance.",
+            "footer": "Ovii - Your Mobile Wallet",
+            "buttons": []
+        },
+        "variables": ["amount", "currency", "reason", "transaction_id"],
+        "example": {
+            "body_text": [["100.00", "USD", "Payment gateway error", "TXN123456"]]
+        }
+    },
+    
+    "withdrawal_failed": {
+        "name": "withdrawal_failed",
+        "category": "MARKETING",
+        "language": "en",
+        "description": "Notification when a withdrawal fails",
+        "structure": {
+            "header": None,
+            "body": "Your withdrawal of {{1}} {{2}} has failed.\n\nReason: {{3}}\n\nTransaction ID: {{4}}\n\nYour balance remains unchanged. Please try again or contact support.",
+            "footer": "Ovii - Your Mobile Wallet",
+            "buttons": []
+        },
+        "variables": ["amount", "currency", "reason", "transaction_id"],
+        "example": {
+            "body_text": [["75.00", "USD", "External service unavailable", "TXN123456"]]
+        }
+    },
+    
+    "kyc_approved": {
+        "name": "kyc_approved",
+        "category": "MARKETING",
+        "language": "en",
+        "description": "Notification when KYC document is approved",
+        "structure": {
+            "header": None,
+            "body": "Congratulations! Your identity verification has been approved. ✅\n\nYour account verification level: {{1}}\n\nYou now have access to additional features and higher transaction limits.",
+            "footer": "Ovii - Your Mobile Wallet",
+            "buttons": []
+        },
+        "variables": ["verification_level"],
+        "example": {
+            "body_text": [["Identity Verified"]]
+        }
+    },
+    
+    "kyc_rejected": {
+        "name": "kyc_rejected",
+        "category": "MARKETING",
+        "language": "en",
+        "description": "Notification when KYC document is rejected",
+        "structure": {
+            "header": None,
+            "body": "Your identity verification has been declined.\n\nReason: {{1}}\n\nPlease resubmit your documents ensuring they are:\n• Clear and readable\n• Valid and not expired\n• Match your account information\n\nContact support if you need assistance.",
+            "footer": "Ovii - Your Mobile Wallet",
+            "buttons": []
+        },
+        "variables": ["reason"],
+        "example": {
+            "body_text": [["Document image is unclear"]]
+        }
+    },
+    
+    "referral_bonus_credited": {
+        "name": "referral_bonus_credited",
+        "category": "MARKETING",
+        "language": "en",
+        "description": "Notification when referral bonus is credited",
+        "structure": {
+            "header": None,
+            "body": "Great news! 🎉\n\nYou've earned a referral bonus of {{1}} {{2}}.\n\nNew balance: {{3}} {{4}}\n\nKeep sharing Ovii with friends to earn more rewards!",
+            "footer": "Ovii - Your Mobile Wallet",
+            "buttons": []
+        },
+        # Note: currency appears twice - once after bonus amount, once after new_balance
+        "variables": ["bonus_amount", "currency", "new_balance", "currency"],
+        "example": {
+            "body_text": [["5.00", "USD", "105.00", "USD"]]
+        }
+    },
+    
+    "payment_received": {
+        "name": "payment_received",
+        "category": "MARKETING",
+        "language": "en",
+        "description": "Notification when merchant receives a payment",
+        "structure": {
+            "header": None,
+            "body": "Payment received! 💰\n\nYou received {{1}} {{2}} from {{3}}.\n\nNew balance: {{4}} {{5}}\n\nTransaction ID: {{6}}",
+            "footer": "Ovii - Your Mobile Wallet",
+            "buttons": []
+        },
+        # Note: currency appears twice - once after amount, once after new_balance
+        "variables": ["amount", "currency", "customer_name", "new_balance", "currency", "transaction_id"],
+        "example": {
+            "body_text": [["25.00", "USD", "John Doe", "525.00", "USD", "TXN123456"]]
+        }
+    },
+    
+    "payment_sent": {
+        "name": "payment_sent",
+        "category": "MARKETING",
+        "language": "en",
+        "description": "Notification when user makes a payment to merchant",
+        "structure": {
+            "header": None,
+            "body": "Payment successful! ✅\n\nYou paid {{1}} {{2}} to {{3}}.\n\nNew balance: {{4}} {{5}}\n\nTransaction ID: {{6}}",
+            "footer": "Ovii - Your Mobile Wallet",
+            "buttons": []
+        },
+        # Note: currency appears twice - once after amount, once after new_balance
+        "variables": ["amount", "currency", "merchant_name", "new_balance", "currency", "transaction_id"],
+        "example": {
+            "body_text": [["15.00", "USD", "ABC Store", "85.00", "USD", "TXN123456"]]
+        }
     }
 }
 
