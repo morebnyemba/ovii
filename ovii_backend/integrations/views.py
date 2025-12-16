@@ -12,6 +12,7 @@ from decimal import Decimal
 from django.db import transaction
 from django.conf import settings
 import logging
+import secrets
 
 from wallets.models import Transaction, Wallet
 from wallets.permissions import IsMobileVerifiedOrHigher
@@ -234,6 +235,14 @@ class WhatsAppWebhookView(APIView):
         token = request.query_params.get("hub.verify_token")
         challenge = request.query_params.get("hub.challenge")
 
+        # Validate required parameters
+        if not challenge:
+            logging.warning("WhatsApp webhook verification: missing challenge parameter")
+            return Response(
+                {"detail": "Missing challenge parameter"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         # Get verify token from database or environment
         verify_token = None
         try:
@@ -247,26 +256,32 @@ class WhatsAppWebhookView(APIView):
         if not verify_token:
             verify_token = getattr(settings, 'WHATSAPP_WEBHOOK_VERIFY_TOKEN', None)
 
-        if mode == "subscribe" and token == verify_token:
-            logging.info("WhatsApp webhook verified successfully")
-            # Return the challenge to complete verification
-            # Validate that challenge is a valid integer before converting
+        # Use constant-time comparison to prevent timing attacks
+        token_match = False
+        if verify_token and token:
             try:
-                challenge_int = int(challenge) if challenge else 0
-                return Response(challenge_int, status=status.HTTP_200_OK)
-            except (ValueError, TypeError):
-                logging.error(f"Invalid challenge value received: {challenge}")
-                return Response(
-                    {"detail": "Invalid challenge parameter"},
-                    status=status.HTTP_400_BAD_REQUEST
+                # Ensure both strings are the same type and use constant-time comparison
+                token_match = secrets.compare_digest(
+                    str(token).encode('utf-8'),
+                    str(verify_token).encode('utf-8')
                 )
+            except Exception as e:
+                logging.error(f"Error comparing tokens: {e}")
+                token_match = False
+
+        if mode == "subscribe" and token_match:
+            logging.info("WhatsApp webhook verified successfully")
+            # Return the challenge exactly as received (as string/int based on Meta's format)
+            # Meta documentation shows it can be either, so return as-is
+            return Response(challenge, status=status.HTTP_200_OK)
         else:
             logging.warning(
-                f"WhatsApp webhook verification failed. Mode: {mode}, Token match: {token == verify_token}"
+                f"WhatsApp webhook verification failed. Mode: {mode}, Token provided: {bool(token)}"
             )
             return Response(
                 {"detail": "Verification failed"},
                 status=status.HTTP_403_FORBIDDEN
+            )
             )
 
     def post(self, request, *args, **kwargs):
