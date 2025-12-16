@@ -33,10 +33,11 @@ def generate_and_log_otp(phone_number):
     # Send OTP via WhatsApp
     try:
         from notifications.services import send_whatsapp_template
+
         send_whatsapp_template(
             phone_number=phone_number,
             template_name="otp_verification",
-            variables={"code": code}
+            variables={"code": code},
         )
         logger.info(f"OTP sent via WhatsApp to {phone_number}")
     except Exception as e:
@@ -99,28 +100,66 @@ def send_realtime_notification(user_id: int, message: str):
 def process_referral_bonus(referral_id: int):
     """
     Processes a referral bonus asynchronously.
-    
+
     This task credits the referral bonuses to both the referrer and referred user
     after the referred user has completed their onboarding (e.g., set up their PIN).
-    
+
     Args:
         referral_id: The ID of the Referral to process.
     """
     from .services import credit_referral_bonuses, ReferralBonusError
-    
+
     try:
         referral = credit_referral_bonuses(referral_id)
-        
-        # Send notifications to both users
+
+        # Send real-time notifications to both users
         send_realtime_notification.delay(
             referral.referrer.id,
-            f"You earned {referral.referrer_bonus} {referral.referrer.wallet.currency} for referring a friend!"
+            f"You earned {referral.referrer_bonus} {referral.referrer.wallet.currency} for referring a friend!",
         )
         send_realtime_notification.delay(
             referral.referred.id,
-            f"You received a {referral.referred_bonus} {referral.referred.wallet.currency} welcome bonus!"
+            f"You received a {referral.referred_bonus} {referral.referred.wallet.currency} welcome bonus!",
         )
-        
+
+        # Send WhatsApp notifications to referrer
+        if referral.referrer.phone_number:
+            try:
+                from notifications.services import send_whatsapp_template
+
+                send_whatsapp_template(
+                    phone_number=str(referral.referrer.phone_number),
+                    template_name="referral_bonus_credited",
+                    variables={
+                        "bonus_amount": str(referral.referrer_bonus),
+                        "currency": referral.referrer.wallet.currency,
+                        "new_balance": str(referral.referrer.wallet.balance),
+                    },
+                )
+            except Exception as e:
+                logger.error(
+                    f"Failed to send WhatsApp referral notification to referrer {referral.referrer.phone_number}: {e}"
+                )
+
+        # Send WhatsApp notifications to referred user
+        if referral.referred.phone_number:
+            try:
+                from notifications.services import send_whatsapp_template
+
+                send_whatsapp_template(
+                    phone_number=str(referral.referred.phone_number),
+                    template_name="referral_bonus_credited",
+                    variables={
+                        "bonus_amount": str(referral.referred_bonus),
+                        "currency": referral.referred.wallet.currency,
+                        "new_balance": str(referral.referred.wallet.balance),
+                    },
+                )
+            except Exception as e:
+                logger.error(
+                    f"Failed to send WhatsApp referral notification to referred user {referral.referred.phone_number}: {e}"
+                )
+
         logger.info(f"Referral {referral_id} bonus processed successfully.")
         return f"Referral {referral_id} bonus processed successfully."
     except ReferralBonusError as e:
@@ -135,21 +174,21 @@ def process_referral_bonus(referral_id: int):
 def process_pending_referral_bonuses():
     """
     Batch task to process all pending referral bonuses for eligible users.
-    
+
     This task is designed to be run periodically (e.g., via Celery Beat) to
     automatically credit referral bonuses when users become eligible.
     """
     from .services import check_referral_eligibility
-    
+
     pending_referrals = Referral.objects.filter(
         bonus_status=Referral.BonusStatus.PENDING
     ).select_related("referred")
-    
+
     processed_count = 0
     for referral in pending_referrals:
         if check_referral_eligibility(referral.referred):
             process_referral_bonus.delay(referral.id)
             processed_count += 1
-    
+
     logger.info(f"Queued {processed_count} referral bonuses for processing.")
     return f"Queued {processed_count} referral bonuses for processing."

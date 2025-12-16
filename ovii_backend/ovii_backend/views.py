@@ -7,12 +7,14 @@ Description: API views for handling third-party integrations.
 from rest_framework import generics, status, serializers
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.views import APIView
 from decimal import Decimal
+import logging
 
 from wallets.models import Transaction
 from wallets.permissions import IsMobileVerifiedOrHigher
 from .services import EcoCashClient
+
+logger = logging.getLogger(__name__)
 
 
 class EcoCashTopUpRequestSerializer(serializers.Serializer):
@@ -61,13 +63,37 @@ class EcoCashTopUpRequestView(generics.GenericAPIView):
                 },
                 status=status.HTTP_202_ACCEPTED,
             )
-        except Exception as e:
+        except Exception:
             # If the request to EcoCash fails, mark our transaction as failed.
             pending_transaction.status = Transaction.Status.FAILED
             pending_transaction.save()
+
+            # Send WhatsApp notification for failed deposit
+            if user.phone_number:
+                try:
+                    from notifications.services import send_whatsapp_template
+
+                    send_whatsapp_template(
+                        phone_number=str(user.phone_number),
+                        template_name="deposit_failed",
+                        variables={
+                            "amount": str(amount),
+                            "currency": user.wallet.currency,
+                            "reason": "Could not connect to payment service",
+                            "transaction_id": str(pending_transaction.id),
+                        },
+                    )
+                except Exception as whatsapp_error:
+                    logger.error(
+                        "Failed to send WhatsApp deposit failure "
+                        f"notification: {whatsapp_error}"
+                    )
+
             return Response(
                 {
-                    "detail": "Could not initiate top-up request. Please try again later."
+                    "detail": (
+                        "Could not initiate top-up request. " "Please try again later."
+                    )
                 },
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )

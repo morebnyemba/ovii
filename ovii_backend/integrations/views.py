@@ -10,19 +10,12 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from decimal import Decimal
 from django.db import transaction
-from django.conf import settings
 import logging
 
 from wallets.models import Transaction, Wallet
 from wallets.permissions import IsMobileVerifiedOrHigher
-from wallets.services import (
-    create_transaction,
-    TransactionError,
-    TransactionLimitExceededError,
-)
-from users.models import OviiUser
 from users.tasks import send_realtime_notification
-from .services import EcoCashClient, PaynowClient
+from .services import PaynowClient
 from .tasks import process_ecocash_withdrawal
 from .serializers import (
     PaynowTopUpRequestSerializer,
@@ -109,6 +102,27 @@ class PaynowTopUpRequestView(generics.GenericAPIView):
             logging.error(f"Paynow top-up initiation failed for user {user.id}: {e}")
             pending_tx.status = Transaction.Status.FAILED
             pending_tx.save()
+
+            # Send WhatsApp notification for failed deposit
+            if user.phone_number:
+                try:
+                    from notifications.services import send_whatsapp_template
+
+                    send_whatsapp_template(
+                        phone_number=str(user.phone_number),
+                        template_name="deposit_failed",
+                        variables={
+                            "amount": str(amount),
+                            "currency": user.wallet.currency,
+                            "reason": "Payment gateway error",
+                            "transaction_id": str(pending_tx.id),
+                        },
+                    )
+                except Exception as whatsapp_error:
+                    logging.error(
+                        f"Failed to send WhatsApp deposit failure notification: {whatsapp_error}"
+                    )
+
             return Response(
                 {"detail": str(e)}, status=status.HTTP_503_SERVICE_UNAVAILABLE
             )
@@ -158,9 +172,32 @@ class PaynowWebhookView(APIView):
             tx_to_update.status = Transaction.Status.FAILED
             tx_to_update.description = f"Paynow top-up failed. Status: {payment_status}. Ref: {paynow_reference}"
             tx_to_update.save()
+
+            # Send real-time notification
             send_realtime_notification.delay(
                 tx_to_update.wallet.user.id,
                 f"Your wallet top-up of ${tx_to_update.amount} failed.",
             )
+
+            # Send WhatsApp notification for failed deposit
+            user = tx_to_update.wallet.user
+            if user.phone_number:
+                try:
+                    from notifications.services import send_whatsapp_template
+
+                    send_whatsapp_template(
+                        phone_number=str(user.phone_number),
+                        template_name="deposit_failed",
+                        variables={
+                            "amount": str(tx_to_update.amount),
+                            "currency": tx_to_update.wallet.currency,
+                            "reason": f"Payment status: {payment_status}",
+                            "transaction_id": str(tx_to_update.id),
+                        },
+                    )
+                except Exception as e:
+                    logging.error(
+                        f"Failed to send WhatsApp deposit failure notification: {e}"
+                    )
 
         return Response(status=status.HTTP_200_OK)

@@ -12,6 +12,9 @@ from .models import (
     Referral,
 )
 from .tasks import send_realtime_notification
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 @admin.register(OviiUser)
@@ -43,7 +46,14 @@ class OviiUserAdmin(UserAdmin):
     list_filter = ("is_staff", "is_active", "verification_level")
 
     # Fields that can be searched in the admin list view.
-    search_fields = ("phone_number", "email", "first_name", "last_name", "id_number", "referral_code")
+    search_fields = (
+        "phone_number",
+        "email",
+        "first_name",
+        "last_name",
+        "id_number",
+        "referral_code",
+    )
 
     # Default ordering for the user list.
     ordering = ("phone_number",)
@@ -157,10 +167,27 @@ class OviiUserAdmin(UserAdmin):
                 user.verification_level = VerificationLevels.LEVEL_2
                 user.save(update_fields=["verification_level"])
 
+                # Send real-time notification
                 send_realtime_notification.delay(
                     user.id,
                     "Congratulations! Your identity document has been approved.",
                 )
+
+                # Send WhatsApp notification
+                if user.phone_number:
+                    try:
+                        from notifications.services import send_whatsapp_template
+
+                        send_whatsapp_template(
+                            phone_number=str(user.phone_number),
+                            template_name="kyc_approved",
+                            variables={"verification_level": "Identity Verified"},
+                        )
+                    except Exception as e:
+                        logger.error(
+                            f"Failed to send WhatsApp KYC approval to {user.phone_number}: {e}"
+                        )
+
                 upgraded_count += 1
             else:
                 no_doc_count += 1
@@ -209,9 +236,27 @@ class OviiUserAdmin(UserAdmin):
 
                 user.verification_level = VerificationLevels.LEVEL_3
                 user.save(update_fields=["verification_level"])
+
+                # Send real-time notification
                 send_realtime_notification.delay(
                     user.id, "Your address has been verified! You now have full access."
                 )
+
+                # Send WhatsApp notification
+                if user.phone_number:
+                    try:
+                        from notifications.services import send_whatsapp_template
+
+                        send_whatsapp_template(
+                            phone_number=str(user.phone_number),
+                            template_name="kyc_approved",
+                            variables={"verification_level": "Address Verified"},
+                        )
+                    except Exception as e:
+                        logger.error(
+                            f"Failed to send WhatsApp KYC approval to {user.phone_number}: {e}"
+                        )
+
                 upgraded_count += 1
 
         self.message_user(
@@ -234,6 +279,50 @@ class KYCDocumentAdmin(admin.ModelAdmin):
     readonly_fields = ("uploaded_at", "reviewed_at")
     # Use a search widget for the user field for better performance with many users.
     raw_id_fields = ("user",)
+    actions = ["reject_documents"]
+
+    @admin.action(description="Reject selected documents")
+    def reject_documents(self, request, queryset):
+        """
+        Custom admin action to reject selected KYC documents and notify users.
+        """
+        rejected_count = 0
+
+        for document in queryset.filter(status=DocumentStatus.PENDING):
+            document.status = DocumentStatus.REJECTED
+            document.reviewed_at = timezone.now()
+            document.save()
+
+            user = document.user
+            reason = "Please resubmit a clear and valid document"  # Default reason
+
+            # Send real-time notification
+            send_realtime_notification.delay(
+                user.id,
+                f"Your {document.get_document_type_display()} verification was declined. Please resubmit.",
+            )
+
+            # Send WhatsApp notification
+            if user.phone_number:
+                try:
+                    from notifications.services import send_whatsapp_template
+
+                    send_whatsapp_template(
+                        phone_number=str(user.phone_number),
+                        template_name="kyc_rejected",
+                        variables={"reason": reason},
+                    )
+                except Exception as e:
+                    logger.error(
+                        f"Failed to send WhatsApp KYC rejection to {user.phone_number}: {e}"
+                    )
+
+            rejected_count += 1
+
+        self.message_user(
+            request,
+            f"{rejected_count} document(s) were rejected and users were notified.",
+        )
 
 
 @admin.register(OTPRequest)
