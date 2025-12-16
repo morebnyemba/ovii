@@ -183,8 +183,13 @@ class Command(BaseCommand):
                         matching_template = None
                         for meta_template in templates_in_meta:
                             meta_lang = meta_template.get('language', '')
-                            # Match language (e.g., "en" matches "en_US")
-                            if meta_lang.startswith(template_data['language']):
+                            template_lang = template_data['language']
+                            
+                            # Bidirectional language matching
+                            # Matches: "en" <-> "en_US", "en_US" <-> "en", "en_US" <-> "en_US"
+                            if (meta_lang.startswith(template_lang) or 
+                                template_lang.startswith(meta_lang) or 
+                                meta_lang == template_lang):
                                 matching_template = meta_template
                                 break
                         
@@ -219,12 +224,14 @@ class Command(BaseCommand):
                                 self.stdout.write(
                                     self.style.WARNING(f"  ⚠  Template exists but was REJECTED. Will attempt to create new version...")
                                 )
+                                # Continue to creation attempt for rejected templates
                             else:
                                 self.stdout.write(
-                                    self.style.WARNING(f"  ℹ  Template exists with status: {template_status}")
+                                    self.style.WARNING(f"  ℹ  Template exists with status: {template_status}. Will attempt to create/update...")
                                 )
+                                # Continue to creation attempt for unknown statuses
                         else:
-                            self.stdout.write(f"  Template not found for language '{template_data['language']}'")
+                            self.stdout.write(f"  Template not found for language '{template_data['language']}', will create...")
                     else:
                         self.stdout.write(f"  Template does not exist in Meta, will create...")
                     
@@ -235,10 +242,10 @@ class Command(BaseCommand):
                     )
                     self.stdout.write(f"  Proceeding with creation attempt...")
                 
-                # Convert to Meta format
+                # Convert to Meta format and create (only if we didn't skip above)
                 meta_payload = convert_template_to_meta_format(template_name)
                 
-                # Create template in Meta (if not already approved/pending)
+                # Create template in Meta
                 try:
                     response = client.create_template(meta_payload)
                     
@@ -263,12 +270,15 @@ class Command(BaseCommand):
                     is_duplicate = getattr(api_error, 'is_duplicate', False)
                     
                     if is_duplicate:
-                        # This shouldn't happen often now since we check first,
-                        # but handle it gracefully
+                        # Handle race condition: template may have been created between 
+                        # our status check and creation attempt
                         db_template.last_synced_at = timezone.now()
                         db_template.save()
                         self.stdout.write(
-                            self.style.WARNING(f"  ⚠  Template already exists in Meta (detected on creation)")
+                            self.style.WARNING(f"  ⚠  Template already exists in Meta (race condition)")
+                        )
+                        self.stdout.write(
+                            self.style.WARNING(f"    Run sync again to update status from Meta")
                         )
                         skipped_count += 1
                     else:
