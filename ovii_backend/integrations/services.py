@@ -351,13 +351,14 @@ class WhatsAppClient:
             # Log the request for debugging
             logger.debug(f"Creating template '{template_data.get('name')}'")
             logger.debug(f"Request URL: {url}")
-            logger.debug(f"Request payload: {template_data}")
+            logger.debug(f"Request payload: {json.dumps(template_data, indent=2)}")
             
             response = requests.post(url, json=template_data, headers=headers, timeout=30)
             
             # Log response status regardless of success/failure
             logger.debug(f"Response status code: {response.status_code}")
             logger.debug(f"Response headers: {dict(response.headers)}")
+            logger.debug(f"Response body: {response.text}")
             
             response.raise_for_status()
             result = response.json()
@@ -370,6 +371,10 @@ class WhatsAppClient:
             response_text = e.response.text if e.response else None
             error_data = {}
             json_parse_error = None
+            
+            # Always log the raw response first for debugging
+            logger.error(f"HTTP Error {status_code} when creating template '{template_data.get('name')}'")
+            logger.error(f"Raw response: {response_text}")
             
             # Try to parse JSON response
             if e.response:
@@ -443,7 +448,7 @@ class WhatsAppClient:
             logger.debug(f"Full error response: {error_data}")
             
             # Log the request payload that failed
-            logger.debug(f"Failed request payload: {template_data}")
+            logger.debug(f"Failed request payload: {json.dumps(template_data, indent=2)}")
             
             # Create structured exception with status code and error code
             additional_attrs = {
