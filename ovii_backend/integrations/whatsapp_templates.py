@@ -16,7 +16,7 @@ WHATSAPP_TEMPLATES = {
         "description": "OTP verification message for user authentication",
         "structure": {
             "header": None,
-            "body": "Your Ovii verification code is {{1}}. This code expires in 5 minutes. Do not share this code with anyone.",
+            "body": "{{1}} is your Ovii verification code.",
             "footer": None,  # AUTHENTICATION templates cannot have footers per Meta requirements
             "buttons": [
                 {
@@ -36,7 +36,7 @@ WHATSAPP_TEMPLATES = {
         "description": "Notification when user receives money",
         "structure": {
             "header": None,
-            "body": "You have received {{1}} from {{2}}.\n\nNew balance: {{3}}\n\nTransaction ID: {{4}}",
+            "body": "Good news! You have successfully received a payment of {{1}} from {{2}}. Your wallet has been updated and your new balance is {{3}}. For your records, the transaction ID is {{4}}. Thank you for using Ovii!",
             "footer": "Ovii - Your Mobile Wallet",
             "buttons": [],
         },
@@ -58,7 +58,7 @@ WHATSAPP_TEMPLATES = {
         "description": "Notification when user sends money",
         "structure": {
             "header": None,
-            "body": "You have sent {{1}} to {{2}}.\n\nNew balance: {{3}}\n\nTransaction ID: {{4}}",
+            "body": "Payment successful! You have sent {{1}} to {{2}}. Your transaction has been processed and your new balance is {{3}}. For your records, the transaction ID is {{4}}. Thank you for using Ovii!",
             "footer": "Ovii - Your Mobile Wallet",
             "buttons": [],
         },
@@ -94,7 +94,7 @@ WHATSAPP_TEMPLATES = {
         "description": "Notification when deposit is confirmed",
         "structure": {
             "header": None,
-            "body": "Your deposit of {{1}} has been confirmed.\n\nNew balance: {{2}}\n\nTransaction ID: {{3}}",
+            "body": "Great news! We have successfully confirmed your deposit of {{1}}. Your wallet has been credited and your new balance is {{2}}. Transaction ID: {{3}}. Thank you for using Ovii!",
             "footer": "Ovii - Your Mobile Wallet",
             "buttons": [],
         },
@@ -113,7 +113,7 @@ WHATSAPP_TEMPLATES = {
         "description": "Notification when withdrawal is processed",
         "structure": {
             "header": None,
-            "body": "Your withdrawal of {{1}} has been processed successfully.\n\nNew balance: {{2}}\n\nTransaction ID: {{3}}",
+            "body": "Withdrawal complete! We have successfully processed your withdrawal of {{1}}. Your wallet has been debited and your new balance is {{2}}. Transaction ID: {{3}}. Thank you for using Ovii!",
             "footer": "Ovii - Your Mobile Wallet",
             "buttons": [],
         },
@@ -224,7 +224,7 @@ WHATSAPP_TEMPLATES = {
         "description": "Notification when merchant receives a payment",
         "structure": {
             "header": None,
-            "body": "Payment received! 💰\n\nYou received {{1}} from {{2}}.\n\nNew balance: {{3}}\n\nTransaction ID: {{4}}",
+            "body": "Excellent news! You have received a payment of {{1}} from {{2}}. Your wallet has been credited and your new balance is {{3}}. For your records, the transaction ID is {{4}}. Thank you for using Ovii!",
             "footer": "Ovii - Your Mobile Wallet",
             "buttons": [],
         },
@@ -246,7 +246,7 @@ WHATSAPP_TEMPLATES = {
         "description": "Notification when user makes a payment to merchant",
         "structure": {
             "header": None,
-            "body": "Payment successful! ✅\n\nYou paid {{1}} to {{2}}.\n\nNew balance: {{3}}\n\nTransaction ID: {{4}}",
+            "body": "Payment successful! You have paid {{1}} to {{2}}. Your transaction has been processed and your new balance is {{3}}. Transaction ID: {{4}}. Thank you for using Ovii!",
             "footer": "Ovii - Your Mobile Wallet",
             "buttons": [],
         },
@@ -362,9 +362,25 @@ def convert_template_to_meta_format(template_name: str) -> dict:
     # Add BODY component (required)
     if structure.get("body"):
         body_component = {
-            "type": "BODY",
-            "text": structure["body"]
+            "type": "BODY"
         }
+        
+        # For AUTHENTICATION templates with OTP buttons, use add_security_recommendation
+        # instead of the text field (Meta API requirement)
+        has_otp_button = any(
+            button.get("type") == "OTP" 
+            for button in structure.get("buttons", [])
+        )
+        
+        if template["category"] == "AUTHENTICATION" and has_otp_button:
+            # For OTP authentication templates, Meta automatically adds security text
+            # We only provide the code via add_security_recommendation
+            # Meta will auto-generate the body text in the format: "<CODE> is your verification code."
+            # The original body text from our template is ignored in this case
+            body_component["add_security_recommendation"] = True
+        else:
+            # For all other templates, include the text field
+            body_component["text"] = structure["body"]
         
         # Add example values for variables if present
         if template.get("example") and template["example"].get("body_text"):
