@@ -18,10 +18,12 @@ from integrations.models import WhatsAppTemplate
 import json
 import logging
 import requests
+import time
 
 # Constants
 MAX_REJECTION_REASON_LENGTH = 500  # Maximum length for rejection reason in database
 MAX_ERROR_DISPLAY_LENGTH = 500  # Maximum length for raw response in command output
+RATE_LIMIT_DELAY = 1.5  # Delay in seconds between template creation requests
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +75,12 @@ class Command(BaseCommand):
             action='store_true',
             help='Enable verbose output with debug information including request/response payloads',
         )
+        parser.add_argument(
+            '--delay',
+            type=float,
+            default=RATE_LIMIT_DELAY,
+            help=f'Delay in seconds between template creation requests (default: {RATE_LIMIT_DELAY}s)',
+        )
 
     def handle(self, *args, **options):
         templates = get_all_templates()
@@ -81,6 +89,7 @@ class Command(BaseCommand):
         check_status = options['check_status']
         specific_template = options.get('template')
         verbose = options.get('verbose', False)
+        delay = options.get('delay', RATE_LIMIT_DELAY)
         
         # Set logging level based on verbose flag
         if verbose:
@@ -105,7 +114,7 @@ class Command(BaseCommand):
             return
 
         # Sync templates to Meta (new behavior)
-        self._sync_templates_to_meta(templates, verbose)
+        self._sync_templates_to_meta(templates, verbose, delay)
 
     def _display_templates(self, templates, output_format):
         """Display templates in text or JSON format."""
@@ -200,12 +209,13 @@ class Command(BaseCommand):
         return base1 == base2
 
 
-    def _sync_templates_to_meta(self, templates, verbose=False):
+    def _sync_templates_to_meta(self, templates, verbose=False, delay=RATE_LIMIT_DELAY):
         """Sync templates to Meta via Graph API.
         
         Args:
             templates: Dictionary of templates to sync
             verbose: Whether to enable verbose/debug output
+            delay: Delay in seconds between template creation requests
         """
         self.stdout.write(self.style.SUCCESS('=' * 80))
         self.stdout.write(self.style.SUCCESS('SYNCING TEMPLATES TO META'))
@@ -225,9 +235,20 @@ class Command(BaseCommand):
         success_count = 0
         failed_count = 0
         skipped_count = 0
+        
+        # Track which errors have shown raw response to avoid duplicates
+        raw_response_shown = set()
+        
+        # Get total count
+        total_templates = len(templates)
+        current_position = 0
 
         for template_name, template_data in templates.items():
+            current_position += 1
             self.stdout.write(f"Processing template: {template_name}")
+            
+            # Track if we attempted to create this template (for rate limiting delay)
+            attempted_creation = False
             
             try:
                 # Get or create database record
@@ -360,6 +381,7 @@ class Command(BaseCommand):
                 logger.debug(f"Converted template '{template_name}' to Meta format: {json.dumps(meta_payload, indent=2)}")
                 
                 # Create template in Meta
+                attempted_creation = True  # Mark that we're attempting creation
                 try:
                     response = client.create_template(meta_payload)
                     
@@ -379,6 +401,18 @@ class Command(BaseCommand):
                     
                 except Exception as api_error:
                     error_msg = str(api_error)
+                    error_id = id(api_error)  # Use object ID for tracking
+                    
+                    # In verbose mode, show raw response immediately
+                    if verbose:
+                        raw_response = getattr(api_error, 'raw_response', None)
+                        if raw_response and error_id not in raw_response_shown:
+                            self.stdout.write(self.style.WARNING(f"  Raw API Response:"))
+                            # Truncate if too long
+                            truncated_response = truncate_text(raw_response, MAX_ERROR_DISPLAY_LENGTH)
+                            self.stdout.write(f"    {truncated_response}")
+                            # Mark as shown to avoid duplicate display later
+                            raw_response_shown.add(error_id)
                     
                     # Check if template already exists using status code/error code
                     is_duplicate = getattr(api_error, 'is_duplicate', False)
@@ -405,7 +439,7 @@ class Command(BaseCommand):
                             self.style.ERROR(f"  ✗ Failed: {error_msg}")
                         )
                         
-                        # Display detailed error information if available
+                        # Display detailed error information
                         status_code = getattr(api_error, 'status_code', None)
                         error_code = getattr(api_error, 'error_code', None)
                         error_type = getattr(api_error, 'error_type', None)
@@ -416,12 +450,12 @@ class Command(BaseCommand):
                         raw_response = getattr(api_error, 'raw_response', None)
                         full_error = getattr(api_error, 'full_error', None)
                         
-                        if status_code:
-                            self.stdout.write(f"    HTTP Status: {status_code}")
-                        if error_code:
-                            self.stdout.write(f"    Error Code: {error_code}")
-                        if error_type:
-                            self.stdout.write(f"    Error Type: {error_type}")
+                        # Always show these fields (even if None) for debugging
+                        self.stdout.write(f"    HTTP Status: {status_code}")
+                        self.stdout.write(f"    Error Code: {error_code}")
+                        self.stdout.write(f"    Error Type: {error_type}")
+                        
+                        # Show optional fields only if present
                         if error_subcode:
                             self.stdout.write(f"    Error Subcode: {error_subcode}")
                         if error_user_title:
@@ -433,7 +467,8 @@ class Command(BaseCommand):
                         
                         # In verbose mode, show more details
                         if verbose:
-                            if raw_response:
+                            # Only show raw response if we didn't already display it above
+                            if raw_response and error_id not in raw_response_shown:
                                 truncated_response = truncate_text(raw_response, MAX_ERROR_DISPLAY_LENGTH)
                                 self.stdout.write(self.style.WARNING(f"    Raw Response: {truncated_response}"))
                             if full_error:
@@ -459,6 +494,13 @@ class Command(BaseCommand):
                 failed_count += 1
             
             self.stdout.write('')
+            
+            # Add delay between template processing to avoid rate limits
+            # Only delay if we attempted creation and this isn't the last template
+            if attempted_creation and current_position < total_templates:
+                if verbose:
+                    self.stdout.write(self.style.WARNING(f"  Waiting {delay}s before next template..."))
+                time.sleep(delay)
 
         # Summary
         self.stdout.write(self.style.SUCCESS('=' * 80))

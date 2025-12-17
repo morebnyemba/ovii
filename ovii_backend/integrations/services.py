@@ -347,6 +347,9 @@ class WhatsAppClient:
             "Content-Type": "application/json"
         }
         
+        # Store response for error handling
+        last_response = None
+        
         try:
             # Log the request for debugging
             logger.debug(f"Creating template '{template_data.get('name')}'")
@@ -354,6 +357,7 @@ class WhatsAppClient:
             logger.debug(f"Request payload: {json.dumps(template_data, indent=2)}")
             
             response = requests.post(url, json=template_data, headers=headers, timeout=30)
+            last_response = response  # Store for error handling
             
             # Log response status regardless of success/failure
             logger.debug(f"Response status code: {response.status_code}")
@@ -367,8 +371,11 @@ class WhatsAppClient:
             return result
         except requests.exceptions.HTTPError as e:
             # Extract error details from response
-            status_code = e.response.status_code if e.response else None
-            response_text = e.response.text if e.response else None
+            # Try e.response first, fallback to last_response (stored before raise_for_status)
+            response_obj = e.response if hasattr(e, 'response') and e.response is not None else last_response
+            
+            status_code = response_obj.status_code if response_obj else None
+            response_text = response_obj.text if response_obj else None
             error_data = {}
             json_parse_error = None
             
@@ -377,9 +384,9 @@ class WhatsAppClient:
             logger.error(f"Raw response: {response_text}")
             
             # Try to parse JSON response
-            if e.response:
+            if response_obj:
                 try:
-                    error_data = e.response.json()
+                    error_data = response_obj.json()
                     logger.debug(f"Parsed error response JSON: {error_data}")
                 except (json.JSONDecodeError, ValueError, TypeError) as json_err:
                     json_parse_error = str(json_err)
@@ -387,6 +394,10 @@ class WhatsAppClient:
                     logger.debug(f"Raw response text: {response_text}")
                     # Use raw text as fallback - store in message field for display
                     error_data = {"message": response_text}
+            else:
+                # No response object available
+                logger.error("No response object available in HTTPError exception")
+                error_data = {"message": str(e)}
             
             # Extract detailed error information with multiple fallback strategies
             error_obj = error_data.get("error", {}) if isinstance(error_data, dict) else {}
