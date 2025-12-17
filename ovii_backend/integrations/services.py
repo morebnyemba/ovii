@@ -376,13 +376,24 @@ class WhatsAppClient:
             
             # Log response status and body BEFORE raise_for_status
             # This ensures we capture the response even if it's an error
-            logger.debug(f"Response status code: {response.status_code}")
-            logger.debug(f"Response headers: {dict(response.headers)}")
+            status_code = response.status_code
+            
+            # Log at appropriate level based on status code
+            if status_code >= 400:
+                logger.error(f"Response status code: {status_code}")
+                logger.error(f"Response headers: {dict(response.headers)}")
+            else:
+                logger.debug(f"Response status code: {status_code}")
+                logger.debug(f"Response headers: {dict(response.headers)}")
             
             # Safely get response text
             try:
                 response_text = response.text
-                logger.debug(f"Response body: {response_text}")
+                if status_code >= 400:
+                    # For errors, log the full response at ERROR level
+                    logger.error(f"Response body: {response_text}")
+                else:
+                    logger.debug(f"Response body: {response_text}")
             except Exception as text_err:
                 logger.warning(f"Could not read response text: {text_err}")
                 response_text = None

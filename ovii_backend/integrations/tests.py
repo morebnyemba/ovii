@@ -417,10 +417,9 @@ class WhatsAppTemplateSyncTestCase(TestCase):
         body_component = next(c for c in components if c["type"] == "BODY")
         self.assertIn("{{1}}", body_component["text"])
         
-        # AUTHENTICATION templates should have footer and OTP button
+        # AUTHENTICATION templates should NOT have footer per Meta requirements
         footer_component = next((c for c in components if c["type"] == "FOOTER"), None)
-        self.assertIsNotNone(footer_component)
-        self.assertEqual(footer_component["text"], "This code is confidential")
+        self.assertIsNone(footer_component, "AUTHENTICATION templates should not have footers")
         
         # Check for OTP button
         buttons_component = next((c for c in components if c["type"] == "BUTTONS"), None)
