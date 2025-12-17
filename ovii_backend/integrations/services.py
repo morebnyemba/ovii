@@ -341,66 +341,110 @@ class WhatsAppClient:
         if not self.access_token:
             raise Exception("WhatsApp access token not configured.")
         
+        # Validate template data before making API call
+        template_name = template_data.get('name', 'unknown')
+        if not template_data.get('name'):
+            raise ValueError("Template name is required")
+        if not template_data.get('category'):
+            raise ValueError("Template category is required")
+        if not template_data.get('language'):
+            raise ValueError("Template language is required")
+        if not template_data.get('components'):
+            raise ValueError("Template components are required")
+        
         url = f"https://graph.facebook.com/{self.api_version}/{self.waba_id}/message_templates"
         headers = {
             "Authorization": f"Bearer {self.access_token}",
             "Content-Type": "application/json"
         }
         
-        # Store response for error handling
-        last_response = None
-        
         try:
-            # Log the request for debugging
-            logger.debug(f"Creating template '{template_data.get('name')}'")
+            # Log the request for debugging (mask token for security)
+            masked_token = self.access_token[:10] + "..." + self.access_token[-4:] if self.access_token and len(self.access_token) > 14 else "***"
+            logger.debug(f"Creating template '{template_name}'")
             logger.debug(f"Request URL: {url}")
+            logger.debug(f"Request headers: Authorization: Bearer {masked_token}, Content-Type: application/json")
             logger.debug(f"Request payload: {json.dumps(template_data, indent=2)}")
             
+            # Make the API call
             response = requests.post(url, json=template_data, headers=headers, timeout=30)
-            last_response = response  # Store for error handling
             
-            # Log response status regardless of success/failure
+            # Log response status and body BEFORE raise_for_status
+            # This ensures we capture the response even if it's an error
             logger.debug(f"Response status code: {response.status_code}")
             logger.debug(f"Response headers: {dict(response.headers)}")
-            logger.debug(f"Response body: {response.text}")
             
+            # Safely get response text
+            try:
+                response_text = response.text
+                logger.debug(f"Response body: {response_text}")
+            except Exception as text_err:
+                logger.warning(f"Could not read response text: {text_err}")
+                response_text = None
+            
+            # Now check for HTTP errors
             response.raise_for_status()
+            
+            # Parse successful response
             result = response.json()
-            logger.info(f"Template '{template_data.get('name')}' created successfully in Meta")
+            logger.info(f"Template '{template_name}' created successfully in Meta")
             logger.debug(f"Response data: {result}")
             return result
         except requests.exceptions.HTTPError as e:
             # Extract error details from response
-            # Try e.response first, fallback to last_response (stored before raise_for_status)
-            response_obj = e.response if hasattr(e, 'response') and e.response is not None else last_response
+            # The response object should be available in e.response
+            response_obj = getattr(e, 'response', None)
             
-            status_code = response_obj.status_code if response_obj else None
-            response_text = response_obj.text if response_obj else None
+            # Extract basic response info first (before any JSON parsing)
+            status_code = getattr(response_obj, 'status_code', None) if response_obj else None
+            response_text = None
+            response_headers = {}
+            
+            # Safely get response text and headers
+            if response_obj:
+                try:
+                    response_text = response_obj.text
+                    response_headers = dict(response_obj.headers)
+                except Exception as text_err:
+                    logger.warning(f"Could not extract response text/headers: {text_err}")
+                    response_text = None
+            
             error_data = {}
             json_parse_error = None
             
             # Always log the raw response first for debugging
-            logger.error(f"HTTP Error {status_code} when creating template '{template_data.get('name')}'")
-            logger.error(f"Raw response: {response_text}")
+            logger.error(f"HTTP Error {status_code} when creating template '{template_name}'")
+            logger.error(f"Response headers: {response_headers}")
+            if response_text:
+                logger.error(f"Raw response: {response_text}")
+            else:
+                logger.error(f"Raw response: None (no response body available)")
             
             # Try to parse JSON response
-            if response_obj:
+            if response_obj and response_text:
                 try:
                     error_data = response_obj.json()
-                    logger.debug(f"Parsed error response JSON: {error_data}")
+                    logger.debug(f"Parsed error response JSON: {json.dumps(error_data, indent=2)}")
                 except (json.JSONDecodeError, ValueError, TypeError) as json_err:
                     json_parse_error = str(json_err)
                     logger.warning(f"Failed to parse error response as JSON: {json_parse_error}")
-                    logger.debug(f"Raw response text: {response_text}")
-                    # Use raw text as fallback - store in message field for display
-                    error_data = {"message": response_text}
-            else:
-                # No response object available
+                    logger.debug(f"Raw response text (length={len(response_text)}): {response_text}")
+                    # Use raw text as fallback - store in error.message structure for consistency
+                    error_data = {"error": {"message": response_text}}
+            elif not response_obj:
+                # No response object available at all
                 logger.error("No response object available in HTTPError exception")
-                error_data = {"message": str(e)}
+                error_data = {"error": {"message": str(e)}}
+            elif not response_text:
+                # Response object exists but no text content
+                logger.warning("Response object exists but contains no text")
+                error_data = {"error": {"message": f"HTTP {status_code} error with no response body"}}
             
             # Extract detailed error information with multiple fallback strategies
             error_obj = error_data.get("error", {}) if isinstance(error_data, dict) else {}
+            
+            # Log the error_obj structure for debugging
+            logger.debug(f"Error object structure: {json.dumps(error_obj, indent=2) if isinstance(error_obj, dict) else str(error_obj)}")
             
             # Extract error code with fallbacks
             error_code = None
@@ -416,11 +460,13 @@ class WhatsAppClient:
                     error_obj.get("error_user_msg")
                 )
             
-            if not error_message:
-                error_message = error_data.get("message") if isinstance(error_data, dict) else None
+            # Additional fallback: check if error_data itself has message
+            if not error_message and isinstance(error_data, dict):
+                error_message = error_data.get("message")
             
+            # Last resort: use response text or exception string
             if not error_message and response_text:
-                # Use truncated response text as last resort
+                # Use truncated response text
                 error_message = response_text[:MAX_ERROR_MESSAGE_LENGTH] if len(response_text) > MAX_ERROR_MESSAGE_LENGTH else response_text
             
             if not error_message:
@@ -435,7 +481,7 @@ class WhatsAppClient:
             
             # Build detailed error log
             error_details = [
-                f"Template: '{template_data.get('name')}'",
+                f"Template: '{template_name}'",
                 f"HTTP Status: {status_code}",
                 f"Error Code: {error_code}",
                 f"Error Type: {error_type}",
@@ -455,20 +501,22 @@ class WhatsAppClient:
             # Log detailed error
             logger.error("Failed to create WhatsApp template:\n  " + "\n  ".join(error_details))
             
-            # Log the full error response for debugging
-            logger.debug(f"Full error response: {error_data}")
+            # Log the full error response for debugging (only in debug mode)
+            logger.debug(f"Full error response: {json.dumps(error_data, indent=2) if isinstance(error_data, dict) else str(error_data)}")
             
-            # Log the request payload that failed
+            # Log the request payload that failed (only in debug mode)
             logger.debug(f"Failed request payload: {json.dumps(template_data, indent=2)}")
             
-            # Create structured exception with status code and error code
+            # Create structured exception with all available data
             additional_attrs = {
                 'error_subcode': error_subcode,
                 'error_user_title': error_user_title,
                 'error_user_msg': error_user_msg,
                 'fbtrace_id': fbtrace_id,
                 'full_error': error_data,
-                'raw_response': response_text
+                'raw_response': response_text,
+                'response_headers': response_headers,
+                'json_parse_error': json_parse_error
             }
             exception = self._create_api_exception(
                 error_msg=f"Meta API error: {error_message}",
@@ -488,11 +536,10 @@ class WhatsAppClient:
         except requests.exceptions.ConnectionError as e:
             # Network connection error
             error_msg = f"Network connection error: {str(e)}"
-            template_name = template_data.get('name', 'unknown')
             logger.error(f"Failed to create template '{template_name}': {error_msg}")
             logger.debug(f"Connection error details: {type(e).__name__} - {str(e)}")
             logger.debug(f"Request URL was: {url}")
-            logger.debug(f"Template payload: {template_data}")
+            logger.debug(f"Template payload: {json.dumps(template_data, indent=2)}")
             raise self._create_api_exception(
                 error_msg, 
                 error_type="ConnectionError",
@@ -501,11 +548,10 @@ class WhatsAppClient:
         except requests.exceptions.Timeout as e:
             # Request timeout
             error_msg = f"Request timeout after 30 seconds: {str(e)}"
-            template_name = template_data.get('name', 'unknown')
             logger.error(f"Failed to create template '{template_name}': {error_msg}")
             logger.debug(f"Timeout details: {type(e).__name__} - {str(e)}")
             logger.debug(f"Request URL was: {url}")
-            logger.debug(f"Template payload: {template_data}")
+            logger.debug(f"Template payload: {json.dumps(template_data, indent=2)}")
             raise self._create_api_exception(
                 error_msg, 
                 error_type="Timeout",
@@ -514,11 +560,10 @@ class WhatsAppClient:
         except requests.exceptions.RequestException as e:
             # Other request-related errors (not HTTPError, ConnectionError, or Timeout)
             error_msg = f"Request error: {str(e)}"
-            template_name = template_data.get('name', 'unknown')
             logger.error(f"Failed to create template '{template_name}': {error_msg}")
             logger.debug(f"Request error details: {type(e).__name__} - {str(e)}")
             logger.debug(f"Request URL was: {url}")
-            logger.debug(f"Template payload: {template_data}")
+            logger.debug(f"Template payload: {json.dumps(template_data, indent=2)}")
             raise self._create_api_exception(
                 error_msg, 
                 error_type=type(e).__name__,
@@ -527,11 +572,10 @@ class WhatsAppClient:
         except Exception as e:
             # Catch-all for unexpected errors
             error_msg = f"Unexpected error: {str(e)}"
-            template_name = template_data.get('name', 'unknown')
             logger.error(f"Failed to create template '{template_name}': {error_msg}")
-            logger.debug(f"Exception type: {type(e).__name__}, Details: {str(e)}")
+            logger.error(f"Exception type: {type(e).__name__}, Details: {str(e)}")
             logger.debug(f"Request URL was: {url}")
-            logger.debug(f"Template payload: {template_data}")
+            logger.debug(f"Template payload: {json.dumps(template_data, indent=2)}")
             logger.debug(f"Full traceback: {traceback.format_exc()}")
             raise self._create_api_exception(
                 error_msg, 
