@@ -219,7 +219,13 @@ STATIC_URL = "/static/"
 # This defines the directory where `collectstatic` will gather all static files.
 # Using BASE_DIR makes it more portable, but your absolute path is also correct for a fixed deployment environment.
 STATIC_ROOT = os.getenv("STATIC_ROOT", BASE_DIR / "staticfiles")
-STATICFILES_DIRS = [BASE_DIR / "static"]
+
+# Only add STATICFILES_DIRS if the static directory exists
+# This prevents the warning: "The directory '/path/to/static' in STATICFILES_DIRS does not exist"
+STATICFILES_DIRS = []
+static_dir = BASE_DIR / "static"
+if static_dir.exists():
+    STATICFILES_DIRS.append(static_dir)
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR.parent / "mediafiles"

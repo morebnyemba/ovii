@@ -82,6 +82,16 @@ docker compose exec db psql -U $DATABASE_USER -d $DATABASE_NAME
 
 ## Django Management Commands
 
+### All Available Management Commands
+
+```bash
+# List all available management commands
+docker compose exec backend python manage.py help
+
+# Get help for a specific command
+docker compose exec backend python manage.py help <command_name>
+```
+
 ### User Management
 
 ```bash
