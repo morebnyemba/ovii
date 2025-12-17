@@ -16,8 +16,8 @@ WHATSAPP_TEMPLATES = {
         "description": "OTP verification message for user authentication",
         "structure": {
             "header": None,
-            "body": "Your Ovii verification code is: {{1}}\n\nThis code expires in 5 minutes. Do not share this code with anyone.",
-            "footer": "Ovii - Your Mobile Wallet",
+            "body": "Your Ovii verification code is {{1}}. This code expires in 5 minutes. Do not share this code with anyone.",
+            "footer": None,  # AUTHENTICATION templates work better without footer
             "buttons": [],
         },
         "variables": ["code"],
@@ -30,21 +30,19 @@ WHATSAPP_TEMPLATES = {
         "description": "Notification when user receives money",
         "structure": {
             "header": None,
-            "body": "You have received {{1}} {{2}} from {{3}}.\n\nNew balance: {{4}} {{5}}\n\nTransaction ID: {{6}}",
+            "body": "You have received {{1}} from {{2}}.\n\nNew balance: {{3}}\n\nTransaction ID: {{4}}",
             "footer": "Ovii - Your Mobile Wallet",
             "buttons": [],
         },
-        # Note: currency appears twice - once after amount, once after new_balance
+        # Combined amount with currency to avoid duplicate variables
         "variables": [
-            "amount",
-            "currency",
+            "amount_with_currency",  # e.g., "10.00 USD"
             "sender_name",
-            "new_balance",
-            "currency",
+            "new_balance_with_currency",  # e.g., "110.00 USD"
             "transaction_id",
         ],
         "example": {
-            "body_text": [["10.00", "USD", "John Doe", "110.00", "USD", "TXN123456"]]
+            "body_text": [["10.00 USD", "John Doe", "110.00 USD", "TXN123456"]]
         },
     },
     "transaction_sent": {
@@ -54,21 +52,19 @@ WHATSAPP_TEMPLATES = {
         "description": "Notification when user sends money",
         "structure": {
             "header": None,
-            "body": "You have sent {{1}} {{2}} to {{3}}.\n\nNew balance: {{4}} {{5}}\n\nTransaction ID: {{6}}",
+            "body": "You have sent {{1}} to {{2}}.\n\nNew balance: {{3}}\n\nTransaction ID: {{4}}",
             "footer": "Ovii - Your Mobile Wallet",
             "buttons": [],
         },
-        # Note: currency appears twice - once after amount, once after new_balance
+        # Combined amount with currency to avoid duplicate variables
         "variables": [
-            "amount",
-            "currency",
+            "amount_with_currency",  # e.g., "10.00 USD"
             "recipient_name",
-            "new_balance",
-            "currency",
+            "new_balance_with_currency",  # e.g., "90.00 USD"
             "transaction_id",
         ],
         "example": {
-            "body_text": [["10.00", "USD", "Jane Smith", "90.00", "USD", "TXN123456"]]
+            "body_text": [["10.00 USD", "Jane Smith", "90.00 USD", "TXN123456"]]
         },
     },
     "welcome_message": {
@@ -92,19 +88,17 @@ WHATSAPP_TEMPLATES = {
         "description": "Notification when deposit is confirmed",
         "structure": {
             "header": None,
-            "body": "Your deposit of {{1}} {{2}} has been confirmed.\n\nNew balance: {{3}} {{4}}\n\nTransaction ID: {{5}}",
+            "body": "Your deposit of {{1}} has been confirmed.\n\nNew balance: {{2}}\n\nTransaction ID: {{3}}",
             "footer": "Ovii - Your Mobile Wallet",
             "buttons": [],
         },
-        # Note: currency appears twice - once after amount, once after new_balance
+        # Combined amount with currency to avoid duplicate variables
         "variables": [
-            "amount",
-            "currency",
-            "new_balance",
-            "currency",
+            "amount_with_currency",  # e.g., "50.00 USD"
+            "new_balance_with_currency",  # e.g., "150.00 USD"
             "transaction_id",
         ],
-        "example": {"body_text": [["50.00", "USD", "150.00", "USD", "TXN123456"]]},
+        "example": {"body_text": [["50.00 USD", "150.00 USD", "TXN123456"]]},
     },
     "withdrawal_processed": {
         "name": "withdrawal_processed",
@@ -113,19 +107,17 @@ WHATSAPP_TEMPLATES = {
         "description": "Notification when withdrawal is processed",
         "structure": {
             "header": None,
-            "body": "Your withdrawal of {{1}} {{2}} has been processed successfully.\n\nNew balance: {{3}} {{4}}\n\nTransaction ID: {{5}}",
+            "body": "Your withdrawal of {{1}} has been processed successfully.\n\nNew balance: {{2}}\n\nTransaction ID: {{3}}",
             "footer": "Ovii - Your Mobile Wallet",
             "buttons": [],
         },
-        # Note: currency appears twice - once after amount, once after new_balance
+        # Combined amount with currency to avoid duplicate variables
         "variables": [
-            "amount",
-            "currency",
-            "new_balance",
-            "currency",
+            "amount_with_currency",  # e.g., "25.00 USD"
+            "new_balance_with_currency",  # e.g., "75.00 USD"
             "transaction_id",
         ],
-        "example": {"body_text": [["25.00", "USD", "75.00", "USD", "TXN123456"]]},
+        "example": {"body_text": [["25.00 USD", "75.00 USD", "TXN123456"]]},
     },
     "transaction_failed": {
         "name": "transaction_failed",
@@ -208,13 +200,16 @@ WHATSAPP_TEMPLATES = {
         "description": "Notification when referral bonus is credited",
         "structure": {
             "header": None,
-            "body": "Great news! 🎉\n\nYou've earned a referral bonus of {{1}} {{2}}.\n\nNew balance: {{3}} {{4}}\n\nKeep sharing Ovii with friends to earn more rewards!",
+            "body": "Great news! 🎉\n\nYou've earned a referral bonus of {{1}}.\n\nNew balance: {{2}}\n\nKeep sharing Ovii with friends to earn more rewards!",
             "footer": "Ovii - Your Mobile Wallet",
             "buttons": [],
         },
-        # Note: currency appears twice - once after bonus amount, once after new_balance
-        "variables": ["bonus_amount", "currency", "new_balance", "currency"],
-        "example": {"body_text": [["5.00", "USD", "105.00", "USD"]]},
+        # Combined amount with currency to avoid duplicate variables
+        "variables": [
+            "bonus_amount_with_currency",  # e.g., "5.00 USD"
+            "new_balance_with_currency",  # e.g., "105.00 USD"
+        ],
+        "example": {"body_text": [["5.00 USD", "105.00 USD"]]},
     },
     "payment_received": {
         "name": "payment_received",
@@ -223,21 +218,19 @@ WHATSAPP_TEMPLATES = {
         "description": "Notification when merchant receives a payment",
         "structure": {
             "header": None,
-            "body": "Payment received! 💰\n\nYou received {{1}} {{2}} from {{3}}.\n\nNew balance: {{4}} {{5}}\n\nTransaction ID: {{6}}",
+            "body": "Payment received! 💰\n\nYou received {{1}} from {{2}}.\n\nNew balance: {{3}}\n\nTransaction ID: {{4}}",
             "footer": "Ovii - Your Mobile Wallet",
             "buttons": [],
         },
-        # Note: currency appears twice - once after amount, once after new_balance
+        # Combined amount with currency to avoid duplicate variables
         "variables": [
-            "amount",
-            "currency",
+            "amount_with_currency",  # e.g., "25.00 USD"
             "customer_name",
-            "new_balance",
-            "currency",
+            "new_balance_with_currency",  # e.g., "525.00 USD"
             "transaction_id",
         ],
         "example": {
-            "body_text": [["25.00", "USD", "John Doe", "525.00", "USD", "TXN123456"]]
+            "body_text": [["25.00 USD", "John Doe", "525.00 USD", "TXN123456"]]
         },
     },
     "payment_sent": {
@@ -247,21 +240,19 @@ WHATSAPP_TEMPLATES = {
         "description": "Notification when user makes a payment to merchant",
         "structure": {
             "header": None,
-            "body": "Payment successful! ✅\n\nYou paid {{1}} {{2}} to {{3}}.\n\nNew balance: {{4}} {{5}}\n\nTransaction ID: {{6}}",
+            "body": "Payment successful! ✅\n\nYou paid {{1}} to {{2}}.\n\nNew balance: {{3}}\n\nTransaction ID: {{4}}",
             "footer": "Ovii - Your Mobile Wallet",
             "buttons": [],
         },
-        # Note: currency appears twice - once after amount, once after new_balance
+        # Combined amount with currency to avoid duplicate variables
         "variables": [
-            "amount",
-            "currency",
+            "amount_with_currency",  # e.g., "15.00 USD"
             "merchant_name",
-            "new_balance",
-            "currency",
+            "new_balance_with_currency",  # e.g., "85.00 USD"
             "transaction_id",
         ],
         "example": {
-            "body_text": [["15.00", "USD", "ABC Store", "85.00", "USD", "TXN123456"]]
+            "body_text": [["15.00 USD", "ABC Store", "85.00 USD", "TXN123456"]]
         },
     },
 }

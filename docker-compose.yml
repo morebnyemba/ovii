@@ -15,12 +15,13 @@ services:
     env_file:
       - ./.env
     environment:
-      - POSTGRES_DB=${POSTGRES_DB:-${DATABASE_NAME}}
-      - POSTGRES_USER=${POSTGRES_USER:-${DATABASE_USER}}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-${DATABASE_PASSWORD}}
+      # Use POSTGRES_* variables from .env, with fallback to DATABASE_* variables
+      - POSTGRES_DB=${POSTGRES_DB:-ovii_prod_db}
+      - POSTGRES_USER=${POSTGRES_USER:-ovii_prod_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-Ovii@PROD2025!}
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-${DATABASE_USER}} -d ${POSTGRES_DB:-${DATABASE_NAME}}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ovii_prod_user} -d ${POSTGRES_DB:-ovii_prod_db}"]
       interval: 5s
       timeout: 5s
       retries: 5
