@@ -51,6 +51,11 @@ class Command(BaseCommand):
             type=str,
             help='Sync only a specific template by name',
         )
+        parser.add_argument(
+            '--verbose',
+            action='store_true',
+            help='Enable verbose output with debug information including request/response payloads',
+        )
 
     def handle(self, *args, **options):
         templates = get_all_templates()
@@ -58,6 +63,13 @@ class Command(BaseCommand):
         display_only = options['display_only']
         check_status = options['check_status']
         specific_template = options.get('template')
+        verbose = options.get('verbose', False)
+        
+        # Set logging level based on verbose flag
+        if verbose:
+            logging.getLogger('integrations.services').setLevel(logging.DEBUG)
+            self.stdout.write(self.style.WARNING('Verbose mode enabled - showing debug information'))
+            self.stdout.write('')
 
         # Filter to specific template if requested
         if specific_template:
@@ -324,12 +336,36 @@ class Command(BaseCommand):
                         )
                         skipped_count += 1
                     else:
-                        # Real error - store truncated rejection reason
+                        # Real error - store truncated rejection reason and display detailed info
                         db_template.rejection_reason = error_msg[:MAX_REJECTION_REASON_LENGTH]
                         db_template.save()
+                        
+                        # Display basic error
                         self.stdout.write(
                             self.style.ERROR(f"  ✗ Failed: {error_msg}")
                         )
+                        
+                        # Display detailed error information if available
+                        error_code = getattr(api_error, 'error_code', None)
+                        error_type = getattr(api_error, 'error_type', None)
+                        error_subcode = getattr(api_error, 'error_subcode', None)
+                        error_user_title = getattr(api_error, 'error_user_title', None)
+                        error_user_msg = getattr(api_error, 'error_user_msg', None)
+                        fbtrace_id = getattr(api_error, 'fbtrace_id', None)
+                        
+                        if error_code:
+                            self.stdout.write(f"    Error Code: {error_code}")
+                        if error_type:
+                            self.stdout.write(f"    Error Type: {error_type}")
+                        if error_subcode:
+                            self.stdout.write(f"    Error Subcode: {error_subcode}")
+                        if error_user_title:
+                            self.stdout.write(f"    Title: {error_user_title}")
+                        if error_user_msg:
+                            self.stdout.write(f"    Details: {error_user_msg}")
+                        if fbtrace_id:
+                            self.stdout.write(f"    FB Trace ID: {fbtrace_id}")
+                        
                         failed_count += 1
                 
             except (ValueError, KeyError) as e:
