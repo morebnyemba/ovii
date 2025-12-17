@@ -246,7 +246,7 @@ WHATSAPP_TEMPLATES = {
         "description": "Notification when user makes a payment to merchant",
         "structure": {
             "header": None,
-            "body": "Payment successful! ✅\n\nYou paid {{1}} to {{2}}.\n\nNew balance: {{3}}\n\nTransaction ID: {{4}}",
+            "body": "Payment successful! You have paid {{1}} to {{2}}. Your transaction has been processed and your new balance is {{3}}. Transaction ID: {{4}}. Thank you for using Ovii!",
             "footer": "Ovii - Your Mobile Wallet",
             "buttons": [],
         },
