@@ -264,6 +264,38 @@ WHATSAPP_TEMPLATES = {
 }
 
 
+def normalize_language_code(language_code: str) -> str:
+    """
+    Normalize language code to Meta's expected format.
+    Converts short codes like 'en' to full codes like 'en_US'.
+    
+    Args:
+        language_code: Language code (e.g., 'en', 'en_US', 'es')
+        
+    Returns:
+        str: Normalized language code in Meta's format (e.g., 'en_US')
+    """
+    if not language_code:
+        return "en_US"  # Default to English US
+    
+    # If already has underscore or hyphen, assume it's already formatted
+    if "_" in language_code or "-" in language_code:
+        # Replace hyphen with underscore for consistency
+        return language_code.replace("-", "_")
+    
+    # Map common language codes to Meta's format
+    language_mapping = {
+        "en": "en_US",
+        "es": "es_ES",
+        "fr": "fr_FR",
+        "de": "de_DE",
+        "pt": "pt_BR",
+        "zh": "zh_CN",
+    }
+    
+    return language_mapping.get(language_code.lower(), f"{language_code}_US")
+
+
 def get_template_structure(template_name: str) -> dict:
     """
     Get the structure of a specific template.
@@ -335,18 +367,7 @@ def convert_template_to_meta_format(template_name: str) -> dict:
         raise ValueError(f"Template '{template_name}' not found")
     
     # Convert language code format (en -> en_US if needed)
-    language_code = template["language"]
-    if "_" not in language_code:
-        # Map common language codes to Meta's format
-        language_mapping = {
-            "en": "en_US",
-            "es": "es_ES",
-            "fr": "fr_FR",
-            "de": "de_DE",
-            "pt": "pt_BR",
-            "zh": "zh_CN",
-        }
-        language_code = language_mapping.get(language_code, f"{language_code}_US")
+    language_code = normalize_language_code(template["language"])
     
     components = []
     structure = template["structure"]
@@ -404,11 +425,21 @@ def convert_template_to_meta_format(template_name: str) -> dict:
             })
     
     # Add BUTTONS component if present
+    # Note: AUTHENTICATION templates with OTP buttons don't need explicit button components
+    # Meta automatically adds the "Copy code" button for OTP authentication templates
     if structure.get("buttons") and len(structure["buttons"]) > 0:
-        components.append({
-            "type": "BUTTONS",
-            "buttons": structure["buttons"]
-        })
+        # Check if this is an OTP authentication template
+        has_otp_button = any(
+            button.get("type") == "OTP" 
+            for button in structure.get("buttons", [])
+        )
+        
+        # Only add BUTTONS component if NOT an OTP authentication template
+        if not (template["category"] == "AUTHENTICATION" and has_otp_button):
+            components.append({
+                "type": "BUTTONS",
+                "buttons": structure["buttons"]
+            })
     
     # Build final payload
     payload = {
