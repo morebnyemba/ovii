@@ -16,8 +16,8 @@ WHATSAPP_TEMPLATES = {
         "description": "OTP verification message for user authentication",
         "structure": {
             "header": None,
-            "body": "Your Ovii verification code is: {{1}}\n\nThis code expires in 5 minutes. Do not share this code with anyone.",
-            "footer": "Ovii - Your Mobile Wallet",
+            "body": "Your Ovii verification code is {{1}}. This code expires in 5 minutes. Do not share this code with anyone.",
+            "footer": None,  # AUTHENTICATION templates work better without footer
             "buttons": [],
         },
         "variables": ["code"],

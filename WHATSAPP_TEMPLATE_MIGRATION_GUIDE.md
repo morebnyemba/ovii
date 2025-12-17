@@ -39,15 +39,40 @@ We combined related values into single variables to avoid duplicates:
 
 The following templates have been updated:
 
-1. ✅ **transaction_received** - Money received notification
-2. ✅ **transaction_sent** - Money sent notification
-3. ✅ **deposit_confirmed** - Deposit confirmation
-4. ✅ **withdrawal_processed** - Withdrawal confirmation
-5. ✅ **payment_received** - Merchant payment received
-6. ✅ **payment_sent** - Customer payment to merchant
-7. ✅ **referral_bonus_credited** - Referral bonus notification
+1. ✅ **otp_verification** - OTP authentication (AUTHENTICATION category - reformatted)
+2. ✅ **transaction_received** - Money received notification
+3. ✅ **transaction_sent** - Money sent notification
+4. ✅ **deposit_confirmed** - Deposit confirmation
+5. ✅ **withdrawal_processed** - Withdrawal confirmation
+6. ✅ **payment_received** - Merchant payment received
+7. ✅ **payment_sent** - Customer payment to merchant
+8. ✅ **referral_bonus_credited** - Referral bonus notification
 
 ## Template-Specific Changes
+
+### 0. otp_verification (AUTHENTICATION Category)
+
+**Before:**
+```python
+structure = {
+    "body": "Your Ovii verification code is: {{1}}\n\nThis code expires in 5 minutes. Do not share this code with anyone.",
+    "footer": "Ovii - Your Mobile Wallet"
+}
+```
+
+**After:**
+```python
+structure = {
+    "body": "Your Ovii verification code is {{1}}. This code expires in 5 minutes. Do not share this code with anyone.",
+    "footer": None  # AUTHENTICATION templates work better without footer
+}
+```
+
+**Why the change?**
+- AUTHENTICATION category templates have stricter formatting requirements
+- Removed colon and double newline for better compliance
+- Removed footer as Meta prefers cleaner AUTHENTICATION messages
+- Uses period and single space for better readability
 
 ### 1. transaction_received
 

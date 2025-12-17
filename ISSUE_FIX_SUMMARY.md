@@ -47,29 +47,40 @@ ERROR: Failed to create template 'deposit_confirmed': HTTP None, 400 Client Erro
 ```
 
 **Root Cause:**
-Templates had duplicate "currency" variables which Meta's API rejects.
+1. Templates had duplicate "currency" variables which Meta's API rejects
+2. The `otp_verification` template (AUTHENTICATION category) had formatting issues
 
 **Solution:**
-- Updated all affected templates to combine amount and currency
+- Updated 7 templates to combine amount and currency
+- Fixed `otp_verification` template formatting for AUTHENTICATION category
 - Changed from separate variables to combined format
 
-**Example Fix:**
+**Example Fixes:**
 ```python
-# BEFORE (WRONG - causes 400 error)
+# Currency duplicate issue (WRONG - causes 400 error)
 variables: ["amount", "currency", "new_balance", "currency"]  # Duplicate!
 
-# AFTER (CORRECT)
+# Fixed (CORRECT)
 variables: ["amount_with_currency", "new_balance_with_currency"]
+
+# OTP template formatting issue (WRONG)
+body: "Your Ovii verification code is: {{1}}\n\nThis code..."
+footer: "Ovii - Your Mobile Wallet"
+
+# Fixed (CORRECT for AUTHENTICATION category)
+body: "Your Ovii verification code is {{1}}. This code..."
+footer: None  # AUTHENTICATION templates work better without footer
 ```
 
 **Affected Templates:**
-1. ✅ transaction_received
-2. ✅ transaction_sent
-3. ✅ deposit_confirmed
-4. ✅ withdrawal_processed
-5. ✅ referral_bonus_credited
-6. ✅ payment_received
-7. ✅ payment_sent
+1. ✅ otp_verification (AUTHENTICATION category - reformatted for Meta compliance)
+2. ✅ transaction_received
+3. ✅ transaction_sent
+4. ✅ deposit_confirmed
+5. ✅ withdrawal_processed
+6. ✅ referral_bonus_credited
+7. ✅ payment_received
+8. ✅ payment_sent
 
 ## Webhook URL Configuration
 
