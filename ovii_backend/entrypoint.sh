@@ -12,14 +12,13 @@ if [ -n "$STATICFILES_DIRS" ]; then
     
     # Split STATICFILES_DIRS by comma and iterate
     for dir in $STATICFILES_DIRS; do
-        # Trim leading and trailing whitespace using parameter expansion
-        dir="${dir#"${dir%%[![:space:]]*}"}"  # Remove leading whitespace
-        dir="${dir%"${dir##*[![:space:]]}"}"  # Remove trailing whitespace
+        # Trim leading and trailing whitespace
+        dir=$(echo "$dir" | xargs)
         
         # Create directory if not empty
         if [ -n "$dir" ]; then
             mkdir -p "$dir"
-            echo "Created static directory: $dir"
+            echo "Ensured static directory exists: $dir"
         fi
     done
     
