@@ -231,14 +231,25 @@ class WhatsAppTemplatesTestCase(TestCase):
         self.assertIsNone(template)
 
     def test_format_template_components(self):
-        """Test formatting template components with variables."""
+        """Test formatting template components with variables for OTP template."""
         variables = {"code": "123456"}
         components = format_template_components("otp_verification", variables)
         
         self.assertIsInstance(components, list)
-        self.assertEqual(len(components), 1)
-        self.assertEqual(components[0]["type"], "body")
-        self.assertEqual(components[0]["parameters"][0]["text"], "123456")
+        # OTP template with URL button fallback should have 2 components: body + button
+        self.assertEqual(len(components), 2)
+        
+        # Verify body component
+        body_component = components[0]
+        self.assertEqual(body_component["type"], "body")
+        self.assertEqual(body_component["parameters"][0]["text"], "123456")
+        
+        # Verify button component (URL button fallback for manually created templates)
+        button_component = components[1]
+        self.assertEqual(button_component["type"], "button")
+        self.assertEqual(button_component["sub_type"], "url")
+        self.assertEqual(button_component["index"], "0")
+        self.assertEqual(button_component["parameters"][0]["text"], "123456")
 
     def test_format_template_components_multiple_variables(self):
         """Test formatting template with multiple variables."""
