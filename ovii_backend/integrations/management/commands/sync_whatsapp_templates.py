@@ -403,9 +403,21 @@ class Command(BaseCommand):
                     error_msg = str(api_error)
                     error_id = id(api_error)  # Use object ID for tracking
                     
+                    # Extract error attributes safely
+                    status_code = getattr(api_error, 'status_code', None)
+                    error_code = getattr(api_error, 'error_code', None)
+                    error_type = getattr(api_error, 'error_type', None)
+                    error_subcode = getattr(api_error, 'error_subcode', None)
+                    error_user_title = getattr(api_error, 'error_user_title', None)
+                    error_user_msg = getattr(api_error, 'error_user_msg', None)
+                    fbtrace_id = getattr(api_error, 'fbtrace_id', None)
+                    raw_response = getattr(api_error, 'raw_response', None)
+                    full_error = getattr(api_error, 'full_error', None)
+                    response_headers = getattr(api_error, 'response_headers', None)
+                    json_parse_error = getattr(api_error, 'json_parse_error', None)
+                    
                     # In verbose mode, show raw response immediately
                     if verbose:
-                        raw_response = getattr(api_error, 'raw_response', None)
                         if raw_response and error_id not in raw_response_shown:
                             self.stdout.write(self.style.WARNING(f"  Raw API Response:"))
                             # Truncate if too long
@@ -413,6 +425,10 @@ class Command(BaseCommand):
                             self.stdout.write(f"    {truncated_response}")
                             # Mark as shown to avoid duplicate display later
                             raw_response_shown.add(error_id)
+                        if response_headers:
+                            self.stdout.write(self.style.WARNING(f"  Response Headers:"))
+                            for key, value in (response_headers.items() if isinstance(response_headers, dict) else []):
+                                self.stdout.write(f"    {key}: {value}")
                     
                     # Check if template already exists using status code/error code
                     is_duplicate = getattr(api_error, 'is_duplicate', False)
@@ -439,18 +455,7 @@ class Command(BaseCommand):
                             self.style.ERROR(f"  ✗ Failed: {error_msg}")
                         )
                         
-                        # Display detailed error information
-                        status_code = getattr(api_error, 'status_code', None)
-                        error_code = getattr(api_error, 'error_code', None)
-                        error_type = getattr(api_error, 'error_type', None)
-                        error_subcode = getattr(api_error, 'error_subcode', None)
-                        error_user_title = getattr(api_error, 'error_user_title', None)
-                        error_user_msg = getattr(api_error, 'error_user_msg', None)
-                        fbtrace_id = getattr(api_error, 'fbtrace_id', None)
-                        raw_response = getattr(api_error, 'raw_response', None)
-                        full_error = getattr(api_error, 'full_error', None)
-                        
-                        # Always show these fields (even if None) for debugging
+                        # Always show these fields for debugging (even if None to indicate missing data)
                         self.stdout.write(f"    HTTP Status: {status_code}")
                         self.stdout.write(f"    Error Code: {error_code}")
                         self.stdout.write(f"    Error Type: {error_type}")
@@ -473,6 +478,17 @@ class Command(BaseCommand):
                                 self.stdout.write(self.style.WARNING(f"    Raw Response: {truncated_response}"))
                             if full_error:
                                 self.stdout.write(self.style.WARNING(f"    Full Error Object: {json.dumps(full_error, indent=6)}"))
+                            if json_parse_error:
+                                self.stdout.write(self.style.WARNING(f"    JSON Parse Error: {json_parse_error}"))
+                        
+                        # If we got HTTP 400 with no detailed error info, show a helpful message
+                        if status_code == 400 and not error_code and not error_type:
+                            self.stdout.write(
+                                self.style.WARNING(f"    ⚠ Note: Meta API returned 400 Bad Request without detailed error information.")
+                            )
+                            self.stdout.write(
+                                self.style.WARNING(f"       This usually indicates a payload format issue. Check the logs for details.")
+                            )
                         
                         failed_count += 1
                 
