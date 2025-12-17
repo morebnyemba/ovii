@@ -15,12 +15,12 @@ services:
     env_file:
       - ./.env
     environment:
-      - POSTGRES_DB=${DATABASE_NAME}
-      - POSTGRES_USER=${DATABASE_USER}
-      - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB:-${DATABASE_NAME}}
+      - POSTGRES_USER=${POSTGRES_USER:-${DATABASE_USER}}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-${DATABASE_PASSWORD}}
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-${DATABASE_USER}} -d ${POSTGRES_DB:-${DATABASE_NAME}}"]
       interval: 5s
       timeout: 5s
       retries: 5
