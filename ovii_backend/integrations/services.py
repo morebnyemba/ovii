@@ -316,6 +316,8 @@ class WhatsAppClient:
         try:
             # Log the request for debugging
             logger.debug(f"Creating template '{template_data.get('name')}' with payload: {template_data}")
+            logger.debug(f"Request URL: {url}")
+            logger.debug(f"Request headers: Authorization=Bearer *****, Content-Type=application/json")
             
             response = requests.post(url, json=template_data, headers=headers, timeout=30)
             response.raise_for_status()
@@ -380,9 +382,49 @@ class WhatsAppClient:
             exception.full_error = error_data
             exception.is_duplicate = status_code == 400 and (error_code == 100 or "already exists" in error_message.lower())
             raise exception
+        except requests.exceptions.ConnectionError as e:
+            # Network connection error
+            error_msg = f"Network connection error: {str(e)}"
+            logger.error(f"Failed to create template '{template_data.get('name')}': {error_msg}")
+            logger.debug(f"Connection error details: {type(e).__name__} - {str(e)}")
+            exception = Exception(error_msg)
+            exception.status_code = None
+            exception.error_code = None
+            exception.error_type = "ConnectionError"
+            exception.is_duplicate = False
+            raise exception
+        except requests.exceptions.Timeout as e:
+            # Request timeout
+            error_msg = f"Request timeout after 30 seconds: {str(e)}"
+            logger.error(f"Failed to create template '{template_data.get('name')}': {error_msg}")
+            exception = Exception(error_msg)
+            exception.status_code = None
+            exception.error_code = None
+            exception.error_type = "Timeout"
+            exception.is_duplicate = False
+            raise exception
+        except requests.exceptions.RequestException as e:
+            # Other request-related errors
+            error_msg = f"Request error: {str(e)}"
+            logger.error(f"Failed to create template '{template_data.get('name')}': {error_msg}")
+            logger.debug(f"Request error details: {type(e).__name__} - {str(e)}")
+            exception = Exception(error_msg)
+            exception.status_code = None
+            exception.error_code = None
+            exception.error_type = type(e).__name__
+            exception.is_duplicate = False
+            raise exception
         except Exception as e:
-            logger.error(f"Failed to create template '{template_data.get('name')}': {e}")
-            raise
+            # Catch-all for unexpected errors
+            error_msg = f"Unexpected error: {str(e)}"
+            logger.error(f"Failed to create template '{template_data.get('name')}': {error_msg}")
+            logger.debug(f"Exception type: {type(e).__name__}, Details: {str(e)}")
+            exception = Exception(error_msg)
+            exception.status_code = None
+            exception.error_code = None
+            exception.error_type = type(e).__name__
+            exception.is_duplicate = False
+            raise exception
 
     def get_template_status(self, template_name: str) -> dict:
         """
