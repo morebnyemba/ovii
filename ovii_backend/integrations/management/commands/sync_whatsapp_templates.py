@@ -235,8 +235,15 @@ class Command(BaseCommand):
         success_count = 0
         failed_count = 0
         skipped_count = 0
+        
+        # Track template position for rate limiting
+        template_list = list(templates.items())
+        total_templates = len(template_list)
+        
+        # Track which errors have shown raw response to avoid duplicates
+        raw_response_shown = set()
 
-        for template_name, template_data in templates.items():
+        for idx, (template_name, template_data) in enumerate(template_list, start=1):
             self.stdout.write(f"Processing template: {template_name}")
             
             try:
@@ -389,17 +396,18 @@ class Command(BaseCommand):
                     
                 except Exception as api_error:
                     error_msg = str(api_error)
+                    error_id = id(api_error)  # Use object ID for tracking
                     
                     # In verbose mode, show raw response immediately
                     if verbose:
                         raw_response = getattr(api_error, 'raw_response', None)
-                        if raw_response:
+                        if raw_response and error_id not in raw_response_shown:
                             self.stdout.write(self.style.WARNING(f"  Raw API Response:"))
                             # Truncate if too long
                             truncated_response = truncate_text(raw_response, MAX_ERROR_DISPLAY_LENGTH)
                             self.stdout.write(f"    {truncated_response}")
-                            # Mark to avoid duplicate display
-                            api_error._raw_shown = True
+                            # Mark as shown to avoid duplicate display later
+                            raw_response_shown.add(error_id)
                     
                     # Check if template already exists using status code/error code
                     is_duplicate = getattr(api_error, 'is_duplicate', False)
@@ -455,7 +463,7 @@ class Command(BaseCommand):
                         # In verbose mode, show more details
                         if verbose:
                             # Only show raw response if we didn't already display it above
-                            if raw_response and not getattr(api_error, '_raw_shown', False):
+                            if raw_response and error_id not in raw_response_shown:
                                 truncated_response = truncate_text(raw_response, MAX_ERROR_DISPLAY_LENGTH)
                                 self.stdout.write(self.style.WARNING(f"    Raw Response: {truncated_response}"))
                             if full_error:
@@ -484,7 +492,7 @@ class Command(BaseCommand):
             
             # Add delay between template processing to avoid rate limits
             # Only delay if not the last template
-            if template_name != list(templates.keys())[-1]:
+            if idx < total_templates:
                 if verbose:
                     self.stdout.write(self.style.WARNING(f"  Waiting {delay}s before next template..."))
                 time.sleep(delay)
