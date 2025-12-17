@@ -105,7 +105,7 @@ class Command(BaseCommand):
             return
 
         # Sync templates to Meta (new behavior)
-        self._sync_templates_to_meta(templates)
+        self._sync_templates_to_meta(templates, verbose)
 
     def _display_templates(self, templates, output_format):
         """Display templates in text or JSON format."""
@@ -200,8 +200,13 @@ class Command(BaseCommand):
         return base1 == base2
 
 
-    def _sync_templates_to_meta(self, templates):
-        """Sync templates to Meta via Graph API."""
+    def _sync_templates_to_meta(self, templates, verbose=False):
+        """Sync templates to Meta via Graph API.
+        
+        Args:
+            templates: Dictionary of templates to sync
+            verbose: Whether to enable verbose/debug output
+        """
         self.stdout.write(self.style.SUCCESS('=' * 80))
         self.stdout.write(self.style.SUCCESS('SYNCING TEMPLATES TO META'))
         self.stdout.write(self.style.SUCCESS('=' * 80))
@@ -346,6 +351,14 @@ class Command(BaseCommand):
                 # Convert to Meta format and create (only if we didn't skip above)
                 meta_payload = convert_template_to_meta_format(template_name)
                 
+                # Log payload in verbose mode
+                if verbose:
+                    self.stdout.write(self.style.WARNING(f"  Template payload for Meta API:"))
+                    self.stdout.write(f"    {json.dumps(meta_payload, indent=6)}")
+                
+                # Also log at DEBUG level for server logs
+                logger.debug(f"Converted template '{template_name}' to Meta format: {json.dumps(meta_payload, indent=2)}")
+                
                 # Create template in Meta
                 try:
                     response = client.create_template(meta_payload)
@@ -401,6 +414,7 @@ class Command(BaseCommand):
                         error_user_msg = getattr(api_error, 'error_user_msg', None)
                         fbtrace_id = getattr(api_error, 'fbtrace_id', None)
                         raw_response = getattr(api_error, 'raw_response', None)
+                        full_error = getattr(api_error, 'full_error', None)
                         
                         if status_code:
                             self.stdout.write(f"    HTTP Status: {status_code}")
@@ -417,10 +431,13 @@ class Command(BaseCommand):
                         if fbtrace_id:
                             self.stdout.write(f"    FB Trace ID: {fbtrace_id}")
                         
-                        # In verbose mode, show raw response if available
-                        if verbose and raw_response:
-                            truncated_response = truncate_text(raw_response, MAX_ERROR_DISPLAY_LENGTH)
-                            self.stdout.write(self.style.WARNING(f"    Raw Response: {truncated_response}"))
+                        # In verbose mode, show more details
+                        if verbose:
+                            if raw_response:
+                                truncated_response = truncate_text(raw_response, MAX_ERROR_DISPLAY_LENGTH)
+                                self.stdout.write(self.style.WARNING(f"    Raw Response: {truncated_response}"))
+                            if full_error:
+                                self.stdout.write(self.style.WARNING(f"    Full Error Object: {json.dumps(full_error, indent=6)}"))
                         
                         failed_count += 1
                 
