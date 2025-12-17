@@ -367,19 +367,17 @@ def convert_template_to_meta_format(template_name: str) -> dict:
         
         # For AUTHENTICATION templates with OTP buttons, use add_security_recommendation
         # instead of the text field (Meta API requirement)
-        has_otp_button = False
-        if structure.get("buttons"):
-            for button in structure["buttons"]:
-                if button.get("type") == "OTP":
-                    has_otp_button = True
-                    break
+        has_otp_button = any(
+            button.get("type") == "OTP" 
+            for button in structure.get("buttons", [])
+        )
         
         if template["category"] == "AUTHENTICATION" and has_otp_button:
             # For OTP authentication templates, Meta automatically adds security text
             # We only provide the code via add_security_recommendation
+            # Meta will auto-generate the body text in the format: "<CODE> is your verification code."
+            # The original body text from our template is ignored in this case
             body_component["add_security_recommendation"] = True
-            # The text field is not used for AUTHENTICATION + OTP combination
-            # Meta will auto-generate: "<CODE> is your verification code."
         else:
             # For all other templates, include the text field
             body_component["text"] = structure["body"]
