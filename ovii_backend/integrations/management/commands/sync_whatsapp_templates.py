@@ -380,6 +380,17 @@ class Command(BaseCommand):
                 except Exception as api_error:
                     error_msg = str(api_error)
                     
+                    # In verbose mode, show raw response immediately
+                    if verbose:
+                        raw_response = getattr(api_error, 'raw_response', None)
+                        if raw_response:
+                            self.stdout.write(self.style.WARNING(f"  Raw API Response:"))
+                            # Truncate if too long
+                            truncated_response = truncate_text(raw_response, MAX_ERROR_DISPLAY_LENGTH)
+                            self.stdout.write(f"    {truncated_response}")
+                            # Mark to avoid duplicate display
+                            api_error._raw_shown = True
+                    
                     # Check if template already exists using status code/error code
                     is_duplicate = getattr(api_error, 'is_duplicate', False)
                     
@@ -405,7 +416,7 @@ class Command(BaseCommand):
                             self.style.ERROR(f"  ✗ Failed: {error_msg}")
                         )
                         
-                        # Display detailed error information if available
+                        # Display detailed error information
                         status_code = getattr(api_error, 'status_code', None)
                         error_code = getattr(api_error, 'error_code', None)
                         error_type = getattr(api_error, 'error_type', None)
@@ -416,12 +427,12 @@ class Command(BaseCommand):
                         raw_response = getattr(api_error, 'raw_response', None)
                         full_error = getattr(api_error, 'full_error', None)
                         
-                        if status_code:
-                            self.stdout.write(f"    HTTP Status: {status_code}")
-                        if error_code:
-                            self.stdout.write(f"    Error Code: {error_code}")
-                        if error_type:
-                            self.stdout.write(f"    Error Type: {error_type}")
+                        # Always show these fields (even if None) for debugging
+                        self.stdout.write(f"    HTTP Status: {status_code}")
+                        self.stdout.write(f"    Error Code: {error_code}")
+                        self.stdout.write(f"    Error Type: {error_type}")
+                        
+                        # Show optional fields only if present
                         if error_subcode:
                             self.stdout.write(f"    Error Subcode: {error_subcode}")
                         if error_user_title:
@@ -433,7 +444,8 @@ class Command(BaseCommand):
                         
                         # In verbose mode, show more details
                         if verbose:
-                            if raw_response:
+                            # Only show raw response if we didn't already display it above
+                            if raw_response and not getattr(api_error, '_raw_shown', False):
                                 truncated_response = truncate_text(raw_response, MAX_ERROR_DISPLAY_LENGTH)
                                 self.stdout.write(self.style.WARNING(f"    Raw Response: {truncated_response}"))
                             if full_error:
