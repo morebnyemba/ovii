@@ -26,6 +26,22 @@ MAX_ERROR_DISPLAY_LENGTH = 500  # Maximum length for raw response in command out
 logger = logging.getLogger(__name__)
 
 
+def truncate_text(text, max_length):
+    """
+    Truncate text to specified length.
+    
+    Args:
+        text: Text to truncate
+        max_length: Maximum length
+        
+    Returns:
+        str: Truncated text
+    """
+    if not text:
+        return text
+    return text[:max_length] if len(text) > max_length else text
+
+
 class Command(BaseCommand):
     help = "Sync WhatsApp message templates with Meta Business Manager via Graph API"
 
@@ -404,7 +420,7 @@ class Command(BaseCommand):
                         
                         # In verbose mode, show raw response if available
                         if verbose and raw_response:
-                            truncated_response = raw_response[:MAX_ERROR_DISPLAY_LENGTH] if len(raw_response) > MAX_ERROR_DISPLAY_LENGTH else raw_response
+                            truncated_response = truncate_text(raw_response, MAX_ERROR_DISPLAY_LENGTH)
                             self.stdout.write(self.style.WARNING(f"    Raw Response: {truncated_response}"))
                         
                         failed_count += 1

@@ -9,6 +9,7 @@ from django.conf import settings
 from decimal import Decimal
 import hashlib
 import logging
+import traceback
 from heyoo import WhatsApp
 
 logger = logging.getLogger(__name__)
@@ -373,7 +374,7 @@ class WhatsAppClient:
                 try:
                     error_data = e.response.json()
                     logger.debug(f"Parsed error response JSON: {error_data}")
-                except Exception as json_err:
+                except (ValueError, TypeError) as json_err:
                     json_parse_error = str(json_err)
                     logger.warning(f"Failed to parse error response as JSON: {json_parse_error}")
                     logger.debug(f"Raw response text: {response_text}")
@@ -514,7 +515,6 @@ class WhatsAppClient:
             logger.debug(f"Exception type: {type(e).__name__}, Details: {str(e)}")
             logger.debug(f"Request URL was: {url}")
             logger.debug(f"Template payload: {template_data}")
-            import traceback
             logger.debug(f"Full traceback: {traceback.format_exc()}")
             raise self._create_api_exception(
                 error_msg, 
@@ -571,7 +571,7 @@ class WhatsAppClient:
             try:
                 error_data = e.response.json() if e.response else {}
                 error_message = error_data.get("error", {}).get("message", response_text)
-            except:
+            except (ValueError, TypeError):
                 error_message = response_text or str(e)
             
             logger.error(f"Failed to get template status for '{template_name}': HTTP {status_code} - {error_message}")
