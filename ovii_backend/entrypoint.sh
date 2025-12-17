@@ -6,15 +6,25 @@ mkdir -p /home/app/web/staticfiles /home/app/web/mediafiles
 # Create any additional static directories specified in STATICFILES_DIRS environment variable
 # This prevents Django warnings about non-existent directories
 if [ -n "$STATICFILES_DIRS" ]; then
-    # Split by comma and create each directory
-    echo "$STATICFILES_DIRS" | tr ',' '\n' | while read -r dir; do
-        # Trim whitespace and create directory if not empty
-        dir=$(echo "$dir" | tr -d ' ')
+    # Save IFS and set it to comma for splitting
+    OLD_IFS="$IFS"
+    IFS=','
+    
+    # Split STATICFILES_DIRS by comma and iterate
+    for dir in $STATICFILES_DIRS; do
+        # Trim leading and trailing whitespace using parameter expansion
+        dir="${dir#"${dir%%[![:space:]]*}"}"  # Remove leading whitespace
+        dir="${dir%"${dir##*[![:space:]]}"}"  # Remove trailing whitespace
+        
+        # Create directory if not empty
         if [ -n "$dir" ]; then
             mkdir -p "$dir"
             echo "Created static directory: $dir"
         fi
     done
+    
+    # Restore IFS
+    IFS="$OLD_IFS"
 fi
 
 # Execute the command passed to the container (e.g., from docker-compose.yml)
