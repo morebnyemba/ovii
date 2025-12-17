@@ -358,21 +358,22 @@ def format_template_components(template_name: str, variables: dict) -> list:
     # Handle fallback for manually created templates with URL buttons
     # Some templates may have been created manually in Meta with URL buttons
     # instead of OTP buttons, requiring us to send button parameters
-    code_value = variables.get("code", "").strip()
-    if template.get("has_url_button_fallback", False) and code_value:
-        # For OTP templates with URL button fallback, send the code as button parameter
-        # This handles the case where template was created with URL button instead of OTP button
-        components.append({
-            "type": "button",
-            "sub_type": "url",
-            "index": FIRST_BUTTON_INDEX,
-            "parameters": [
-                {
-                    "type": "text",
-                    "text": code_value
-                }
-            ]
-        })
+    if template.get("has_url_button_fallback", False):
+        code_value = variables.get("code", "").strip()
+        if code_value:
+            # For OTP templates with URL button fallback, send the code as button parameter
+            # This handles the case where template was created with URL button instead of OTP button
+            components.append({
+                "type": "button",
+                "sub_type": "url",
+                "index": FIRST_BUTTON_INDEX,
+                "parameters": [
+                    {
+                        "type": "text",
+                        "text": code_value
+                    }
+                ]
+            })
 
     return components
 
