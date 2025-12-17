@@ -243,17 +243,16 @@ class WhatsAppTemplatesTestCase(TestCase):
     def test_format_template_components_multiple_variables(self):
         """Test formatting template with multiple variables."""
         variables = {
-            "amount": "10.00",
-            "currency": "USD",
+            "amount_with_currency": "10.00 USD",
             "sender_name": "John Doe",
-            "new_balance": "110.00",
+            "new_balance_with_currency": "110.00 USD",
             "transaction_id": "TXN123456"
         }
         components = format_template_components("transaction_received", variables)
         
         self.assertIsInstance(components, list)
         self.assertEqual(len(components), 1)
-        self.assertEqual(len(components[0]["parameters"]), 6)  # Including duplicate currency
+        self.assertEqual(len(components[0]["parameters"]), 4)  # 4 variables: amount, sender, balance, txn_id
 
     def test_format_template_components_invalid_template(self):
         """Test formatting with invalid template name."""
@@ -418,9 +417,9 @@ class WhatsAppTemplateSyncTestCase(TestCase):
         body_component = next(c for c in components if c["type"] == "BODY")
         self.assertIn("{{1}}", body_component["text"])
         
-        # Check footer
+        # AUTHENTICATION templates should not have footer
         footer_component = next((c for c in components if c["type"] == "FOOTER"), None)
-        self.assertIsNotNone(footer_component)
+        self.assertIsNone(footer_component)
 
     def test_convert_template_invalid_name(self):
         """Test conversion with invalid template name."""
@@ -428,6 +427,28 @@ class WhatsAppTemplateSyncTestCase(TestCase):
         
         with self.assertRaises(ValueError):
             convert_template_to_meta_format("invalid_template_name")
+
+    def test_convert_marketing_template_to_meta_format(self):
+        """Test conversion of MARKETING template with footer to Meta format."""
+        from .whatsapp_templates import convert_template_to_meta_format
+        
+        result = convert_template_to_meta_format("welcome_message")
+        
+        # Check required fields
+        self.assertEqual(result["name"], "welcome_message")
+        self.assertEqual(result["category"], "MARKETING")
+        self.assertEqual(result["language"], "en_US")
+        self.assertIn("components", result)
+        
+        # Check components
+        components = result["components"]
+        body_component = next(c for c in components if c["type"] == "BODY")
+        self.assertIn("{{1}}", body_component["text"])
+        
+        # MARKETING templates should have footer
+        footer_component = next((c for c in components if c["type"] == "FOOTER"), None)
+        self.assertIsNotNone(footer_component)
+        self.assertEqual(footer_component["text"], "Ovii - Your Mobile Wallet")
 
     def test_whatsapp_template_model_creation(self):
         """Test WhatsAppTemplate model creation."""
