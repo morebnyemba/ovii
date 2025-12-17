@@ -271,13 +271,19 @@ class WhatsAppClient:
         if not self.client:
             raise Exception("WhatsApp client not configured. Check credentials.")
         
+        # Import here to avoid circular imports
+        from integrations.whatsapp_templates import normalize_language_code
+        
+        # Normalize language code to Meta's expected format (e.g., "en" -> "en_US")
+        normalized_lang = normalize_language_code(language_code)
+        
         try:
             # Remove '+' if present for API call
             clean_number = phone_number.replace("+", "")
             response = self.client.send_template(
                 template=template_name,
                 recipient_id=clean_number,
-                lang=language_code,
+                lang=normalized_lang,
                 components=components or []
             )
             logger.info(f"WhatsApp template '{template_name}' sent to {phone_number}")
