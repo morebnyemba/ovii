@@ -314,6 +314,9 @@ class WhatsAppClient:
         }
         
         try:
+            # Log the request for debugging
+            logger.debug(f"Creating template '{template_data.get('name')}' with payload: {template_data}")
+            
             response = requests.post(url, json=template_data, headers=headers, timeout=30)
             response.raise_for_status()
             result = response.json()
@@ -329,15 +332,52 @@ class WhatsAppClient:
             except:
                 error_data = {"message": e.response.text if e.response else str(e)}
             
-            error_code = error_data.get("error", {}).get("code") if isinstance(error_data.get("error"), dict) else None
-            error_message = error_data.get("error", {}).get("message") if isinstance(error_data.get("error"), dict) else error_data.get("message", str(e))
+            # Extract detailed error information
+            error_obj = error_data.get("error", {})
+            error_code = error_obj.get("code") if isinstance(error_obj, dict) else None
+            error_message = error_obj.get("message") if isinstance(error_obj, dict) else error_data.get("message", str(e))
+            error_type = error_obj.get("type") if isinstance(error_obj, dict) else None
+            error_subcode = error_obj.get("error_subcode") if isinstance(error_obj, dict) else None
+            error_user_title = error_obj.get("error_user_title") if isinstance(error_obj, dict) else None
+            error_user_msg = error_obj.get("error_user_msg") if isinstance(error_obj, dict) else None
+            fbtrace_id = error_obj.get("fbtrace_id") if isinstance(error_obj, dict) else None
             
-            logger.error(f"Failed to create template '{template_data.get('name')}': HTTP {status_code}, {error_message}")
+            # Build detailed error log
+            error_details = [
+                f"Template: '{template_data.get('name')}'",
+                f"HTTP Status: {status_code}",
+                f"Error Code: {error_code}",
+                f"Error Type: {error_type}",
+                f"Error Subcode: {error_subcode}",
+                f"Message: {error_message}",
+            ]
+            
+            if error_user_title:
+                error_details.append(f"User Title: {error_user_title}")
+            if error_user_msg:
+                error_details.append(f"User Message: {error_user_msg}")
+            if fbtrace_id:
+                error_details.append(f"FB Trace ID: {fbtrace_id}")
+            
+            # Log detailed error
+            logger.error("Failed to create WhatsApp template:\n  " + "\n  ".join(error_details))
+            
+            # Log the full error response for debugging
+            logger.debug(f"Full error response: {error_data}")
+            
+            # Log the request payload that failed
+            logger.debug(f"Failed request payload: {template_data}")
             
             # Create structured exception with status code and error code
             exception = Exception(f"Meta API error: {error_message}")
             exception.status_code = status_code
             exception.error_code = error_code
+            exception.error_type = error_type
+            exception.error_subcode = error_subcode
+            exception.error_user_title = error_user_title
+            exception.error_user_msg = error_user_msg
+            exception.fbtrace_id = fbtrace_id
+            exception.full_error = error_data
             exception.is_duplicate = status_code == 400 and (error_code == 100 or "already exists" in error_message.lower())
             raise exception
         except Exception as e:
