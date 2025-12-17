@@ -426,9 +426,12 @@ class Command(BaseCommand):
                             # Mark as shown to avoid duplicate display later
                             raw_response_shown.add(error_id)
                         if response_headers:
-                            self.stdout.write(self.style.WARNING(f"  Response Headers:"))
-                            for key, value in (response_headers.items() if isinstance(response_headers, dict) else []):
-                                self.stdout.write(f"    {key}: {value}")
+                            if isinstance(response_headers, dict):
+                                self.stdout.write(self.style.WARNING(f"  Response Headers:"))
+                                for key, value in response_headers.items():
+                                    self.stdout.write(f"    {key}: {value}")
+                            else:
+                                self.stdout.write(self.style.WARNING(f"  Response Headers: (unexpected format, type={type(response_headers).__name__})"))
                     
                     # Check if template already exists using status code/error code
                     is_duplicate = getattr(api_error, 'is_duplicate', False)

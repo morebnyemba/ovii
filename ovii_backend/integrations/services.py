@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 
 # Constants for error handling
 MAX_ERROR_MESSAGE_LENGTH = 500  # Maximum length for error message in logs/display
+MIN_TOKEN_LENGTH_FOR_MASKING = 14  # Minimum token length to apply masking
 
 
 class EcoCashClient:
@@ -360,7 +361,11 @@ class WhatsAppClient:
         
         try:
             # Log the request for debugging (mask token for security)
-            masked_token = self.access_token[:10] + "..." + self.access_token[-4:] if self.access_token and len(self.access_token) > 14 else "***"
+            masked_token = (
+                self.access_token[:10] + "..." + self.access_token[-4:] 
+                if self.access_token and len(self.access_token) > MIN_TOKEN_LENGTH_FOR_MASKING 
+                else "***"
+            )
             logger.debug(f"Creating template '{template_name}'")
             logger.debug(f"Request URL: {url}")
             logger.debug(f"Request headers: Authorization: Bearer {masked_token}, Content-Type: application/json")
