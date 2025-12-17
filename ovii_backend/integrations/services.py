@@ -4,14 +4,20 @@ Date: 2024-05-21
 Description: Service layer for handling third-party integrations like EcoCash and WhatsApp.
 """
 
+import hashlib
+import json
+import logging
+import traceback
+from decimal import Decimal
+
 import requests
 from django.conf import settings
-from decimal import Decimal
-import hashlib
-import logging
 from heyoo import WhatsApp
 
 logger = logging.getLogger(__name__)
+
+# Constants for error handling
+MAX_ERROR_MESSAGE_LENGTH = 500  # Maximum length for error message in logs/display
 
 
 class EcoCashClient:
@@ -343,29 +349,68 @@ class WhatsAppClient:
         
         try:
             # Log the request for debugging
-            logger.debug(f"Creating template '{template_data.get('name')}' with payload: {template_data}")
+            logger.debug(f"Creating template '{template_data.get('name')}'")
             logger.debug(f"Request URL: {url}")
-            logger.debug(f"Request headers: Authorization=Bearer *****, Content-Type=application/json")
+            logger.debug(f"Request payload: {template_data}")
             
             response = requests.post(url, json=template_data, headers=headers, timeout=30)
+            
+            # Log response status regardless of success/failure
+            logger.debug(f"Response status code: {response.status_code}")
+            logger.debug(f"Response headers: {dict(response.headers)}")
+            
             response.raise_for_status()
             result = response.json()
             logger.info(f"Template '{template_data.get('name')}' created successfully in Meta")
+            logger.debug(f"Response data: {result}")
             return result
         except requests.exceptions.HTTPError as e:
             # Extract error details from response
             status_code = e.response.status_code if e.response else None
+            response_text = e.response.text if e.response else None
             error_data = {}
+            json_parse_error = None
             
-            try:
-                error_data = e.response.json() if e.response else {}
-            except:
-                error_data = {"message": e.response.text if e.response else str(e)}
+            # Try to parse JSON response
+            if e.response:
+                try:
+                    error_data = e.response.json()
+                    logger.debug(f"Parsed error response JSON: {error_data}")
+                except (json.JSONDecodeError, ValueError, TypeError) as json_err:
+                    json_parse_error = str(json_err)
+                    logger.warning(f"Failed to parse error response as JSON: {json_parse_error}")
+                    logger.debug(f"Raw response text: {response_text}")
+                    # Use raw text as fallback - store in message field for display
+                    error_data = {"message": response_text}
             
-            # Extract detailed error information
-            error_obj = error_data.get("error", {})
-            error_code = error_obj.get("code") if isinstance(error_obj, dict) else None
-            error_message = error_obj.get("message") if isinstance(error_obj, dict) else error_data.get("message", str(e))
+            # Extract detailed error information with multiple fallback strategies
+            error_obj = error_data.get("error", {}) if isinstance(error_data, dict) else {}
+            
+            # Extract error code with fallbacks
+            error_code = None
+            if isinstance(error_obj, dict):
+                error_code = error_obj.get("code") or error_obj.get("error_code")
+            
+            # Extract error message with multiple fallbacks
+            error_message = None
+            if isinstance(error_obj, dict):
+                error_message = (
+                    error_obj.get("message") or 
+                    error_obj.get("error_message") or 
+                    error_obj.get("error_user_msg")
+                )
+            
+            if not error_message:
+                error_message = error_data.get("message") if isinstance(error_data, dict) else None
+            
+            if not error_message and response_text:
+                # Use truncated response text as last resort
+                error_message = response_text[:MAX_ERROR_MESSAGE_LENGTH] if len(response_text) > MAX_ERROR_MESSAGE_LENGTH else response_text
+            
+            if not error_message:
+                error_message = str(e)
+            
+            # Extract other error fields
             error_type = error_obj.get("type") if isinstance(error_obj, dict) else None
             error_subcode = error_obj.get("error_subcode") if isinstance(error_obj, dict) else None
             error_user_title = error_obj.get("error_user_title") if isinstance(error_obj, dict) else None
@@ -388,6 +433,8 @@ class WhatsAppClient:
                 error_details.append(f"User Message: {error_user_msg}")
             if fbtrace_id:
                 error_details.append(f"FB Trace ID: {fbtrace_id}")
+            if json_parse_error:
+                error_details.append(f"JSON Parse Error: {json_parse_error}")
             
             # Log detailed error
             logger.error("Failed to create WhatsApp template:\n  " + "\n  ".join(error_details))
@@ -404,7 +451,8 @@ class WhatsAppClient:
                 'error_user_title': error_user_title,
                 'error_user_msg': error_user_msg,
                 'fbtrace_id': fbtrace_id,
-                'full_error': error_data
+                'full_error': error_data,
+                'raw_response': response_text
             }
             exception = self._create_api_exception(
                 error_msg=f"Meta API error: {error_message}",
@@ -413,31 +461,67 @@ class WhatsAppClient:
                 error_code=error_code,
                 additional_attrs=additional_attrs
             )
-            exception.is_duplicate = status_code == 400 and (error_code == 100 or "already exists" in error_message.lower())
+            
+            # Check for duplicate template error
+            exception.is_duplicate = (
+                status_code == 400 and 
+                (error_code == 100 or (error_message and "already exists" in error_message.lower()))
+            )
+            
             raise exception
         except requests.exceptions.ConnectionError as e:
             # Network connection error
             error_msg = f"Network connection error: {str(e)}"
-            logger.error(f"Failed to create template '{template_data.get('name')}': {error_msg}")
+            template_name = template_data.get('name', 'unknown')
+            logger.error(f"Failed to create template '{template_name}': {error_msg}")
             logger.debug(f"Connection error details: {type(e).__name__} - {str(e)}")
-            raise self._create_api_exception(error_msg, error_type="ConnectionError")
+            logger.debug(f"Request URL was: {url}")
+            logger.debug(f"Template payload: {template_data}")
+            raise self._create_api_exception(
+                error_msg, 
+                error_type="ConnectionError",
+                additional_attrs={'template_name': template_name, 'request_url': url}
+            )
         except requests.exceptions.Timeout as e:
             # Request timeout
             error_msg = f"Request timeout after 30 seconds: {str(e)}"
-            logger.error(f"Failed to create template '{template_data.get('name')}': {error_msg}")
-            raise self._create_api_exception(error_msg, error_type="Timeout")
+            template_name = template_data.get('name', 'unknown')
+            logger.error(f"Failed to create template '{template_name}': {error_msg}")
+            logger.debug(f"Timeout details: {type(e).__name__} - {str(e)}")
+            logger.debug(f"Request URL was: {url}")
+            logger.debug(f"Template payload: {template_data}")
+            raise self._create_api_exception(
+                error_msg, 
+                error_type="Timeout",
+                additional_attrs={'template_name': template_name, 'request_url': url}
+            )
         except requests.exceptions.RequestException as e:
-            # Other request-related errors
+            # Other request-related errors (not HTTPError, ConnectionError, or Timeout)
             error_msg = f"Request error: {str(e)}"
-            logger.error(f"Failed to create template '{template_data.get('name')}': {error_msg}")
+            template_name = template_data.get('name', 'unknown')
+            logger.error(f"Failed to create template '{template_name}': {error_msg}")
             logger.debug(f"Request error details: {type(e).__name__} - {str(e)}")
-            raise self._create_api_exception(error_msg, error_type=type(e).__name__)
+            logger.debug(f"Request URL was: {url}")
+            logger.debug(f"Template payload: {template_data}")
+            raise self._create_api_exception(
+                error_msg, 
+                error_type=type(e).__name__,
+                additional_attrs={'template_name': template_name, 'request_url': url}
+            )
         except Exception as e:
             # Catch-all for unexpected errors
             error_msg = f"Unexpected error: {str(e)}"
-            logger.error(f"Failed to create template '{template_data.get('name')}': {error_msg}")
+            template_name = template_data.get('name', 'unknown')
+            logger.error(f"Failed to create template '{template_name}': {error_msg}")
             logger.debug(f"Exception type: {type(e).__name__}, Details: {str(e)}")
-            raise self._create_api_exception(error_msg, error_type=type(e).__name__)
+            logger.debug(f"Request URL was: {url}")
+            logger.debug(f"Template payload: {template_data}")
+            logger.debug(f"Full traceback: {traceback.format_exc()}")
+            raise self._create_api_exception(
+                error_msg, 
+                error_type=type(e).__name__,
+                additional_attrs={'template_name': template_name, 'request_url': url}
+            )
 
     def get_template_status(self, template_name: str) -> dict:
         """
@@ -467,14 +551,39 @@ class WhatsAppClient:
         }
         
         try:
+            logger.debug(f"Checking template status for '{template_name}'")
+            logger.debug(f"Request URL: {url}")
+            logger.debug(f"Request params: {params}")
+            
             response = requests.get(url, headers=headers, params=params, timeout=30)
+            
+            # Log response details
+            logger.debug(f"Response status code: {response.status_code}")
+            
             response.raise_for_status()
             result = response.json()
+            logger.debug(f"Template status response: {result}")
             return result
         except requests.exceptions.HTTPError as e:
-            error_message = e.response.text if e.response else str(e)
-            logger.error(f"Failed to get template status for '{template_name}': {error_message}")
-            raise Exception(f"Meta API error: {error_message}")
+            status_code = e.response.status_code if e.response else None
+            response_text = e.response.text if e.response else None
+            
+            # Try to parse error response
+            try:
+                error_data = e.response.json() if e.response else {}
+                error_message = error_data.get("error", {}).get("message", response_text)
+            except (json.JSONDecodeError, ValueError, TypeError):
+                error_message = response_text or str(e)
+            
+            logger.error(f"Failed to get template status for '{template_name}': HTTP {status_code} - {error_message}")
+            logger.debug(f"Response text: {response_text}")
+            raise Exception(f"Meta API error (HTTP {status_code}): {error_message}")
+        except requests.exceptions.RequestException as e:
+            error_msg = f"Request error: {str(e)}"
+            logger.error(f"Failed to get template status for '{template_name}': {error_msg}")
+            logger.debug(f"Error type: {type(e).__name__}")
+            raise Exception(error_msg)
         except Exception as e:
             logger.error(f"Failed to get template status for '{template_name}': {e}")
+            logger.debug(f"Exception type: {type(e).__name__}, Details: {str(e)}")
             raise
