@@ -18,10 +18,12 @@ from integrations.models import WhatsAppTemplate
 import json
 import logging
 import requests
+import time
 
 # Constants
 MAX_REJECTION_REASON_LENGTH = 500  # Maximum length for rejection reason in database
 MAX_ERROR_DISPLAY_LENGTH = 500  # Maximum length for raw response in command output
+RATE_LIMIT_DELAY = 1.5  # Delay in seconds between template creation requests
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +75,12 @@ class Command(BaseCommand):
             action='store_true',
             help='Enable verbose output with debug information including request/response payloads',
         )
+        parser.add_argument(
+            '--delay',
+            type=float,
+            default=RATE_LIMIT_DELAY,
+            help=f'Delay in seconds between template creation requests (default: {RATE_LIMIT_DELAY}s)',
+        )
 
     def handle(self, *args, **options):
         templates = get_all_templates()
@@ -81,6 +89,7 @@ class Command(BaseCommand):
         check_status = options['check_status']
         specific_template = options.get('template')
         verbose = options.get('verbose', False)
+        delay = options.get('delay', RATE_LIMIT_DELAY)
         
         # Set logging level based on verbose flag
         if verbose:
@@ -105,7 +114,7 @@ class Command(BaseCommand):
             return
 
         # Sync templates to Meta (new behavior)
-        self._sync_templates_to_meta(templates, verbose)
+        self._sync_templates_to_meta(templates, verbose, delay)
 
     def _display_templates(self, templates, output_format):
         """Display templates in text or JSON format."""
@@ -200,12 +209,13 @@ class Command(BaseCommand):
         return base1 == base2
 
 
-    def _sync_templates_to_meta(self, templates, verbose=False):
+    def _sync_templates_to_meta(self, templates, verbose=False, delay=RATE_LIMIT_DELAY):
         """Sync templates to Meta via Graph API.
         
         Args:
             templates: Dictionary of templates to sync
             verbose: Whether to enable verbose/debug output
+            delay: Delay in seconds between template creation requests
         """
         self.stdout.write(self.style.SUCCESS('=' * 80))
         self.stdout.write(self.style.SUCCESS('SYNCING TEMPLATES TO META'))
@@ -471,6 +481,13 @@ class Command(BaseCommand):
                 failed_count += 1
             
             self.stdout.write('')
+            
+            # Add delay between template processing to avoid rate limits
+            # Only delay if not the last template
+            if template_name != list(templates.keys())[-1]:
+                if verbose:
+                    self.stdout.write(self.style.WARNING(f"  Waiting {delay}s before next template..."))
+                time.sleep(delay)
 
         # Summary
         self.stdout.write(self.style.SUCCESS('=' * 80))
