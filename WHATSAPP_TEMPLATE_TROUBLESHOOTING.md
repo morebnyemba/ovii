@@ -1,5 +1,64 @@
 # WhatsApp Template Sync Issues - Troubleshooting Guide
 
+## 🆕 Recent Fixes (2025-12-17)
+
+### Issue: NameError and Missing Error Details
+
+**Problem**: The sync command was failing with `NameError: name 'verbose' is not defined` and showing no error details from Meta API (all fields showing as None).
+
+**Status**: ✅ **FIXED**
+
+**What Was Fixed**:
+1. ✅ Fixed `verbose` variable scope issue - no more NameError
+2. ✅ Added detailed error logging with HTTP status codes
+3. ✅ Added request payload logging (see what's being sent)
+4. ✅ Added response body logging (see what Meta returns)
+5. ✅ Added full error object display in verbose mode
+
+**How to Use the Enhanced Logging**:
+
+```bash
+# Run with --verbose flag to see detailed diagnostics
+docker compose exec backend python manage.py sync_whatsapp_templates --verbose
+```
+
+**What You'll Now See**:
+- ✅ Template payload being sent to Meta (JSON formatted)
+- ✅ HTTP status codes (e.g., 400, 403, 500)
+- ✅ Meta API error codes (e.g., 100, 200, 368)
+- ✅ Detailed error messages from Meta
+- ✅ FB Trace IDs for support tickets
+- ✅ Full error objects with all details
+
+**Example Output**:
+```
+Processing template: otp_verification
+  Template payload for Meta API:
+    {
+      "name": "otp_verification",
+      "category": "AUTHENTICATION",
+      "language": "en_US",
+      "components": [...]
+    }
+  ✗ Failed: Meta API error: Invalid parameter value
+    HTTP Status: 400
+    Error Code: 100
+    Error Type: OAuthException
+    Error Subcode: 2388008
+    Title: Invalid Template
+    Details: Template has duplicate variable placeholders
+    FB Trace ID: ABC123xyz
+    Full Error Object: {...}
+```
+
+**Next Steps After Running with --verbose**:
+1. Check the detailed error messages to identify the specific issue
+2. Review the request payload to see what's being sent
+3. Compare with Meta's template requirements
+4. Use the information below to fix the identified issues
+
+---
+
 ## Overview
 
 When syncing WhatsApp templates to Meta, some templates may fail with 400 Bad Request errors. This document explains common causes and solutions.
@@ -286,7 +345,32 @@ docker compose logs backend | grep -i "template"
 
 ## Getting More Details
 
-To see the exact error from Meta's API:
+### Method 1: Using the Verbose Flag (Recommended) 🆕
+
+The sync command now has enhanced logging. Run with `--verbose` to see detailed diagnostics:
+
+```bash
+# Run sync with verbose output
+docker compose exec backend python manage.py sync_whatsapp_templates --verbose
+```
+
+This will show:
+- Template payload being sent (JSON formatted)
+- HTTP status codes
+- Meta API error codes and messages
+- Full error response from Meta
+- Request/response details
+
+Check Docker logs for even more details:
+
+```bash
+# View detailed server logs
+docker compose logs -f backend | grep -A 30 "Creating template"
+```
+
+### Method 2: Manual API Testing (Advanced)
+
+To test individual templates and see raw API responses:
 
 ```bash
 # Run sync with verbose logging
