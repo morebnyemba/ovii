@@ -220,17 +220,23 @@ STATIC_URL = "/static/"
 # Using BASE_DIR makes it more portable, but your absolute path is also correct for a fixed deployment environment.
 STATIC_ROOT = os.getenv("STATIC_ROOT", BASE_DIR / "staticfiles")
 
-# Only add STATICFILES_DIRS if explicitly configured and the directory exists
-# This prevents the warning: "The directory '/path/to/static' in STATICFILES_DIRS does not exist"
-# By default, we don't use STATICFILES_DIRS in production
-STATICFILES_DIRS = []
-# Only add if STATICFILES_DIRS is explicitly configured in environment
+# STATICFILES_DIRS: Additional locations of static files
+# This setting defines additional locations where Django should look for static files
+# besides each app's "static" directory.
+# 
+# By default, we don't use STATICFILES_DIRS in production since we rely on each app's
+# static directory and STATIC_ROOT for collected static files.
+#
+# If you need to add custom static directories, set the STATICFILES_DIRS environment
+# variable as a comma-separated list of paths. The entrypoint script will create
+# these directories to prevent Django warnings.
+#
+# Example: STATICFILES_DIRS=/home/app/web/static,/home/app/web/extra_static
 if os.getenv("STATICFILES_DIRS"):
     static_dirs = os.getenv("STATICFILES_DIRS").split(",")
-    for static_dir_path in static_dirs:
-        static_dir = Path(static_dir_path.strip())
-        if static_dir.exists():
-            STATICFILES_DIRS.append(static_dir)
+    STATICFILES_DIRS = [Path(d.strip()) for d in static_dirs if d.strip()]
+else:
+    STATICFILES_DIRS = []
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR.parent / "mediafiles"

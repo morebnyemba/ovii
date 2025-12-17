@@ -280,6 +280,34 @@ class WhatsAppClient:
                 f"Failed to send WhatsApp template '{template_name}' to {phone_number}: {e}"
             )
             raise
+    
+    def _create_api_exception(self, error_msg: str, error_type: str = None, 
+                             status_code: int = None, error_code: str = None,
+                             additional_attrs: dict = None) -> Exception:
+        """
+        Helper method to create a structured exception with consistent attributes.
+        
+        Args:
+            error_msg: Main error message
+            error_type: Type of error (e.g., 'ConnectionError', 'Timeout')
+            status_code: HTTP status code if available
+            error_code: API error code if available
+            additional_attrs: Additional attributes to set on the exception
+            
+        Returns:
+            Exception with structured attributes
+        """
+        exception = Exception(error_msg)
+        exception.status_code = status_code
+        exception.error_code = error_code
+        exception.error_type = error_type
+        exception.is_duplicate = False
+        
+        if additional_attrs:
+            for key, value in additional_attrs.items():
+                setattr(exception, key, value)
+        
+        return exception
 
     def create_template(self, template_data: dict) -> dict:
         """
@@ -316,6 +344,8 @@ class WhatsAppClient:
         try:
             # Log the request for debugging
             logger.debug(f"Creating template '{template_data.get('name')}' with payload: {template_data}")
+            logger.debug(f"Request URL: {url}")
+            logger.debug(f"Request headers: Authorization=Bearer *****, Content-Type=application/json")
             
             response = requests.post(url, json=template_data, headers=headers, timeout=30)
             response.raise_for_status()
@@ -369,20 +399,45 @@ class WhatsAppClient:
             logger.debug(f"Failed request payload: {template_data}")
             
             # Create structured exception with status code and error code
-            exception = Exception(f"Meta API error: {error_message}")
-            exception.status_code = status_code
-            exception.error_code = error_code
-            exception.error_type = error_type
-            exception.error_subcode = error_subcode
-            exception.error_user_title = error_user_title
-            exception.error_user_msg = error_user_msg
-            exception.fbtrace_id = fbtrace_id
-            exception.full_error = error_data
+            additional_attrs = {
+                'error_subcode': error_subcode,
+                'error_user_title': error_user_title,
+                'error_user_msg': error_user_msg,
+                'fbtrace_id': fbtrace_id,
+                'full_error': error_data
+            }
+            exception = self._create_api_exception(
+                error_msg=f"Meta API error: {error_message}",
+                error_type=error_type,
+                status_code=status_code,
+                error_code=error_code,
+                additional_attrs=additional_attrs
+            )
             exception.is_duplicate = status_code == 400 and (error_code == 100 or "already exists" in error_message.lower())
             raise exception
+        except requests.exceptions.ConnectionError as e:
+            # Network connection error
+            error_msg = f"Network connection error: {str(e)}"
+            logger.error(f"Failed to create template '{template_data.get('name')}': {error_msg}")
+            logger.debug(f"Connection error details: {type(e).__name__} - {str(e)}")
+            raise self._create_api_exception(error_msg, error_type="ConnectionError")
+        except requests.exceptions.Timeout as e:
+            # Request timeout
+            error_msg = f"Request timeout after 30 seconds: {str(e)}"
+            logger.error(f"Failed to create template '{template_data.get('name')}': {error_msg}")
+            raise self._create_api_exception(error_msg, error_type="Timeout")
+        except requests.exceptions.RequestException as e:
+            # Other request-related errors
+            error_msg = f"Request error: {str(e)}"
+            logger.error(f"Failed to create template '{template_data.get('name')}': {error_msg}")
+            logger.debug(f"Request error details: {type(e).__name__} - {str(e)}")
+            raise self._create_api_exception(error_msg, error_type=type(e).__name__)
         except Exception as e:
-            logger.error(f"Failed to create template '{template_data.get('name')}': {e}")
-            raise
+            # Catch-all for unexpected errors
+            error_msg = f"Unexpected error: {str(e)}"
+            logger.error(f"Failed to create template '{template_data.get('name')}': {error_msg}")
+            logger.debug(f"Exception type: {type(e).__name__}, Details: {str(e)}")
+            raise self._create_api_exception(error_msg, error_type=type(e).__name__)
 
     def get_template_status(self, template_name: str) -> dict:
         """

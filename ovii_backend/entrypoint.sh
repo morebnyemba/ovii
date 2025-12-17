@@ -1,8 +1,30 @@
 #!/bin/sh
 
 # This script ensures that the directories used for volumes exist.
-# Note: /home/app/web/static is not needed as Django checks for it conditionally
 mkdir -p /home/app/web/staticfiles /home/app/web/mediafiles
+
+# Create any additional static directories specified in STATICFILES_DIRS environment variable
+# This prevents Django warnings about non-existent directories
+if [ -n "$STATICFILES_DIRS" ]; then
+    # Save IFS and set it to comma for splitting
+    OLD_IFS="$IFS"
+    IFS=','
+    
+    # Split STATICFILES_DIRS by comma and iterate
+    for dir in $STATICFILES_DIRS; do
+        # Trim leading and trailing whitespace
+        dir=$(echo "$dir" | xargs)
+        
+        # Create directory if not empty
+        if [ -n "$dir" ]; then
+            mkdir -p "$dir"
+            echo "Ensured static directory exists: $dir"
+        fi
+    done
+    
+    # Restore IFS
+    IFS="$OLD_IFS"
+fi
 
 # Execute the command passed to the container (e.g., from docker-compose.yml)
 exec "$@"
