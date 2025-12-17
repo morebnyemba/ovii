@@ -420,8 +420,20 @@ class WhatsAppClient:
             # Always log the raw response first for debugging
             logger.error(f"HTTP Error {status_code} when creating template '{template_name}'")
             logger.error(f"Response headers: {response_headers}")
+            
+            # Check content type to help diagnose non-JSON responses
+            content_type = response_headers.get('Content-Type', '') if response_headers else ''
+            if content_type:
+                logger.error(f"Response Content-Type: {content_type}")
+            
             if response_text:
-                logger.error(f"Raw response: {response_text}")
+                # Truncate very long responses for logging
+                max_log_length = 2000
+                if len(response_text) > max_log_length:
+                    logger.error(f"Raw response (truncated, first {max_log_length} chars): {response_text[:max_log_length]}...")
+                    logger.error(f"Full response length: {len(response_text)} characters")
+                else:
+                    logger.error(f"Raw response: {response_text}")
             else:
                 logger.error(f"Raw response: None (no response body available)")
             
@@ -433,9 +445,15 @@ class WhatsAppClient:
                 except (json.JSONDecodeError, ValueError, TypeError) as json_err:
                     json_parse_error = str(json_err)
                     logger.warning(f"Failed to parse error response as JSON: {json_parse_error}")
-                    logger.debug(f"Raw response text (length={len(response_text)}): {response_text}")
+                    logger.debug(f"Raw response text (length={len(response_text)}): {response_text[:500]}")
+                    
+                    # Check if response looks like HTML
+                    is_html = response_text.strip().startswith('<') or 'text/html' in content_type.lower()
+                    if is_html:
+                        logger.error("Response appears to be HTML instead of JSON - this may indicate a proxy, firewall, or Meta API infrastructure issue")
+                    
                     # Use raw text as fallback - store in error.message structure for consistency
-                    error_data = {"error": {"message": response_text}}
+                    error_data = {"error": {"message": response_text[:MAX_ERROR_MESSAGE_LENGTH]}}
             elif not response_obj:
                 # No response object available at all
                 logger.error("No response object available in HTTPError exception")
