@@ -30,20 +30,26 @@ Added URL button parameter support to handle manually created templates with URL
 
 2. **Updated `format_template_components()`** to include button parameters:
 ```python
+# Constants for button configuration
+FIRST_BUTTON_INDEX = "0"
+
 # Handle fallback for manually created templates with URL buttons
-if template.get("has_url_button_fallback", False):
-    if "code" in variables:
-        components.append({
-            "type": "button",
-            "sub_type": "url",
-            "index": "0",
-            "parameters": [
-                {
-                    "type": "text",
-                    "text": str(variables["code"])
-                }
-            ]
-        })
+# Some templates may have been created manually in Meta with URL buttons
+# instead of OTP buttons, requiring us to send button parameters
+if template.get("has_url_button_fallback", False) and "code" in variables:
+    # For OTP templates with URL button fallback, send the code as button parameter
+    # This handles the case where template was created with URL button instead of OTP button
+    components.append({
+        "type": "button",
+        "sub_type": "url",
+        "index": FIRST_BUTTON_INDEX,
+        "parameters": [
+            {
+                "type": "text",
+                "text": str(variables["code"])
+            }
+        ]
+    })
 ```
 
 ### Result

@@ -231,7 +231,13 @@ class WhatsAppTemplatesTestCase(TestCase):
         self.assertIsNone(template)
 
     def test_format_template_components(self):
-        """Test formatting template components with variables for OTP template."""
+        """
+        Test formatting template components for OTP template with URL button fallback.
+        
+        This test verifies that the OTP template correctly generates both body and button
+        components when the has_url_button_fallback flag is enabled. This handles the case
+        where templates were manually created in Meta with URL buttons instead of OTP buttons.
+        """
         variables = {"code": "123456"}
         components = format_template_components("otp_verification", variables)
         
