@@ -282,7 +282,6 @@ class WhatsAppWebhookView(APIView):
                 {"detail": "Verification failed"},
                 status=status.HTTP_403_FORBIDDEN
             )
-            )
 
     def post(self, request, *args, **kwargs):
         """
