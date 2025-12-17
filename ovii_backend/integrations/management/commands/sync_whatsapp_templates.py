@@ -279,21 +279,52 @@ class Command(BaseCommand):
                     else:
                         self.stdout.write(f"  Template does not exist in Meta, will create...")
                     
-                except (requests.RequestException, ValueError, KeyError) as check_error:
-                    # If checking fails, log it but continue with creation attempt
+                except requests.RequestException as check_error:
+                    # Network or HTTP errors
                     error_type = type(check_error).__name__
-                    logger.warning(f"Template status check failed for '{template_name}': {error_type} - {check_error}")
+                    error_msg = str(check_error)
+                    status_code = getattr(check_error, 'response', None)
+                    if status_code:
+                        status_code = status_code.status_code if hasattr(status_code, 'status_code') else None
+                    
+                    logger.warning(
+                        f"Template status check failed for '{template_name}': "
+                        f"{error_type} - {error_msg}"
+                    )
+                    
                     self.stdout.write(
                         self.style.WARNING(f"  ⚠  Could not check template status: {error_type}")
                     )
+                    if status_code:
+                        self.stdout.write(f"     HTTP Status: {status_code}")
+                    if verbose:
+                        self.stdout.write(f"     Details: {error_msg}")
+                    self.stdout.write(f"  Proceeding with creation attempt...")
+                except (ValueError, KeyError) as check_error:
+                    # Data parsing errors
+                    error_type = type(check_error).__name__
+                    logger.warning(
+                        f"Template status check failed for '{template_name}': "
+                        f"{error_type} - {check_error}"
+                    )
+                    self.stdout.write(
+                        self.style.WARNING(f"  ⚠  Could not parse template status: {error_type}")
+                    )
+                    if verbose:
+                        self.stdout.write(f"     Details: {check_error}")
                     self.stdout.write(f"  Proceeding with creation attempt...")
                 except Exception as check_error:
                     # Catch-all for unexpected errors
                     error_type = type(check_error).__name__
-                    logger.error(f"Unexpected error checking template '{template_name}': {error_type} - {check_error}")
+                    logger.error(
+                        f"Unexpected error checking template '{template_name}': "
+                        f"{error_type} - {check_error}"
+                    )
                     self.stdout.write(
                         self.style.WARNING(f"  ⚠  Unexpected error: {error_type}")
                     )
+                    if verbose:
+                        self.stdout.write(f"     Details: {check_error}")
                     self.stdout.write(f"  Proceeding with creation attempt...")
                 
                 # Convert to Meta format and create (only if we didn't skip above)
@@ -346,13 +377,17 @@ class Command(BaseCommand):
                         )
                         
                         # Display detailed error information if available
+                        status_code = getattr(api_error, 'status_code', None)
                         error_code = getattr(api_error, 'error_code', None)
                         error_type = getattr(api_error, 'error_type', None)
                         error_subcode = getattr(api_error, 'error_subcode', None)
                         error_user_title = getattr(api_error, 'error_user_title', None)
                         error_user_msg = getattr(api_error, 'error_user_msg', None)
                         fbtrace_id = getattr(api_error, 'fbtrace_id', None)
+                        raw_response = getattr(api_error, 'raw_response', None)
                         
+                        if status_code:
+                            self.stdout.write(f"    HTTP Status: {status_code}")
                         if error_code:
                             self.stdout.write(f"    Error Code: {error_code}")
                         if error_type:
@@ -365,6 +400,10 @@ class Command(BaseCommand):
                             self.stdout.write(f"    Details: {error_user_msg}")
                         if fbtrace_id:
                             self.stdout.write(f"    FB Trace ID: {fbtrace_id}")
+                        
+                        # In verbose mode, show raw response if available
+                        if verbose and raw_response:
+                            self.stdout.write(self.style.WARNING(f"    Raw Response: {raw_response[:500]}"))
                         
                         failed_count += 1
                 
