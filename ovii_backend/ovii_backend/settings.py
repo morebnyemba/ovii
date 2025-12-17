@@ -220,12 +220,17 @@ STATIC_URL = "/static/"
 # Using BASE_DIR makes it more portable, but your absolute path is also correct for a fixed deployment environment.
 STATIC_ROOT = os.getenv("STATIC_ROOT", BASE_DIR / "staticfiles")
 
-# Only add STATICFILES_DIRS if the static directory exists
+# Only add STATICFILES_DIRS if explicitly configured and the directory exists
 # This prevents the warning: "The directory '/path/to/static' in STATICFILES_DIRS does not exist"
+# By default, we don't use STATICFILES_DIRS in production
 STATICFILES_DIRS = []
-static_dir = BASE_DIR / "static"
-if static_dir.exists():
-    STATICFILES_DIRS.append(static_dir)
+# Only add if STATICFILES_DIRS is explicitly configured in environment
+if os.getenv("STATICFILES_DIRS"):
+    static_dirs = os.getenv("STATICFILES_DIRS").split(",")
+    for static_dir_path in static_dirs:
+        static_dir = Path(static_dir_path.strip())
+        if static_dir.exists():
+            STATICFILES_DIRS.append(static_dir)
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR.parent / "mediafiles"
