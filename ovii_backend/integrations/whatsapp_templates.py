@@ -28,6 +28,9 @@ WHATSAPP_TEMPLATES = {
         },
         "variables": ["code"],
         "example": {"body_text": [["123456"]]},
+        # If template was manually created with URL button, we need to provide parameter
+        # This is a fallback for improperly created templates
+        "has_url_button_fallback": True,
     },
     "transaction_received": {
         "name": "transaction_received",
@@ -322,6 +325,9 @@ def get_all_templates() -> dict:
 def format_template_components(template_name: str, variables: dict) -> list:
     """
     Format template components with provided variables.
+    
+    This function handles both properly created templates and improperly created
+    templates that have URL buttons requiring parameters.
 
     Args:
         template_name: Name of the template
@@ -345,6 +351,25 @@ def format_template_components(template_name: str, variables: dict) -> list:
 
         if parameters:
             components.append({"type": "body", "parameters": parameters})
+
+    # Handle fallback for manually created templates with URL buttons
+    # Some templates may have been created manually in Meta with URL buttons
+    # instead of OTP buttons, requiring us to send button parameters
+    if template.get("has_url_button_fallback", False):
+        # For OTP templates with URL button fallback, send the code as button parameter
+        # This handles the case where template was created with URL button instead of OTP button
+        if "code" in variables:
+            components.append({
+                "type": "button",
+                "sub_type": "url",
+                "index": "0",
+                "parameters": [
+                    {
+                        "type": "text",
+                        "text": str(variables["code"])
+                    }
+                ]
+            })
 
     return components
 
