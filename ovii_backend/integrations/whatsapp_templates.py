@@ -5,6 +5,9 @@ Description: WhatsApp message template definitions for Ovii.
 These templates need to be created and approved in Meta Business Manager.
 """
 
+# Button configuration constants
+FIRST_BUTTON_INDEX = "0"  # Index of the first button in WhatsApp template
+
 # Template definitions for WhatsApp Business Cloud API
 # These templates must be created and approved in Meta Business Manager before use
 
@@ -336,9 +339,6 @@ def format_template_components(template_name: str, variables: dict) -> list:
     Returns:
         list: Formatted components for WhatsApp API
     """
-    # Constants for button configuration
-    FIRST_BUTTON_INDEX = "0"
-    
     template = WHATSAPP_TEMPLATES.get(template_name)
     if not template:
         raise ValueError(f"Template '{template_name}' not found")
@@ -358,7 +358,8 @@ def format_template_components(template_name: str, variables: dict) -> list:
     # Handle fallback for manually created templates with URL buttons
     # Some templates may have been created manually in Meta with URL buttons
     # instead of OTP buttons, requiring us to send button parameters
-    if template.get("has_url_button_fallback", False) and "code" in variables:
+    code_value = variables.get("code", "").strip()
+    if template.get("has_url_button_fallback", False) and code_value:
         # For OTP templates with URL button fallback, send the code as button parameter
         # This handles the case where template was created with URL button instead of OTP button
         components.append({
@@ -368,7 +369,7 @@ def format_template_components(template_name: str, variables: dict) -> list:
             "parameters": [
                 {
                     "type": "text",
-                    "text": str(variables["code"])
+                    "text": code_value
                 }
             ]
         })
