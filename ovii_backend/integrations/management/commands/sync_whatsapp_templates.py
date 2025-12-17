@@ -236,15 +236,19 @@ class Command(BaseCommand):
         failed_count = 0
         skipped_count = 0
         
-        # Track template position for rate limiting
-        template_list = list(templates.items())
-        total_templates = len(template_list)
-        
         # Track which errors have shown raw response to avoid duplicates
         raw_response_shown = set()
+        
+        # Get total count
+        total_templates = len(templates)
+        current_position = 0
 
-        for idx, (template_name, template_data) in enumerate(template_list, start=1):
+        for template_name, template_data in templates.items():
+            current_position += 1
             self.stdout.write(f"Processing template: {template_name}")
+            
+            # Track if we attempted to create this template (for rate limiting delay)
+            attempted_creation = False
             
             try:
                 # Get or create database record
@@ -377,6 +381,7 @@ class Command(BaseCommand):
                 logger.debug(f"Converted template '{template_name}' to Meta format: {json.dumps(meta_payload, indent=2)}")
                 
                 # Create template in Meta
+                attempted_creation = True  # Mark that we're attempting creation
                 try:
                     response = client.create_template(meta_payload)
                     
@@ -491,8 +496,8 @@ class Command(BaseCommand):
             self.stdout.write('')
             
             # Add delay between template processing to avoid rate limits
-            # Only delay if not the last template
-            if idx < total_templates:
+            # Only delay if we attempted creation and this isn't the last template
+            if attempted_creation and current_position < total_templates:
                 if verbose:
                     self.stdout.write(self.style.WARNING(f"  Waiting {delay}s before next template..."))
                 time.sleep(delay)
