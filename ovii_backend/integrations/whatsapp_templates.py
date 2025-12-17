@@ -336,6 +336,9 @@ def format_template_components(template_name: str, variables: dict) -> list:
     Returns:
         list: Formatted components for WhatsApp API
     """
+    # Constants for button configuration
+    FIRST_BUTTON_INDEX = "0"
+    
     template = WHATSAPP_TEMPLATES.get(template_name)
     if not template:
         raise ValueError(f"Template '{template_name}' not found")
@@ -355,21 +358,20 @@ def format_template_components(template_name: str, variables: dict) -> list:
     # Handle fallback for manually created templates with URL buttons
     # Some templates may have been created manually in Meta with URL buttons
     # instead of OTP buttons, requiring us to send button parameters
-    if template.get("has_url_button_fallback", False):
+    if template.get("has_url_button_fallback", False) and "code" in variables:
         # For OTP templates with URL button fallback, send the code as button parameter
         # This handles the case where template was created with URL button instead of OTP button
-        if "code" in variables:
-            components.append({
-                "type": "button",
-                "sub_type": "url",
-                "index": "0",
-                "parameters": [
-                    {
-                        "type": "text",
-                        "text": str(variables["code"])
-                    }
-                ]
-            })
+        components.append({
+            "type": "button",
+            "sub_type": "url",
+            "index": FIRST_BUTTON_INDEX,
+            "parameters": [
+                {
+                    "type": "text",
+                    "text": str(variables["code"])
+                }
+            ]
+        })
 
     return components
 
