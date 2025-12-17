@@ -17,7 +17,7 @@ WHATSAPP_TEMPLATES = {
         "structure": {
             "header": None,
             "body": "Your Ovii verification code is {{1}}. This code expires in 5 minutes. Do not share this code with anyone.",
-            "footer": "This code is confidential",
+            "footer": None,  # AUTHENTICATION templates cannot have footers per Meta requirements
             "buttons": [
                 {
                     "type": "OTP",
@@ -375,11 +375,17 @@ def convert_template_to_meta_format(template_name: str) -> dict:
         components.append(body_component)
     
     # Add FOOTER component if present
+    # Note: AUTHENTICATION templates cannot have footers per Meta requirements
     if structure.get("footer"):
-        components.append({
-            "type": "FOOTER",
-            "text": structure["footer"]
-        })
+        if template["category"] == "AUTHENTICATION":
+            # Log warning but don't add footer for AUTHENTICATION templates
+            # This is a Meta API requirement
+            pass
+        else:
+            components.append({
+                "type": "FOOTER",
+                "text": structure["footer"]
+            })
     
     # Add BUTTONS component if present
     if structure.get("buttons") and len(structure["buttons"]) > 0:
