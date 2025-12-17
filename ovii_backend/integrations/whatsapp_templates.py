@@ -372,6 +372,13 @@ def convert_template_to_meta_format(template_name: str) -> dict:
     components = []
     structure = template["structure"]
     
+    # Check if this is an OTP authentication template (used in multiple places below)
+    has_otp_button = any(
+        button.get("type") == "OTP" 
+        for button in structure.get("buttons", [])
+    )
+    is_otp_auth_template = template["category"] == "AUTHENTICATION" and has_otp_button
+    
     # Add HEADER component if present
     if structure.get("header"):
         components.append({
@@ -388,12 +395,7 @@ def convert_template_to_meta_format(template_name: str) -> dict:
         
         # For AUTHENTICATION templates with OTP buttons, use add_security_recommendation
         # instead of the text field (Meta API requirement)
-        has_otp_button = any(
-            button.get("type") == "OTP" 
-            for button in structure.get("buttons", [])
-        )
-        
-        if template["category"] == "AUTHENTICATION" and has_otp_button:
+        if is_otp_auth_template:
             # For OTP authentication templates, Meta automatically adds security text
             # We only provide the code via add_security_recommendation
             # Meta will auto-generate the body text in the format: "<CODE> is your verification code."
@@ -428,14 +430,8 @@ def convert_template_to_meta_format(template_name: str) -> dict:
     # Note: AUTHENTICATION templates with OTP buttons don't need explicit button components
     # Meta automatically adds the "Copy code" button for OTP authentication templates
     if structure.get("buttons") and len(structure["buttons"]) > 0:
-        # Check if this is an OTP authentication template
-        has_otp_button = any(
-            button.get("type") == "OTP" 
-            for button in structure.get("buttons", [])
-        )
-        
         # Only add BUTTONS component if NOT an OTP authentication template
-        if not (template["category"] == "AUTHENTICATION" and has_otp_button):
+        if not is_otp_auth_template:
             components.append({
                 "type": "BUTTONS",
                 "buttons": structure["buttons"]
