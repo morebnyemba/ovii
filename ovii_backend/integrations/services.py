@@ -4,12 +4,14 @@ Date: 2024-05-21
 Description: Service layer for handling third-party integrations like EcoCash and WhatsApp.
 """
 
-import requests
-from django.conf import settings
-from decimal import Decimal
 import hashlib
+import json
 import logging
 import traceback
+from decimal import Decimal
+
+import requests
+from django.conf import settings
 from heyoo import WhatsApp
 
 logger = logging.getLogger(__name__)
@@ -374,7 +376,7 @@ class WhatsAppClient:
                 try:
                     error_data = e.response.json()
                     logger.debug(f"Parsed error response JSON: {error_data}")
-                except (ValueError, TypeError) as json_err:
+                except (json.JSONDecodeError, ValueError, TypeError) as json_err:
                     json_parse_error = str(json_err)
                     logger.warning(f"Failed to parse error response as JSON: {json_parse_error}")
                     logger.debug(f"Raw response text: {response_text}")
@@ -461,11 +463,10 @@ class WhatsAppClient:
             )
             
             # Check for duplicate template error
-            is_duplicate = False
-            if status_code == 400:
-                if error_code == 100 or (error_message and "already exists" in error_message.lower()):
-                    is_duplicate = True
-            exception.is_duplicate = is_duplicate
+            exception.is_duplicate = (
+                status_code == 400 and 
+                (error_code == 100 or (error_message and "already exists" in error_message.lower()))
+            )
             
             raise exception
         except requests.exceptions.ConnectionError as e:
@@ -571,7 +572,7 @@ class WhatsAppClient:
             try:
                 error_data = e.response.json() if e.response else {}
                 error_message = error_data.get("error", {}).get("message", response_text)
-            except (ValueError, TypeError):
+            except (json.JSONDecodeError, ValueError, TypeError):
                 error_message = response_text or str(e)
             
             logger.error(f"Failed to get template status for '{template_name}': HTTP {status_code} - {error_message}")

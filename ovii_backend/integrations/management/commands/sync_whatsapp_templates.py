@@ -300,9 +300,8 @@ class Command(BaseCommand):
                     # Network or HTTP errors
                     error_type = type(check_error).__name__
                     error_msg = str(check_error)
-                    status_code = getattr(check_error, 'response', None)
-                    if status_code:
-                        status_code = status_code.status_code if hasattr(status_code, 'status_code') else None
+                    response = getattr(check_error, 'response', None)
+                    status_code = response.status_code if response and hasattr(response, 'status_code') else None
                     
                     logger.warning(
                         f"Template status check failed for '{template_name}': "
