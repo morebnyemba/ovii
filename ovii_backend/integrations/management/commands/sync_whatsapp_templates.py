@@ -21,6 +21,7 @@ import requests
 
 # Constants
 MAX_REJECTION_REASON_LENGTH = 500  # Maximum length for rejection reason in database
+MAX_ERROR_DISPLAY_LENGTH = 500  # Maximum length for raw response in command output
 
 logger = logging.getLogger(__name__)
 
@@ -403,7 +404,8 @@ class Command(BaseCommand):
                         
                         # In verbose mode, show raw response if available
                         if verbose and raw_response:
-                            self.stdout.write(self.style.WARNING(f"    Raw Response: {raw_response[:500]}"))
+                            truncated_response = raw_response[:MAX_ERROR_DISPLAY_LENGTH] if len(raw_response) > MAX_ERROR_DISPLAY_LENGTH else raw_response
+                            self.stdout.write(self.style.WARNING(f"    Raw Response: {truncated_response}"))
                         
                         failed_count += 1
                 

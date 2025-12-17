@@ -13,6 +13,9 @@ from heyoo import WhatsApp
 
 logger = logging.getLogger(__name__)
 
+# Constants for error handling
+MAX_ERROR_MESSAGE_LENGTH = 500  # Maximum length for error message in logs/display
+
 
 class EcoCashClient:
     """
@@ -374,8 +377,8 @@ class WhatsAppClient:
                     json_parse_error = str(json_err)
                     logger.warning(f"Failed to parse error response as JSON: {json_parse_error}")
                     logger.debug(f"Raw response text: {response_text}")
-                    # Use raw text as fallback
-                    error_data = {"message": response_text, "raw_response": response_text}
+                    # Use raw text as fallback - store in message field for display
+                    error_data = {"message": response_text}
             
             # Extract detailed error information with multiple fallback strategies
             error_obj = error_data.get("error", {}) if isinstance(error_data, dict) else {}
@@ -399,7 +402,7 @@ class WhatsAppClient:
             
             if not error_message and response_text:
                 # Use truncated response text as last resort
-                error_message = response_text[:500] if len(response_text) > 500 else response_text
+                error_message = response_text[:MAX_ERROR_MESSAGE_LENGTH] if len(response_text) > MAX_ERROR_MESSAGE_LENGTH else response_text
             
             if not error_message:
                 error_message = str(e)
@@ -432,10 +435,6 @@ class WhatsAppClient:
             
             # Log detailed error
             logger.error("Failed to create WhatsApp template:\n  " + "\n  ".join(error_details))
-            
-            # Log raw response for debugging if JSON parsing failed
-            if json_parse_error and response_text:
-                logger.debug(f"Raw response text: {response_text}")
             
             # Log the full error response for debugging
             logger.debug(f"Full error response: {error_data}")
