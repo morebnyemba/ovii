@@ -16,6 +16,27 @@ from notifications.tasks import send_email_task, send_sms_task, send_push_task, 
 logger = logging.getLogger(__name__)
 
 
+def _send_whatsapp_template_notification(user, template_name, variables):
+    """
+    Helper function to send WhatsApp template notifications.
+    This uses WhatsApp approved templates instead of plain text messages.
+    """
+    if not user.phone_number:
+        return
+    
+    try:
+        from notifications.services import send_whatsapp_template
+        
+        send_whatsapp_template(
+            phone_number=str(user.phone_number),
+            template_name=template_name,
+            variables=variables,
+        )
+        logger.info(f"WhatsApp template '{template_name}' sent to user {user.id}")
+    except Exception as e:
+        logger.error(f"Failed to send WhatsApp template '{template_name}' to user {user.id}: {e}")
+
+
 def _create_and_send_notification(user, title, message):
     """
     Helper function to create notification records and trigger email, SMS, push, and in-app.
@@ -109,6 +130,31 @@ def handle_transaction_completed(sender, **kwargs):
         # Email, SMS, and Push notifications
         _create_and_send_notification(sender_user, "Transfer Sent", sender_msg)
         _create_and_send_notification(receiver_user, "Money Received", receiver_msg)
+        
+        # WhatsApp Template notifications
+        # Send template to sender
+        _send_whatsapp_template_notification(
+            sender_user,
+            "transaction_sent",
+            {
+                "amount_with_currency": f"{amount} {currency}",
+                "recipient_name": receiver_user.get_full_name() or str(receiver_user.phone_number),
+                "new_balance_with_currency": f"{transaction.wallet.balance} {currency}",
+                "transaction_id": str(transaction.id),
+            }
+        )
+        
+        # Send template to receiver
+        _send_whatsapp_template_notification(
+            receiver_user,
+            "transaction_received",
+            {
+                "amount_with_currency": f"{amount} {currency}",
+                "sender_name": sender_user.get_full_name() or str(sender_user.phone_number),
+                "new_balance_with_currency": f"{transaction.related_wallet.balance} {currency}",
+                "transaction_id": str(transaction.id),
+            }
+        )
 
     elif (
         tx_type == Transaction.TransactionType.DEPOSIT and receiver_user
@@ -123,6 +169,17 @@ def handle_transaction_completed(sender, **kwargs):
         # Email, SMS, and Push notifications
         _create_and_send_notification(sender_user, "Deposit Completed", agent_msg)
         _create_and_send_notification(receiver_user, "Money Deposited", customer_msg)
+        
+        # WhatsApp Template notification for customer (deposit confirmed)
+        _send_whatsapp_template_notification(
+            receiver_user,
+            "deposit_confirmed",
+            {
+                "amount_with_currency": f"{amount} {currency}",
+                "new_balance_with_currency": f"{transaction.related_wallet.balance} {currency}",
+                "transaction_id": str(transaction.id),
+            }
+        )
 
     elif (
         tx_type == Transaction.TransactionType.WITHDRAWAL and receiver_user
@@ -138,6 +195,17 @@ def handle_transaction_completed(sender, **kwargs):
         # Email, SMS, and Push notifications
         _create_and_send_notification(sender_user, "Cash-out Successful", customer_msg)
         _create_and_send_notification(receiver_user, "Cash-out Received", agent_msg)
+        
+        # WhatsApp Template notification for customer (withdrawal processed)
+        _send_whatsapp_template_notification(
+            sender_user,
+            "withdrawal_processed",
+            {
+                "amount_with_currency": f"{amount} {currency}",
+                "new_balance_with_currency": f"{transaction.wallet.balance} {currency}",
+                "transaction_id": str(transaction.id),
+            }
+        )
 
     # --- Commission Transaction Notifications ---
     elif tx_type == Transaction.TransactionType.COMMISSION:
@@ -149,5 +217,30 @@ def handle_transaction_completed(sender, **kwargs):
     # --- Webhook for Merchant Payments ---
     # If the transaction is a payment and the receiver is a merchant, trigger a webhook.
     if transaction.transaction_type == Transaction.TransactionType.PAYMENT:
-        if hasattr(receiver_user, "merchant_profile"):
+        if hasattr(receiver_user, "merchant_profile") and receiver_user:
             send_payment_webhook.delay(transaction.id)
+            
+            # Send WhatsApp template notifications for merchant payments
+            # Customer notification (payment sent)
+            _send_whatsapp_template_notification(
+                sender_user,
+                "payment_sent",
+                {
+                    "amount_with_currency": f"{amount} {currency}",
+                    "merchant_name": receiver_user.get_full_name() or str(receiver_user.phone_number),
+                    "new_balance_with_currency": f"{transaction.wallet.balance} {currency}",
+                    "transaction_id": str(transaction.id),
+                }
+            )
+            
+            # Merchant notification (payment received)
+            _send_whatsapp_template_notification(
+                receiver_user,
+                "payment_received",
+                {
+                    "amount_with_currency": f"{amount} {currency}",
+                    "customer_name": sender_user.get_full_name() or str(sender_user.phone_number),
+                    "new_balance_with_currency": f"{transaction.related_wallet.balance} {currency}",
+                    "transaction_id": str(transaction.id),
+                }
+            )

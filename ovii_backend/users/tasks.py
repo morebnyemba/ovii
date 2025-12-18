@@ -66,19 +66,47 @@ def create_user_wallet(user_id: int):
 @shared_task
 def send_welcome_notification(user_id: int):
     """
-    Sends a welcome notification to a user via WebSocket after successful registration.
+    Sends a welcome notification to a user via WebSocket and WhatsApp after successful registration.
 
     This task is executed asynchronously by a Celery worker. It retrieves the
-    channel layer and sends a message to the user's private notification group.
+    channel layer and sends a message to the user's private notification group,
+    and also sends a WhatsApp template message.
     """
-    channel_layer = get_channel_layer()
-    room_group_name = f"user_{user_id}_notifications"
-    message = {
-        "type": "user.notification",
-        "message": "Welcome to Ovii! Thank you for registering.",
-    }
-    async_to_sync(channel_layer.group_send)(room_group_name, message)
-    return f"Welcome notification sent to user {user_id}"
+    try:
+        user = OviiUser.objects.get(id=user_id)
+        
+        # Send WebSocket notification
+        channel_layer = get_channel_layer()
+        room_group_name = f"user_{user_id}_notifications"
+        message = {
+            "type": "user.notification",
+            "message": "Welcome to Ovii! Thank you for registering.",
+        }
+        async_to_sync(channel_layer.group_send)(room_group_name, message)
+        
+        # Send WhatsApp template notification
+        if user.phone_number:
+            try:
+                from notifications.services import send_whatsapp_template
+                
+                # Get user's first name, fallback to phone number if no name
+                user_name = user.first_name if user.first_name else str(user.phone_number)
+                
+                send_whatsapp_template(
+                    phone_number=str(user.phone_number),
+                    template_name="welcome_message",
+                    variables={
+                        "user_name": user_name,
+                    },
+                )
+                logger.info(f"Welcome WhatsApp template sent to user {user_id}")
+            except Exception as e:
+                logger.error(f"Failed to send welcome WhatsApp template to user {user_id}: {e}")
+        
+        return f"Welcome notification sent to user {user_id}"
+    except OviiUser.DoesNotExist:
+        logger.error(f"User {user_id} not found for welcome notification")
+        return f"User {user_id} not found"
 
 
 @shared_task
@@ -131,9 +159,8 @@ def process_referral_bonus(referral_id: int):
                     phone_number=str(referral.referrer.phone_number),
                     template_name="referral_bonus_credited",
                     variables={
-                        "bonus_amount": str(referral.referrer_bonus),
-                        "currency": referral.referrer.wallet.currency,
-                        "new_balance": str(referral.referrer.wallet.balance),
+                        "bonus_amount_with_currency": f"{referral.referrer_bonus} {referral.referrer.wallet.currency}",
+                        "new_balance_with_currency": f"{referral.referrer.wallet.balance} {referral.referrer.wallet.currency}",
                     },
                 )
             except Exception as e:
@@ -150,9 +177,8 @@ def process_referral_bonus(referral_id: int):
                     phone_number=str(referral.referred.phone_number),
                     template_name="referral_bonus_credited",
                     variables={
-                        "bonus_amount": str(referral.referred_bonus),
-                        "currency": referral.referred.wallet.currency,
-                        "new_balance": str(referral.referred.wallet.balance),
+                        "bonus_amount_with_currency": f"{referral.referred_bonus} {referral.referred.wallet.currency}",
+                        "new_balance_with_currency": f"{referral.referred.wallet.balance} {referral.referred.wallet.currency}",
                     },
                 )
             except Exception as e:
