@@ -354,7 +354,12 @@ export default function DashboardPage() {
           </div>
         ) : transactions.length > 0 ? (
           <ul className="mt-4 space-y-3">
-            {transactions.slice(0, 3).map((tx, index) => (
+            {transactions.slice(0, 3).map((tx, index) => {
+              // Determine if this is an outgoing or incoming transaction
+              const userPhone = user?.phone_number;
+              const isOutgoing = tx.sender === userPhone;
+              
+              return (
               <motion.li
                 key={tx.id}
                 initial={{ opacity: 0, x: -20 }}
@@ -363,23 +368,26 @@ export default function DashboardPage() {
                 className="flex items-center justify-between p-3 rounded-lg transition-colors hover:bg-lightGray"
               >
                 <div className="flex items-center gap-4">
-                  <div className={`flex items-center justify-center w-10 h-10 rounded-full ${tx.transaction_type === 'TRANSFER' ? 'bg-red-100' : 'bg-green-100'}`}>
-                    {tx.transaction_type === 'TRANSFER' ? (
+                  <div className={`flex items-center justify-center w-10 h-10 rounded-full ${isOutgoing ? 'bg-red-100' : 'bg-green-100'}`}>
+                    {isOutgoing ? (
                       <FiArrowUpRight style={{ color: COLORS.coral }} />
                     ) : (
                       <FiArrowDownLeft style={{ color: COLORS.mint }} />
                     )}
                   </div>
                   <div>
-                    <p className="font-semibold" style={{ color: COLORS.darkIndigo }}>{tx.transaction_type === 'TRANSFER' ? 'Sent to' : 'Received from'} {tx.receiver || 'Unknown'}</p>
+                    <p className="font-semibold" style={{ color: COLORS.darkIndigo }}>
+                      {isOutgoing ? 'Sent to' : 'Received from'} {isOutgoing ? (tx.receiver || 'Unknown') : (tx.sender || 'Unknown')}
+                    </p>
                     <p className="text-sm text-gray-500">{new Date(tx.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
                   </div>
                 </div>
-                <p className={`font-bold ${tx.transaction_type === 'TRANSFER' ? 'text-red-500' : 'text-green-500'}`}>
-                  {tx.transaction_type === 'TRANSFER' ? '-' : '+'} {wallet.currency} {tx.amount}
+                <p className={`font-bold ${isOutgoing ? 'text-red-500' : 'text-green-500'}`}>
+                  {isOutgoing ? '-' : '+'} {wallet.currency} {tx.amount}
                 </p>
               </motion.li>
-            ))}
+              );
+            })}
           </ul>
         ) : (
           <div className="mt-4 text-center py-8" style={{ color: COLORS.darkIndigo }}>

@@ -68,6 +68,7 @@ export interface Wallet {
 
 export interface Transaction {
   id: number;
+  transaction_reference: string;
   sender: string;
   receiver: string | null;
   amount: string;

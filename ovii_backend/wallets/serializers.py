@@ -48,6 +48,7 @@ class TransactionSerializer(serializers.ModelSerializer):
         model = Transaction
         fields = [
             "id",
+            "transaction_reference",
             "sender",
             "receiver",
             "amount",
