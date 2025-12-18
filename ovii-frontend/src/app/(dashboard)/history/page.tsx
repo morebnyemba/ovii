@@ -37,6 +37,7 @@ const TransactionSkeleton = () => (
 
 export default function HistoryPage() {
   const {
+    user,
     transactions,
     wallet,
     fetchTransactions,
@@ -147,27 +148,43 @@ export default function HistoryPage() {
             className="space-y-3"
           >
             {transactions.map((tx, index) => {
-              // Determine if this is an outgoing or incoming transaction based on type
-              // TRANSFER, WITHDRAWAL, PAYMENT, COMMISSION are outgoing (debit)
-              // DEPOSIT is incoming (credit)
-              const isOutgoing = ['TRANSFER', 'WITHDRAWAL', 'PAYMENT', 'COMMISSION'].includes(tx.transaction_type);
-              const isIncoming = tx.transaction_type === 'DEPOSIT';
+              // Determine if this is an outgoing or incoming transaction
+              // Check if the current user is the sender or receiver
+              const userPhone = user?.phone_number;
+              const isOutgoing = tx.sender === userPhone;
+              const isIncoming = tx.receiver === userPhone;
               
-              // Determine display text based on transaction type
+              // Safety check: if neither matches, assume incoming to avoid confusion
+              // (This shouldn't happen due to backend filtering, but handle it gracefully)
+              const direction = isOutgoing ? 'outgoing' : 'incoming';
+              
+              // Determine display text based on transaction type and direction
               const getTransactionLabel = () => {
-                switch (tx.transaction_type) {
-                  case 'TRANSFER':
-                    return `Sent to ${tx.receiver || 'Unknown'}`;
-                  case 'DEPOSIT':
-                    return `Received from ${tx.sender || 'Agent'}`;
-                  case 'WITHDRAWAL':
-                    return `Cash-out to ${tx.receiver || 'Agent'}`;
-                  case 'PAYMENT':
-                    return `Payment to ${tx.receiver || 'Merchant'}`;
-                  case 'COMMISSION':
-                    return 'Commission Fee';
-                  default:
-                    return tx.transaction_type;
+                if (isOutgoing) {
+                  switch (tx.transaction_type) {
+                    case 'TRANSFER':
+                      return `Sent to ${tx.receiver || 'Unknown'}`;
+                    case 'WITHDRAWAL':
+                      return `Cash-out to ${tx.receiver || 'Agent'}`;
+                    case 'PAYMENT':
+                      return `Payment to ${tx.receiver || 'Merchant'}`;
+                    case 'COMMISSION':
+                      return 'Commission Fee';
+                    default:
+                      return `Sent ${tx.transaction_type}`;
+                  }
+                } else {
+                  // Incoming transaction (or unclear - treat as incoming)
+                  switch (tx.transaction_type) {
+                    case 'TRANSFER':
+                      return `Received from ${tx.sender || 'Unknown'}`;
+                    case 'DEPOSIT':
+                      return `Received from ${tx.sender || 'Agent'}`;
+                    case 'PAYMENT':
+                      return `Payment from ${tx.sender || 'Customer'}`;
+                    default:
+                      return `Received ${tx.transaction_type}`;
+                  }
                 }
               };
 

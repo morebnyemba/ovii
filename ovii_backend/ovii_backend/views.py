@@ -80,7 +80,7 @@ class EcoCashTopUpRequestView(generics.GenericAPIView):
                             "amount": str(amount),
                             "currency": user.wallet.currency,
                             "reason": "Could not connect to payment service",
-                            "transaction_id": str(pending_transaction.id),
+                            "transaction_id": pending_transaction.transaction_reference,
                         },
                     )
                 except Exception as whatsapp_error:

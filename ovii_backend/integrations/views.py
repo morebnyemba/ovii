@@ -118,7 +118,7 @@ class PaynowTopUpRequestView(generics.GenericAPIView):
                             "amount": str(amount),
                             "currency": user.wallet.currency,
                             "reason": "Payment gateway error",
-                            "transaction_id": str(pending_tx.id),
+                            "transaction_id": pending_tx.transaction_reference,
                         },
                     )
                 except Exception as whatsapp_error:
@@ -195,7 +195,7 @@ class PaynowWebhookView(APIView):
                             "amount": str(tx_to_update.amount),
                             "currency": tx_to_update.wallet.currency,
                             "reason": f"Payment status: {payment_status}",
-                            "transaction_id": str(tx_to_update.id),
+                            "transaction_id": tx_to_update.transaction_reference,
                         },
                     )
                 except Exception as e:

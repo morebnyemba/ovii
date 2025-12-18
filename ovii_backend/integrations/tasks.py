@@ -126,7 +126,7 @@ def process_ecocash_withdrawal(self, user_id: int, amount_str: str):
                             "amount": str(amount),
                             "currency": user.wallet.currency,
                             "reason": "External service unavailable",
-                            "transaction_id": str(internal_tx.id),
+                            "transaction_id": internal_tx.transaction_reference,
                         },
                     )
                 except Exception as whatsapp_error:

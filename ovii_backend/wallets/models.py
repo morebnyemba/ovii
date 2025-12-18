@@ -4,6 +4,7 @@ Date: 2024-05-20
 Description: Defines the Wallet and Transaction models for the wallets app.
 """
 
+import uuid
 from decimal import Decimal
 from django.db import models
 from django.conf import settings
@@ -176,6 +177,15 @@ class Transaction(models.Model):
     # Timestamp for when the transaction was initiated.
     timestamp = models.DateTimeField(_("timestamp"), auto_now_add=True)
 
+    # Human-readable transaction reference with prefix (TR, CO, MP) and 8-digit UUID
+    transaction_reference = models.CharField(
+        _("transaction reference"),
+        max_length=20,
+        unique=True,
+        editable=False,
+        help_text=_("Unique transaction reference (e.g., TR-A1B2C3D4)"),
+    )
+
     # --- Denormalized fields for historical accuracy and query performance ---
     # Store the identifier of the sender and receiver at the time of the transaction.
     # This is crucial because a user might change their phone number, but the transaction
@@ -195,6 +205,31 @@ class Transaction(models.Model):
 
     description = models.CharField(_("description"), max_length=255, blank=True)
 
+    def _generate_transaction_reference(self):
+        """
+        Generate a unique transaction reference based on transaction type.
+        Format: PREFIX-XXXXXXXX (8 hexadecimal characters from UUID)
+        
+        Prefixes:
+        - TR: Transfer
+        - CO: Cash-out (Withdrawal)
+        - MP: Merchant Payment
+        - DP: Deposit
+        - CM: Commission
+        """
+        prefix_map = {
+            self.TransactionType.TRANSFER: "TR",
+            self.TransactionType.WITHDRAWAL: "CO",
+            self.TransactionType.PAYMENT: "MP",
+            self.TransactionType.DEPOSIT: "DP",
+            self.TransactionType.COMMISSION: "CM",
+        }
+        
+        prefix = prefix_map.get(self.transaction_type, "TR")
+        # Generate 8-character hexadecimal from UUID
+        unique_id = uuid.uuid4().hex[:8].upper()
+        return f"{prefix}-{unique_id}"
+
     def __str__(self):
         """Returns a string representation of the transaction."""
         if self.related_wallet:
@@ -206,4 +241,23 @@ class Transaction(models.Model):
         self.sender_identifier = str(self.wallet.user.phone_number)
         if self.related_wallet:
             self.receiver_identifier = str(self.related_wallet.user.phone_number)
+        
+        # Generate transaction reference if not already set
+        if not self.transaction_reference:
+            self.transaction_reference = self._generate_transaction_reference()
+            # Ensure uniqueness - regenerate if collision occurs
+            # Note: UUID collisions are extremely rare (1 in 2^32 for 8 hex chars)
+            # This loop will almost never execute more than once
+            max_attempts = 5  # Safety limit to prevent infinite loop
+            attempts = 0
+            while Transaction.objects.filter(transaction_reference=self.transaction_reference).exists():
+                if attempts >= max_attempts:
+                    # This should never happen, but log it if it does
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.error(f"Failed to generate unique transaction reference after {max_attempts} attempts")
+                    break
+                self.transaction_reference = self._generate_transaction_reference()
+                attempts += 1
+        
         super().save(*args, **kwargs)
