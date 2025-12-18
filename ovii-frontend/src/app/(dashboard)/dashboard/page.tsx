@@ -365,24 +365,27 @@ export default function DashboardPage() {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.3, delay: index * 0.1 }}
-                className="flex items-center justify-between p-3 rounded-lg transition-colors hover:bg-lightGray"
+                className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 rounded-lg transition-colors hover:bg-lightGray gap-2"
               >
-                <div className="flex items-center gap-4">
-                  <div className={`flex items-center justify-center w-10 h-10 rounded-full ${isOutgoing ? 'bg-red-100' : 'bg-green-100'}`}>
+                <div className="flex items-center gap-4 flex-1 min-w-0">
+                  <div className={`flex items-center justify-center w-10 h-10 rounded-full flex-shrink-0 ${isOutgoing ? 'bg-red-100' : 'bg-green-100'}`}>
                     {isOutgoing ? (
                       <FiArrowUpRight style={{ color: COLORS.coral }} />
                     ) : (
                       <FiArrowDownLeft style={{ color: COLORS.mint }} />
                     )}
                   </div>
-                  <div>
-                    <p className="font-semibold" style={{ color: COLORS.darkIndigo }}>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold truncate" style={{ color: COLORS.darkIndigo }}>
                       {isOutgoing ? 'Sent to' : 'Received from'} {isOutgoing ? (tx.receiver || 'Unknown') : (tx.sender || 'Unknown')}
                     </p>
                     <p className="text-sm text-gray-500">{new Date(tx.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
+                    {tx.transaction_reference && (
+                      <p className="text-xs text-gray-400 mt-1">Ref: {tx.transaction_reference}</p>
+                    )}
                   </div>
                 </div>
-                <p className={`font-bold ${isOutgoing ? 'text-red-500' : 'text-green-500'}`}>
+                <p className={`font-bold flex-shrink-0 ${isOutgoing ? 'text-red-500' : 'text-green-500'}`}>
                   {isOutgoing ? '-' : '+'} {wallet.currency} {tx.amount}
                 </p>
               </motion.li>

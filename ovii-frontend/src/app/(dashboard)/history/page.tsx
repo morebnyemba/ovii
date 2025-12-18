@@ -194,11 +194,11 @@ export default function HistoryPage() {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.3, delay: index * 0.05 }}
-                className="flex items-center justify-between p-4 rounded-lg bg-white shadow-sm hover:shadow-md transition-shadow"
+                className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 rounded-lg bg-white shadow-sm hover:shadow-md transition-shadow gap-3"
               >
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-4 flex-1 min-w-0">
                   <div
-                    className={`flex items-center justify-center w-10 h-10 rounded-full ${
+                    className={`flex items-center justify-center w-10 h-10 rounded-full flex-shrink-0 ${
                       isOutgoing ? 'bg-red-100' : 'bg-green-100'
                     }`}
                   >
@@ -208,8 +208,8 @@ export default function HistoryPage() {
                       <FiArrowDownLeft style={{ color: COLORS.mint }} />
                     )}
                   </div>
-                  <div>
-                    <p className="font-semibold" style={{ color: COLORS.darkIndigo }}>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold truncate" style={{ color: COLORS.darkIndigo }}>
                       {getTransactionLabel()}
                     </p>
                     <p className="text-sm text-gray-500">
@@ -221,12 +221,15 @@ export default function HistoryPage() {
                         minute: '2-digit',
                       })}
                     </p>
+                    {tx.transaction_reference && (
+                      <p className="text-xs text-gray-400 mt-1">Ref: {tx.transaction_reference}</p>
+                    )}
                     {tx.description && (
-                      <p className="text-xs text-gray-400 mt-1">{tx.description}</p>
+                      <p className="text-xs text-gray-400 mt-1 truncate">{tx.description}</p>
                     )}
                   </div>
                 </div>
-                <div className="text-right">
+                <div className="text-left sm:text-right flex-shrink-0">
                   <p
                     className={`font-bold ${
                       isOutgoing ? 'text-red-500' : 'text-green-500'
