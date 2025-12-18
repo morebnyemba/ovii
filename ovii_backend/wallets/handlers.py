@@ -121,9 +121,10 @@ def handle_transaction_completed(sender, **kwargs):
     # Refresh wallet instances from the database to get updated balances
     # This is crucial because the transaction object has cached wallet objects
     # from before the balance was updated
-    transaction.wallet.refresh_from_db()
+    # Only refresh the balance field to minimize database query overhead
+    transaction.wallet.refresh_from_db(fields=['balance'])
     if transaction.related_wallet:
-        transaction.related_wallet.refresh_from_db()
+        transaction.related_wallet.refresh_from_db(fields=['balance'])
 
     # --- User-facing WebSocket Notifications ---
     if tx_type == Transaction.TransactionType.TRANSFER and receiver_user:
