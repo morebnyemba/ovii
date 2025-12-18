@@ -6,6 +6,7 @@ from django.db import migrations, models
 def generate_transaction_reference_for_existing(apps, schema_editor):
     """
     Generate transaction references for existing transactions.
+    Uses bulk operations for better performance.
     """
     Transaction = apps.get_model('wallets', 'Transaction')
     
@@ -17,18 +18,48 @@ def generate_transaction_reference_for_existing(apps, schema_editor):
         'COMMISSION': 'CM',
     }
     
-    for transaction in Transaction.objects.all():
+    # Process transactions in batches for better performance
+    batch_size = 500
+    transactions = Transaction.objects.all()
+    total = transactions.count()
+    
+    if total == 0:
+        return  # No transactions to process
+    
+    # Generate unique references
+    generated_refs = set()
+    transactions_to_update = []
+    
+    for transaction in transactions.iterator(chunk_size=batch_size):
         prefix = prefix_map.get(transaction.transaction_type, 'TR')
         unique_id = uuid.uuid4().hex[:8].upper()
         transaction_reference = f"{prefix}-{unique_id}"
         
-        # Ensure uniqueness
-        while Transaction.objects.filter(transaction_reference=transaction_reference).exists():
+        # Ensure uniqueness within this batch
+        while transaction_reference in generated_refs:
             unique_id = uuid.uuid4().hex[:8].upper()
             transaction_reference = f"{prefix}-{unique_id}"
         
+        generated_refs.add(transaction_reference)
         transaction.transaction_reference = transaction_reference
-        transaction.save(update_fields=['transaction_reference'])
+        transactions_to_update.append(transaction)
+        
+        # Bulk update every batch_size transactions
+        if len(transactions_to_update) >= batch_size:
+            Transaction.objects.bulk_update(
+                transactions_to_update, 
+                ['transaction_reference'], 
+                batch_size=batch_size
+            )
+            transactions_to_update = []
+    
+    # Update any remaining transactions
+    if transactions_to_update:
+        Transaction.objects.bulk_update(
+            transactions_to_update, 
+            ['transaction_reference'], 
+            batch_size=batch_size
+        )
 
 
 class Migration(migrations.Migration):

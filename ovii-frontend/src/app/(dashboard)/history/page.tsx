@@ -154,6 +154,10 @@ export default function HistoryPage() {
               const isOutgoing = tx.sender === userPhone;
               const isIncoming = tx.receiver === userPhone;
               
+              // Safety check: if neither matches, assume incoming to avoid confusion
+              // (This shouldn't happen due to backend filtering, but handle it gracefully)
+              const direction = isOutgoing ? 'outgoing' : 'incoming';
+              
               // Determine display text based on transaction type and direction
               const getTransactionLabel = () => {
                 if (isOutgoing) {
@@ -170,7 +174,7 @@ export default function HistoryPage() {
                       return `Sent ${tx.transaction_type}`;
                   }
                 } else {
-                  // Incoming transaction
+                  // Incoming transaction (or unclear - treat as incoming)
                   switch (tx.transaction_type) {
                     case 'TRANSFER':
                       return `Received from ${tx.sender || 'Unknown'}`;

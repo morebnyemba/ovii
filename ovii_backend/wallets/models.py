@@ -246,7 +246,18 @@ class Transaction(models.Model):
         if not self.transaction_reference:
             self.transaction_reference = self._generate_transaction_reference()
             # Ensure uniqueness - regenerate if collision occurs
+            # Note: UUID collisions are extremely rare (1 in 2^32 for 8 hex chars)
+            # This loop will almost never execute more than once
+            max_attempts = 5  # Safety limit to prevent infinite loop
+            attempts = 0
             while Transaction.objects.filter(transaction_reference=self.transaction_reference).exists():
+                if attempts >= max_attempts:
+                    # This should never happen, but log it if it does
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.error(f"Failed to generate unique transaction reference after {max_attempts} attempts")
+                    break
                 self.transaction_reference = self._generate_transaction_reference()
+                attempts += 1
         
         super().save(*args, **kwargs)
