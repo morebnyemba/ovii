@@ -328,7 +328,9 @@ export default function DashboardLayout({
             className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto"
             style={{ backgroundColor: COLORS.white }}
           >
-            {children}
+            <div className="max-w-7xl mx-auto">
+              {children}
+            </div>
           </div>
         </main>
       </div>

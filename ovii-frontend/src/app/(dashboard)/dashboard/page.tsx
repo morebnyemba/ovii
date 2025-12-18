@@ -194,12 +194,12 @@ export default function DashboardPage() {
           <p className="text-4xl md:text-5xl font-bold mt-2">
             {wallet.currency} {parseFloat(wallet.balance).toFixed(2)}
           </p>
-          <div className="mt-8 flex flex-wrap gap-4">
+          <div className="mt-8 flex flex-wrap gap-3 md:gap-4">
             <Link href="/send">
               <motion.div 
                 whileHover={{ scale: 1.05 }} 
                 whileTap={{ scale: 0.95 }} 
-                className="flex cursor-pointer items-center gap-2 font-bold py-3 px-6 rounded-full shadow-md"
+                className="flex cursor-pointer items-center gap-2 font-bold py-3 px-5 md:px-6 rounded-full shadow-md whitespace-nowrap"
                 style={{ 
                   backgroundColor: COLORS.gold,
                   color: COLORS.indigo
@@ -213,7 +213,7 @@ export default function DashboardPage() {
               <motion.div 
                 whileHover={{ scale: 1.05 }} 
                 whileTap={{ scale: 0.95 }} 
-                className="flex cursor-pointer items-center gap-2 font-bold py-3 px-6 rounded-full shadow-md"
+                className="flex cursor-pointer items-center gap-2 font-bold py-3 px-5 md:px-6 rounded-full shadow-md whitespace-nowrap"
                 style={{ 
                   backgroundColor: COLORS.mint,
                   color: COLORS.indigo
