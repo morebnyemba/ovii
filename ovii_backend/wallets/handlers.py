@@ -140,7 +140,7 @@ def handle_transaction_completed(sender, **kwargs):
                 "amount_with_currency": f"{amount} {currency}",
                 "recipient_name": receiver_user.get_full_name() or str(receiver_user.phone_number),
                 "new_balance_with_currency": f"{transaction.wallet.balance} {currency}",
-                "transaction_id": str(transaction.transaction_id),
+                "transaction_id": str(transaction.id),
             }
         )
         
@@ -152,7 +152,7 @@ def handle_transaction_completed(sender, **kwargs):
                 "amount_with_currency": f"{amount} {currency}",
                 "sender_name": sender_user.get_full_name() or str(sender_user.phone_number),
                 "new_balance_with_currency": f"{transaction.related_wallet.balance} {currency}",
-                "transaction_id": str(transaction.transaction_id),
+                "transaction_id": str(transaction.id),
             }
         )
 
@@ -177,7 +177,7 @@ def handle_transaction_completed(sender, **kwargs):
             {
                 "amount_with_currency": f"{amount} {currency}",
                 "new_balance_with_currency": f"{transaction.related_wallet.balance} {currency}",
-                "transaction_id": str(transaction.transaction_id),
+                "transaction_id": str(transaction.id),
             }
         )
 
@@ -203,7 +203,7 @@ def handle_transaction_completed(sender, **kwargs):
             {
                 "amount_with_currency": f"{amount} {currency}",
                 "new_balance_with_currency": f"{transaction.wallet.balance} {currency}",
-                "transaction_id": str(transaction.transaction_id),
+                "transaction_id": str(transaction.id),
             }
         )
 
@@ -229,7 +229,7 @@ def handle_transaction_completed(sender, **kwargs):
                     "amount_with_currency": f"{amount} {currency}",
                     "merchant_name": receiver_user.get_full_name() or str(receiver_user.phone_number),
                     "new_balance_with_currency": f"{transaction.wallet.balance} {currency}",
-                    "transaction_id": str(transaction.transaction_id),
+                    "transaction_id": str(transaction.id),
                 }
             )
             
@@ -241,6 +241,6 @@ def handle_transaction_completed(sender, **kwargs):
                     "amount_with_currency": f"{amount} {currency}",
                     "customer_name": sender_user.get_full_name() or str(sender_user.phone_number),
                     "new_balance_with_currency": f"{transaction.related_wallet.balance} {currency}",
-                    "transaction_id": str(transaction.transaction_id),
+                    "transaction_id": str(transaction.id),
                 }
             )
