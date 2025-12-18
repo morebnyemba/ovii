@@ -159,9 +159,8 @@ def process_referral_bonus(referral_id: int):
                     phone_number=str(referral.referrer.phone_number),
                     template_name="referral_bonus_credited",
                     variables={
-                        "bonus_amount": str(referral.referrer_bonus),
-                        "currency": referral.referrer.wallet.currency,
-                        "new_balance": str(referral.referrer.wallet.balance),
+                        "bonus_amount_with_currency": f"{referral.referrer_bonus} {referral.referrer.wallet.currency}",
+                        "new_balance_with_currency": f"{referral.referrer.wallet.balance} {referral.referrer.wallet.currency}",
                     },
                 )
             except Exception as e:
@@ -178,9 +177,8 @@ def process_referral_bonus(referral_id: int):
                     phone_number=str(referral.referred.phone_number),
                     template_name="referral_bonus_credited",
                     variables={
-                        "bonus_amount": str(referral.referred_bonus),
-                        "currency": referral.referred.wallet.currency,
-                        "new_balance": str(referral.referred.wallet.balance),
+                        "bonus_amount_with_currency": f"{referral.referred_bonus} {referral.referred.wallet.currency}",
+                        "new_balance_with_currency": f"{referral.referred.wallet.balance} {referral.referred.wallet.currency}",
                     },
                 )
             except Exception as e:
