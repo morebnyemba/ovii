@@ -20,6 +20,8 @@ import {
   FiX
 } from 'react-icons/fi';
 import Link from 'next/link';
+import TypedText from '@/components/ui/typed-text';
+import { TYPED_STRINGS, TYPED_TEXT_MIN_HEIGHTS } from '@/lib/constants/typed-text-strings';
 
 const COLORS = {
   indigo: '#1A1B4B',
@@ -331,26 +333,36 @@ export default function LandingPage() {
               className="text-5xl md:text-7xl font-bold mb-6"
               style={{ color: COLORS.white }}
             >
-              Money moves
-              <motion.span
-                className="block bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.5 }}
-              >
-                differently here.
-              </motion.span>
+              Money moves{' '}
+              <span className="block bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">
+                <TypedText
+                  strings={TYPED_STRINGS.landing.hero.taglines}
+                  speed={60}
+                  backSpeed={40}
+                  backDelay={2000}
+                  loop={true}
+                  showCursor={true}
+                  cursorChar="_"
+                />
+              </span>
             </motion.h1>
 
             <motion.p
               className="text-xl md:text-2xl mb-8 opacity-90 max-w-3xl mx-auto"
-              style={{ color: COLORS.white }}
+              style={{ color: COLORS.white, minHeight: TYPED_TEXT_MIN_HEIGHTS.hero }}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.7 }}
             >
-              For creators, hustlers, and builders who don&apos;t wait. Ovii lets you send, receive, 
-              and build wealth without borders.
+              <TypedText
+                strings={TYPED_STRINGS.landing.hero.subtitles}
+                speed={50}
+                backSpeed={30}
+                backDelay={3000}
+                loop={true}
+                showCursor={false}
+                startDelay={1500}
+              />
             </motion.p>
 
             <motion.div
@@ -516,12 +528,19 @@ export default function LandingPage() {
             </h2>
             <motion.p
               className="text-2xl md:text-3xl font-semibold mb-6 italic"
-              style={{ color: COLORS.coral }}
+              style={{ color: COLORS.coral, minHeight: '3rem' }}
               initial={{ opacity: 0 }}
               whileInView={{ opacity: 1 }}
               transition={{ delay: 0.3 }}
             >
-              "For those who move different."
+              <TypedText
+                strings={TYPED_STRINGS.landing.whyOvii}
+                speed={60}
+                backSpeed={40}
+                backDelay={2500}
+                loop={true}
+                showCursor={false}
+              />
             </motion.p>
             <p 
               className="text-xl opacity-80 mb-4"

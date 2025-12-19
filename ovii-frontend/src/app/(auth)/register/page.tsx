@@ -21,6 +21,8 @@ import { useSearchParams } from 'next/navigation';
 import api from '@/lib/api';
 import { useUserStore } from '@/lib/store/useUserStore';
 import { useCsrf } from '@/hooks/useCsrf';
+import TypedText from '@/components/ui/typed-text';
+import { TYPED_STRINGS, TYPED_TEXT_MIN_HEIGHTS } from '@/lib/constants/typed-text-strings';
 
 const COLORS = {
   indigo: '#1A1B4B',
@@ -785,12 +787,21 @@ function RegisterPageContent() {
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.3 }}
               className="text-lg opacity-80"
-              style={{ color: COLORS.indigo }}
+              style={{ color: COLORS.indigo, minHeight: TYPED_TEXT_MIN_HEIGHTS.subtitle }}
             >
               {verificationSuccess 
                 ? 'Your account has been created successfully' 
                 : step === 1
-                  ? 'Create your account for instant, secure payments'
+                  ? (
+                    <TypedText
+                      strings={TYPED_STRINGS.register.onboarding}
+                      speed={50}
+                      backSpeed={30}
+                      backDelay={2000}
+                      loop={true}
+                      showCursor={false}
+                    />
+                  )
                   : `Enter the code sent to ${phoneNumber}`
               }
             </motion.p>
