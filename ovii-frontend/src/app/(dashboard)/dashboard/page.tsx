@@ -7,6 +7,7 @@ import { FiTrendingUp, FiSend, FiAlertTriangle, FiUser, FiUserPlus, FiDollarSign
 import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
 import { useUserStore } from '@/lib/store/useUserStore';
+import TypedText from '@/components/ui/typed-text';
 
 const COLORS = {
   indigo: '#1A1B4B',
@@ -164,7 +165,21 @@ export default function DashboardPage() {
           <h1 className="text-3xl md:text-4xl font-bold" style={{ color: COLORS.indigo }}>
             Welcome back, {user?.first_name || 'User'}!
           </h1>
-          <p className="mt-1" style={{ color: COLORS.darkIndigo }}>Here&apos;s a snapshot of your finances.</p>
+          <p className="mt-1 min-h-[1.5rem]" style={{ color: COLORS.darkIndigo }}>
+            <TypedText
+              strings={[
+                "Here's a snapshot of your finances.",
+                "Your wallet is ready for action.",
+                "Make your next move count.",
+                "Manage your money with ease.",
+              ]}
+              speed={50}
+              backSpeed={30}
+              backDelay={3000}
+              loop={true}
+              showCursor={false}
+            />
+          </p>
         </div>
         <button 
           onClick={handleRefresh}

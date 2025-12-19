@@ -20,6 +20,7 @@ import {
   FiX
 } from 'react-icons/fi';
 import Link from 'next/link';
+import TypedText from '@/components/ui/typed-text';
 
 const COLORS = {
   indigo: '#1A1B4B',
@@ -331,26 +332,46 @@ export default function LandingPage() {
               className="text-5xl md:text-7xl font-bold mb-6"
               style={{ color: COLORS.white }}
             >
-              Money moves
-              <motion.span
-                className="block bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.5 }}
-              >
-                differently here.
-              </motion.span>
+              Money moves{' '}
+              <span className="block bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">
+                <TypedText
+                  strings={[
+                    'differently here.',
+                    'at the speed of trust.',
+                    'without borders.',
+                    'the way you need it.',
+                  ]}
+                  speed={60}
+                  backSpeed={40}
+                  backDelay={2000}
+                  loop={true}
+                  showCursor={true}
+                  cursorChar="_"
+                />
+              </span>
             </motion.h1>
 
             <motion.p
-              className="text-xl md:text-2xl mb-8 opacity-90 max-w-3xl mx-auto"
+              className="text-xl md:text-2xl mb-8 opacity-90 max-w-3xl mx-auto min-h-[4rem]"
               style={{ color: COLORS.white }}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.7 }}
             >
-              For creators, hustlers, and builders who don&apos;t wait. Ovii lets you send, receive, 
-              and build wealth without borders.
+              <TypedText
+                strings={[
+                  'For creators, hustlers, and builders who don\'t wait.',
+                  'Send, receive, and build wealth without borders.',
+                  'Your secure digital wallet for instant payments.',
+                  'Join thousands moving money the smart way.',
+                ]}
+                speed={50}
+                backSpeed={30}
+                backDelay={3000}
+                loop={true}
+                showCursor={false}
+                startDelay={1500}
+              />
             </motion.p>
 
             <motion.div
@@ -515,13 +536,25 @@ export default function LandingPage() {
               Why Ovii Exists
             </h2>
             <motion.p
-              className="text-2xl md:text-3xl font-semibold mb-6 italic"
+              className="text-2xl md:text-3xl font-semibold mb-6 italic min-h-[3rem]"
               style={{ color: COLORS.coral }}
               initial={{ opacity: 0 }}
               whileInView={{ opacity: 1 }}
               transition={{ delay: 0.3 }}
             >
-              "For those who move different."
+              <TypedText
+                strings={[
+                  '"For those who move different."',
+                  '"Banking that moves at your speed."',
+                  '"Your money, your way, instantly."',
+                  '"Built for the future of finance."',
+                ]}
+                speed={60}
+                backSpeed={40}
+                backDelay={2500}
+                loop={true}
+                showCursor={false}
+              />
             </motion.p>
             <p 
               className="text-xl opacity-80 mb-4"

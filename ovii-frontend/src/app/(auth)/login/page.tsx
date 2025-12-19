@@ -17,6 +17,7 @@ import {
 import api from '@/lib/api';
 import { useUserStore } from '@/lib/store/useUserStore';
 import { useCsrf } from '@/hooks/useCsrf';
+import TypedText from '@/components/ui/typed-text';
 
 const COLORS = {
   indigo: '#1A1B4B',
@@ -327,14 +328,28 @@ function LoginPage() {
               initial={{ y: -10, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.3 }}
-              className="text-lg opacity-80"
+              className="text-lg opacity-80 min-h-[1.75rem]"
               style={{ color: COLORS.indigo }}
             >
               {verificationSuccess 
                 ? 'Your account is now secure' 
                 : otpSent 
                   ? `Enter the code sent to ${phoneNumber}` 
-                  : 'Your secure digital wallet for instant payments'}
+                  : (
+                    <TypedText
+                      strings={[
+                        'Your secure digital wallet',
+                        'Login to access your funds',
+                        'Fast and secure authentication',
+                        'Welcome back!',
+                      ]}
+                      speed={50}
+                      backSpeed={30}
+                      backDelay={2000}
+                      loop={true}
+                      showCursor={false}
+                    />
+                  )}
             </motion.p>
           </div>
 
