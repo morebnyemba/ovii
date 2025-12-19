@@ -55,9 +55,7 @@ export default function TypedText({
       shuffle,
       fadeOut,
       fadeOutDelay,
-      onComplete: (self: Typed) => {
-        if (onComplete) onComplete();
-      },
+      onComplete,
     };
 
     typedInstance.current = new Typed(typedRef.current, options);
@@ -67,7 +65,8 @@ export default function TypedText({
         typedInstance.current.destroy();
       }
     };
-    // Only recreate when strings change to avoid unnecessary reinitializations
+    // Only recreate when strings change to avoid interrupting animations
+    // Other props are applied on initial mount and remain static
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [strings]);
 
