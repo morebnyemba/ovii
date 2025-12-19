@@ -6,7 +6,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   FiPhone, 
   FiZap, 
-  FiShield, 
   FiLock, 
   FiTrendingUp, 
   FiSmartphone,
@@ -377,6 +376,10 @@ export default function LandingPage() {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
+                onClick={() => {
+                  const featuresSection = document.getElementById('features');
+                  featuresSection?.scrollIntoView({ behavior: 'smooth' });
+                }}
                 className="px-8 py-4 rounded-2xl font-bold text-lg border-2 backdrop-blur-sm transition-all"
                 style={{
                   borderColor: COLORS.mint,
