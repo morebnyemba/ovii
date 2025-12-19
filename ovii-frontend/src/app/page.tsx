@@ -6,7 +6,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   FiPhone, 
   FiZap, 
-  FiShield, 
   FiLock, 
   FiTrendingUp, 
   FiSmartphone,
@@ -80,42 +79,42 @@ export default function LandingPage() {
 
   const features = [
     {
+      icon: <FiPhone className="text-2xl" />,
+      title: "Send & Receive",
+      description: "Local, regional & global transfers - mobile-first experience"
+    },
+    {
       icon: <FiZap className="text-2xl" />,
-      title: "Instant Transfers",
-      description: "Send and receive money instantly with zero delays"
+      title: "Secure & Fast",
+      description: "Bank-grade security with instant, borderless transactions"
     },
     {
-      icon: <FiShield className="text-2xl" />,
-      title: "Bank-Grade Security",
-      description: "Your funds are protected with military-grade encryption"
-    },
-    {
-      icon: <FiTrendingUp className="text-2xl" />,
-      title: "Smart Savings",
-      description: "Automated savings and investment opportunities"
+      icon: <FiUsers className="text-2xl" />,
+      title: "Built for Everyone",
+      description: "Individuals, SMEs, marketplaces & digital creators"
     },
     {
       icon: <FiSmartphone className="text-2xl" />,
-      title: "Mobile First",
-      description: "Complete banking experience right from your phone"
+      title: "Collect Payments",
+      description: "Accept payments for your hustle without friction"
     }
   ];
 
   const steps = [
     {
       number: "01",
-      title: "Sign Up",
-      description: "Create your account in under 2 minutes"
+      title: "Sign Up in Minutes",
+      description: "Create your account quickly and easily"
     },
     {
       number: "02",
-      title: "Verify",
-      description: "Secure verification with OTP"
+      title: "Verify Securely",
+      description: "Quick and secure OTP verification"
     },
     {
       number: "03",
-      title: "Start Banking",
-      description: "Access all features immediately"
+      title: "Start Sending/Receiving",
+      description: "Move money across borders or within your network"
     }
   ];
 
@@ -332,14 +331,14 @@ export default function LandingPage() {
               className="text-5xl md:text-7xl font-bold mb-6"
               style={{ color: COLORS.white }}
             >
-              Banking
+              Money moves
               <motion.span
                 className="block bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.5 }}
               >
-                Reimagined
+                differently here.
               </motion.span>
             </motion.h1>
 
@@ -350,8 +349,8 @@ export default function LandingPage() {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.7 }}
             >
-              Experience the future of digital payments with Ovii. Secure, instant, and effortless 
-              money management in the palm of your hand.
+              For creators, hustlers, and builders who don&apos;t wait. Ovii lets you send, receive, 
+              and build wealth without borders.
             </motion.p>
 
             <motion.div
@@ -370,14 +369,17 @@ export default function LandingPage() {
                   color: COLORS.indigo,
                 }}
               >
-                Get Started Free
+                Sign Up
                 <FiArrowRight className="inline ml-2" />
               </motion.button>
 
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => router.push('/login')}
+                onClick={() => {
+                  const featuresSection = document.getElementById('features');
+                  featuresSection?.scrollIntoView({ behavior: 'smooth' });
+                }}
                 className="px-8 py-4 rounded-2xl font-bold text-lg border-2 backdrop-blur-sm transition-all"
                 style={{
                   borderColor: COLORS.mint,
@@ -385,7 +387,8 @@ export default function LandingPage() {
                   backgroundColor: 'rgba(255, 255, 255, 0.1)',
                 }}
               >
-                Already have an account? Login
+                Learn More
+                <FiArrowRight className="inline ml-2" />
               </motion.button>
             </motion.div>
 
@@ -436,7 +439,7 @@ export default function LandingPage() {
         </motion.div>
       </section>
 
-      {/* Features Section */}
+      {/* Features Section - SECTION 1: What is Ovii */}
       <section id="features" className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
@@ -449,13 +452,14 @@ export default function LandingPage() {
               className="text-4xl md:text-5xl font-bold mb-4"
               style={{ color: COLORS.indigo }}
             >
-              Why Choose Ovii?
+              What is Ovii?
             </h2>
             <p 
-              className="text-xl max-w-2xl mx-auto opacity-80"
+              className="text-xl max-w-3xl mx-auto opacity-80"
               style={{ color: COLORS.indigo }}
             >
-              Built with cutting-edge technology to give you the best digital banking experience
+              Ovii is your wallet and payment gateway for the everyday doer. From sending cash across borders, 
+              paying team members, or collecting payments for your hustle — Ovii makes it easy, fast, and powerful.
             </p>
           </motion.div>
 
@@ -495,7 +499,108 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* How It Works */}
+      {/* SECTION 2: Why Ovii Exists */}
+      <section className="py-20" style={{ backgroundColor: COLORS.lightGray }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            className="max-w-4xl mx-auto text-center"
+          >
+            <h2 
+              className="text-4xl md:text-5xl font-bold mb-6"
+              style={{ color: COLORS.indigo }}
+            >
+              Why Ovii Exists
+            </h2>
+            <motion.p
+              className="text-2xl md:text-3xl font-semibold mb-6 italic"
+              style={{ color: COLORS.coral }}
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
+            >
+              "For those who move different."
+            </motion.p>
+            <p 
+              className="text-xl opacity-80 mb-4"
+              style={{ color: COLORS.indigo }}
+            >
+              You deserve tools that work as hard as you do.
+            </p>
+            <p 
+              className="text-xl opacity-80"
+              style={{ color: COLORS.indigo }}
+            >
+              You deserve a platform that speaks your language. Ovii isn&apos;t just fintech. 
+              It&apos;s <span className="font-bold">your</span>tech wallet.
+            </p>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* SECTION 3: Built Different */}
+      <section className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            className="text-center mb-12"
+          >
+            <h2 
+              className="text-4xl md:text-5xl font-bold mb-6"
+              style={{ color: COLORS.indigo }}
+            >
+              Built Different
+            </h2>
+            <p 
+              className="text-xl max-w-3xl mx-auto opacity-80 mb-8"
+              style={{ color: COLORS.indigo }}
+            >
+              We didn&apos;t build Ovii for the boardroom. We built it for the streets, for the markets, 
+              for the creators, for the future. It&apos;s tech for those who rise early, hustle late, 
+              and need money to move right now.
+            </p>
+          </motion.div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto">
+            {[
+              { icon: <FiTrendingUp className="text-2xl" />, text: "For the builder who wants to sell anywhere." },
+              { icon: <FiZap className="text-2xl" />, text: "For the side-hustler who needs to collect without friction." },
+              { icon: <FiUsers className="text-2xl" />, text: "For the marketplace that doesn't want borders." },
+              { icon: <FiAward className="text-2xl" />, text: "For the future." }
+            ].map((item, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: index * 0.1 }}
+                whileHover={{ y: -5 }}
+                className="p-6 rounded-2xl backdrop-blur-sm border border-gray-100 hover:shadow-xl transition-all text-center group"
+              >
+                <div 
+                  className="w-14 h-14 rounded-xl mb-4 mx-auto flex items-center justify-center group-hover:scale-110 transition-transform"
+                  style={{ backgroundColor: `${COLORS.gold}30` }}
+                >
+                  <div style={{ color: COLORS.gold }}>
+                    {item.icon}
+                  </div>
+                </div>
+                <p 
+                  className="text-base font-medium opacity-80"
+                  style={{ color: COLORS.indigo }}
+                >
+                  {item.text}
+                </p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* How It Works - SECTION 4 */}
       <section id="how-it-works" className="py-20" style={{ backgroundColor: COLORS.lightGray }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
@@ -507,13 +612,13 @@ export default function LandingPage() {
               className="text-4xl md:text-5xl font-bold mb-4"
               style={{ color: COLORS.indigo }}
             >
-              Get Started in 3 Steps
+              How It Works
             </h2>
             <p 
               className="text-xl max-w-2xl mx-auto opacity-80"
               style={{ color: COLORS.indigo }}
             >
-              Simple, secure, and straightforward
+              Simple 3 steps to start moving money
             </p>
           </motion.div>
 
@@ -550,6 +655,34 @@ export default function LandingPage() {
               </motion.div>
             ))}
           </div>
+
+          {/* CTA after steps */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
+            className="text-center mt-12"
+          >
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => router.push('/register')}
+              className="px-10 py-4 rounded-2xl font-bold text-lg shadow-xl hover:shadow-2xl transition-all inline-flex items-center gap-2"
+              style={{
+                backgroundColor: COLORS.gold,
+                color: COLORS.indigo,
+              }}
+            >
+              Join Now
+              <FiArrowRight className="text-xl" />
+            </motion.button>
+            <p 
+              className="text-sm mt-4 opacity-70"
+              style={{ color: COLORS.indigo }}
+            >
+              Be first to access Ovii
+            </p>
+          </motion.div>
         </div>
       </section>
 
@@ -712,7 +845,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* CTA Section */}
+      {/* CTA Section - SECTION 5: Join the Movement */}
       <section className="py-20 bg-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <motion.div
@@ -721,10 +854,13 @@ export default function LandingPage() {
             className="bg-gradient-to-r from-blue-600 to-cyan-600 rounded-3xl p-12 text-white shadow-2xl"
           >
             <h2 className="text-4xl md:text-5xl font-bold mb-6">
-              Ready to Get Started?
+              Join the Movement
             </h2>
-            <p className="text-xl mb-8 opacity-90 max-w-2xl mx-auto">
-              Join thousands of users who trust Ovii with their financial journey
+            <p className="text-xl mb-4 opacity-90 max-w-2xl mx-auto">
+              We&apos;re not just building an app. We&apos;re building a movement.
+            </p>
+            <p className="text-lg mb-8 opacity-85 max-w-2xl mx-auto">
+              Wallets that work for you. Payments without pain. Global reach with local soul.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <motion.button
