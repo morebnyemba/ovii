@@ -21,6 +21,7 @@ import {
 } from 'react-icons/fi';
 import Link from 'next/link';
 import TypedText from '@/components/ui/typed-text';
+import { TYPED_STRINGS, TYPED_TEXT_MIN_HEIGHTS } from '@/lib/constants/typed-text-strings';
 
 const COLORS = {
   indigo: '#1A1B4B',
@@ -335,12 +336,7 @@ export default function LandingPage() {
               Money moves{' '}
               <span className="block bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">
                 <TypedText
-                  strings={[
-                    'differently here.',
-                    'at the speed of trust.',
-                    'without borders.',
-                    'the way you need it.',
-                  ]}
+                  strings={TYPED_STRINGS.landing.hero.taglines}
                   speed={60}
                   backSpeed={40}
                   backDelay={2000}
@@ -352,19 +348,14 @@ export default function LandingPage() {
             </motion.h1>
 
             <motion.p
-              className="text-xl md:text-2xl mb-8 opacity-90 max-w-3xl mx-auto min-h-[4rem]"
-              style={{ color: COLORS.white }}
+              className="text-xl md:text-2xl mb-8 opacity-90 max-w-3xl mx-auto"
+              style={{ color: COLORS.white, minHeight: TYPED_TEXT_MIN_HEIGHTS.hero }}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.7 }}
             >
               <TypedText
-                strings={[
-                  'For creators, hustlers, and builders who don\'t wait.',
-                  'Send, receive, and build wealth without borders.',
-                  'Your secure digital wallet for instant payments.',
-                  'Join thousands moving money the smart way.',
-                ]}
+                strings={TYPED_STRINGS.landing.hero.subtitles}
                 speed={50}
                 backSpeed={30}
                 backDelay={3000}
@@ -536,19 +527,14 @@ export default function LandingPage() {
               Why Ovii Exists
             </h2>
             <motion.p
-              className="text-2xl md:text-3xl font-semibold mb-6 italic min-h-[3rem]"
-              style={{ color: COLORS.coral }}
+              className="text-2xl md:text-3xl font-semibold mb-6 italic"
+              style={{ color: COLORS.coral, minHeight: '3rem' }}
               initial={{ opacity: 0 }}
               whileInView={{ opacity: 1 }}
               transition={{ delay: 0.3 }}
             >
               <TypedText
-                strings={[
-                  '"For those who move different."',
-                  '"Banking that moves at your speed."',
-                  '"Your money, your way, instantly."',
-                  '"Built for the future of finance."',
-                ]}
+                strings={TYPED_STRINGS.landing.whyOvii}
                 speed={60}
                 backSpeed={40}
                 backDelay={2500}

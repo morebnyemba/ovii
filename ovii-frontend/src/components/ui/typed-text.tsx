@@ -67,7 +67,9 @@ export default function TypedText({
         typedInstance.current.destroy();
       }
     };
-  }, [strings, speed, backSpeed, loop, showCursor, cursorChar, startDelay, backDelay, smartBackspace, shuffle, fadeOut, fadeOutDelay, onComplete]);
+    // Only recreate when strings change to avoid unnecessary reinitializations
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [strings]);
 
   return <span ref={typedRef} className={className} />;
 }

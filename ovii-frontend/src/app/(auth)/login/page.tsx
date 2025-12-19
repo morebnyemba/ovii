@@ -18,6 +18,7 @@ import api from '@/lib/api';
 import { useUserStore } from '@/lib/store/useUserStore';
 import { useCsrf } from '@/hooks/useCsrf';
 import TypedText from '@/components/ui/typed-text';
+import { TYPED_STRINGS, TYPED_TEXT_MIN_HEIGHTS } from '@/lib/constants/typed-text-strings';
 
 const COLORS = {
   indigo: '#1A1B4B',
@@ -328,8 +329,8 @@ function LoginPage() {
               initial={{ y: -10, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.3 }}
-              className="text-lg opacity-80 min-h-[1.75rem]"
-              style={{ color: COLORS.indigo }}
+              className="text-lg opacity-80"
+              style={{ color: COLORS.indigo, minHeight: TYPED_TEXT_MIN_HEIGHTS.subtitle }}
             >
               {verificationSuccess 
                 ? 'Your account is now secure' 
@@ -337,12 +338,7 @@ function LoginPage() {
                   ? `Enter the code sent to ${phoneNumber}` 
                   : (
                     <TypedText
-                      strings={[
-                        'Your secure digital wallet',
-                        'Login to access your funds',
-                        'Fast and secure authentication',
-                        'Welcome back!',
-                      ]}
+                      strings={TYPED_STRINGS.login.welcome}
                       speed={50}
                       backSpeed={30}
                       backDelay={2000}
