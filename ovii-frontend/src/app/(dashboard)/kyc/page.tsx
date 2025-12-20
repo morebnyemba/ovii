@@ -33,6 +33,17 @@ const COLORS = {
   darkIndigo: '#0F0F2D',
 };
 
+// Transaction limits by verification level
+const DAILY_LIMITS = ['$50', '$500', '$2,000', '$10,000'];
+const MONTHLY_LIMITS = ['Limited', 'Limited', '$50,000', 'Unlimited'];
+
+const getTransactionLimit = (level: number): { daily: string; monthly: string } => {
+  return {
+    daily: DAILY_LIMITS[level] || '$0',
+    monthly: MONTHLY_LIMITS[level] || 'N/A'
+  };
+};
+
 interface KYCDocument {
   id: number;
   document_type: string;
@@ -311,13 +322,13 @@ export default function KYCPage() {
             <div className="bg-gray-50 p-4 rounded-xl">
               <p className="text-sm text-gray-500 mb-1">Your Daily Limit</p>
               <p className="text-3xl font-bold" style={{ color: currentLevel.color }}>
-                ${['$50', '$500', '$2,000', '$10,000'][user.verification_level]}
+                {getTransactionLimit(user.verification_level).daily}
               </p>
               {user.verification_level < 3 && (
                 <div className="mt-2 pt-2 border-t border-gray-200">
                   <p className="text-xs text-gray-500">Upgrade to unlock</p>
                   <p className="font-semibold text-sm" style={{ color: COLORS.mint }}>
-                    ${['$500', '$2,000', '$10,000', 'Unlimited'][user.verification_level + 1]} daily
+                    {getTransactionLimit(user.verification_level + 1).daily} daily
                   </p>
                 </div>
               )}
@@ -433,11 +444,11 @@ export default function KYCPage() {
               <div className="mb-4 p-4 rounded-xl" style={{ backgroundColor: `${level.color}10` }}>
                 <p className="text-xs text-gray-500 mb-1">Transaction Limits</p>
                 <p className="text-2xl font-bold" style={{ color: level.color }}>
-                  ${['$50', '$500', '$2,000', '$10,000'][level.level]}/day
+                  {getTransactionLimit(level.level).daily}/day
                 </p>
                 {level.level >= 2 && (
                   <p className="text-sm text-gray-600 mt-1">
-                    Monthly: {level.level === 3 ? 'Unlimited' : `$${level.level === 2 ? '50,000' : 'N/A'}`}
+                    Monthly: {getTransactionLimit(level.level).monthly}
                   </p>
                 )}
               </div>
