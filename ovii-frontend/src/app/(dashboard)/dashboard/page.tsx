@@ -107,7 +107,7 @@ export default function DashboardPage() {
     const userPhone = user?.phone_number;
     let totalSent = 0;
     let totalReceived = 0;
-    let transactionCount = transactions.length;
+    const transactionCount = transactions.length;
 
     transactions.forEach(tx => {
       const amount = parseFloat(tx.amount);
@@ -442,11 +442,11 @@ export default function DashboardPage() {
                     </p>
                   </div>
                 </div>
-                <p className="text-xs text-gray-600">
+                <p className="text-sm text-gray-600">
                   {insights.monthlyTrend === 'positive' 
-                    ? "You're receiving more than you're spending! 🎉" 
+                    ? "You&apos;re receiving more than you&apos;re spending! 🎉" 
                     : insights.monthlyTrend === 'negative' 
-                    ? "You're spending more than receiving this month"
+                    ? "You&apos;re spending more than receiving this month"
                     : "Balanced spending this month"}
                 </p>
               </motion.div>

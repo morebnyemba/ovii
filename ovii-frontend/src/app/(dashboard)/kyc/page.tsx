@@ -511,6 +511,7 @@ export default function KYCPage() {
             </motion.div>
           );
         })}
+        </div>
       </div>
 
       {/* How It Works Section */}

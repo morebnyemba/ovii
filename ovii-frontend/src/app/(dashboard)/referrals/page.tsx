@@ -119,7 +119,7 @@ const getBonusStatusIcon = (status: string) => {
 };
 
 export default function ReferralsPage() {
-  const { _hasHydrated, isAuthenticated, user } = useUserStore();
+  const { _hasHydrated, isAuthenticated } = useUserStore();
   const [stats, setStats] = useState<ReferralStats | null>(null);
   const [referrals, setReferrals] = useState<Referral[]>([]);
   const [loading, setLoading] = useState(true);
