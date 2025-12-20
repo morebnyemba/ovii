@@ -91,6 +91,51 @@ export default function DashboardPage() {
     }
   };
 
+  // Calculate financial insights
+  const getFinancialInsights = () => {
+    if (!transactions || transactions.length === 0 || !user) {
+      return {
+        totalSent: 0,
+        totalReceived: 0,
+        transactionCount: 0,
+        avgTransaction: 0,
+        topSpendingCategory: 'No data yet',
+        monthlyTrend: 'neutral'
+      };
+    }
+
+    const userPhone = user?.phone_number;
+    let totalSent = 0;
+    let totalReceived = 0;
+    let transactionCount = transactions.length;
+
+    transactions.forEach(tx => {
+      const amount = parseFloat(tx.amount);
+      const isOutgoing = tx.sender === userPhone;
+      
+      if (isOutgoing) {
+        totalSent += amount;
+      } else {
+        totalReceived += amount;
+      }
+    });
+
+    const avgTransaction = transactionCount > 0 ? (totalSent + totalReceived) / transactionCount : 0;
+    const netFlow = totalReceived - totalSent;
+    const monthlyTrend = netFlow > 0 ? 'positive' : netFlow < 0 ? 'negative' : 'neutral';
+
+    return {
+      totalSent,
+      totalReceived,
+      transactionCount,
+      avgTransaction,
+      netFlow,
+      monthlyTrend
+    };
+  };
+
+  const insights = getFinancialInsights();
+
   const Card = ({ children, className = '', ...props }: { children: React.ReactNode; className?: string, [key: string]: any }) => (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -197,18 +242,57 @@ export default function DashboardPage() {
           color: COLORS.white
         }}>
           <div className="flex justify-between items-start">
-            <p className="text-lg opacity-90">Total Balance</p>
-            {loading.wallet && (
-              <Skeleton width={80} height={20} />
-            )}
+            <div>
+              <p className="text-lg opacity-90">Total Balance</p>
+              {loading.wallet && (
+                <Skeleton width={80} height={20} />
+              )}
+            </div>
+            <motion.div
+              animate={{ rotate: [0, 10, -10, 0] }}
+              transition={{ duration: 2, repeat: Infinity, repeatDelay: 5 }}
+            >
+              <FiTrendingUp className="text-2xl" style={{ color: COLORS.gold }} />
+            </motion.div>
           </div>
-          <p className="text-4xl md:text-5xl font-bold mt-2">
+          <motion.p 
+            className="text-4xl md:text-5xl font-bold mt-2"
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.5 }}
+          >
             {wallet.currency} {parseFloat(wallet.balance).toFixed(2)}
-          </p>
+          </motion.p>
+          
+          {/* Quick Balance Insights */}
+          {transactions && transactions.length > 0 && (
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="mt-4 grid grid-cols-2 gap-3"
+            >
+              <div className="bg-white/10 backdrop-blur-sm p-3 rounded-xl">
+                <p className="text-xs opacity-70">This Month</p>
+                <p className="text-lg font-bold" style={{ color: COLORS.mint }}>
+                  +{wallet.currency} {insights.totalReceived.toFixed(2)}
+                </p>
+                <p className="text-xs opacity-70">Received</p>
+              </div>
+              <div className="bg-white/10 backdrop-blur-sm p-3 rounded-xl">
+                <p className="text-xs opacity-70">This Month</p>
+                <p className="text-lg font-bold" style={{ color: COLORS.coral }}>
+                  -{wallet.currency} {insights.totalSent.toFixed(2)}
+                </p>
+                <p className="text-xs opacity-70">Sent</p>
+              </div>
+            </motion.div>
+          )}
+          
           <div className="mt-8 flex flex-wrap gap-3 md:gap-4">
             <Link href="/send">
               <motion.div 
-                whileHover={{ scale: 1.05 }} 
+                whileHover={{ scale: 1.05, boxShadow: '0 8px 20px rgba(255, 194, 71, 0.3)' }} 
                 whileTap={{ scale: 0.95 }} 
                 className="flex cursor-pointer items-center gap-2 font-bold py-3 px-5 md:px-6 rounded-full shadow-md whitespace-nowrap"
                 style={{ 
@@ -222,7 +306,7 @@ export default function DashboardPage() {
             </Link>
             <Link href="/request">
               <motion.div 
-                whileHover={{ scale: 1.05 }} 
+                whileHover={{ scale: 1.05, boxShadow: '0 8px 20px rgba(51, 217, 178, 0.3)' }} 
                 whileTap={{ scale: 0.95 }} 
                 className="flex cursor-pointer items-center gap-2 font-bold py-3 px-5 md:px-6 rounded-full shadow-md whitespace-nowrap"
                 style={{ 
@@ -244,76 +328,194 @@ export default function DashboardPage() {
             <li>
               <Link 
                 href="/transfer" 
-                className="flex items-center gap-3 p-3 rounded-lg transition-colors hover:bg-indigo-50"
+                className="flex items-center gap-3 p-3 rounded-lg transition-all hover:bg-indigo-50 hover:scale-[1.02]"
                 style={{ color: COLORS.darkIndigo }}
               >
-                <FiCreditCard className="text-lg" style={{ color: COLORS.mint }} />
+                <motion.div whileHover={{ rotate: 15 }}>
+                  <FiCreditCard className="text-lg" style={{ color: COLORS.mint }} />
+                </motion.div>
                 <span>Pay Merchant</span>
               </Link>
             </li>
             <li>
               <Link 
                 href="/cashout" 
-                className="flex items-center gap-3 p-3 rounded-lg transition-colors hover:bg-indigo-50"
+                className="flex items-center gap-3 p-3 rounded-lg transition-all hover:bg-indigo-50 hover:scale-[1.02]"
                 style={{ color: COLORS.darkIndigo }}
               >
-                <FiBriefcase className="text-lg" style={{ color: COLORS.coral }} />
+                <motion.div whileHover={{ rotate: 15 }}>
+                  <FiBriefcase className="text-lg" style={{ color: COLORS.coral }} />
+                </motion.div>
                 <span>Cash Out</span>
               </Link>
             </li>
             <li>
               <Link 
                 href="/history" 
-                className="flex items-center gap-3 p-3 rounded-lg transition-colors hover:bg-indigo-50"
+                className="flex items-center gap-3 p-3 rounded-lg transition-all hover:bg-indigo-50 hover:scale-[1.02]"
                 style={{ color: COLORS.darkIndigo }}
               >
-                <FiTrendingUp className="text-lg" style={{ color: COLORS.gold }} />
+                <motion.div whileHover={{ rotate: 15 }}>
+                  <FiTrendingUp className="text-lg" style={{ color: COLORS.gold }} />
+                </motion.div>
                 <span>Transaction History</span>
               </Link>
             </li>
             <li>
               <Link 
                 href="/beneficiaries" 
-                className="flex items-center gap-3 p-3 rounded-lg transition-colors hover:bg-indigo-50"
+                className="flex items-center gap-3 p-3 rounded-lg transition-all hover:bg-indigo-50 hover:scale-[1.02]"
                 style={{ color: COLORS.darkIndigo }}
               >
-                <FiUserPlus className="text-lg" style={{ color: COLORS.mint }} />
+                <motion.div whileHover={{ rotate: 15 }}>
+                  <FiUserPlus className="text-lg" style={{ color: COLORS.mint }} />
+                </motion.div>
                 <span>Add Beneficiary</span>
               </Link>
             </li>
             <li>
               <Link 
                 href="/referrals" 
-                className="flex items-center gap-3 p-3 rounded-lg transition-colors hover:bg-indigo-50"
+                className="flex items-center gap-3 p-3 rounded-lg transition-all hover:bg-indigo-50 hover:scale-[1.02]"
                 style={{ color: COLORS.darkIndigo }}
               >
-                <FiGift className="text-lg" style={{ color: COLORS.gold }} />
+                <motion.div whileHover={{ rotate: 15 }}>
+                  <FiGift className="text-lg" style={{ color: COLORS.gold }} />
+                </motion.div>
                 <span>Invite Friends</span>
               </Link>
             </li>
             <li>
               <Link 
                 href="/kyc" 
-                className="flex items-center gap-3 p-3 rounded-lg transition-colors hover:bg-indigo-50"
+                className="flex items-center gap-3 p-3 rounded-lg transition-all hover:bg-indigo-50 hover:scale-[1.02]"
                 style={{ color: COLORS.darkIndigo }}
               >
-                <FiShield className="text-lg" style={{ color: COLORS.indigo }} />
+                <motion.div whileHover={{ rotate: 15 }}>
+                  <FiShield className="text-lg" style={{ color: COLORS.indigo }} />
+                </motion.div>
                 <span>KYC Verification</span>
               </Link>
             </li>
             <li>
               <Link 
                 href="/profile" 
-                className="flex items-center gap-3 p-3 rounded-lg transition-colors hover:bg-indigo-50"
+                className="flex items-center gap-3 p-3 rounded-lg transition-all hover:bg-indigo-50 hover:scale-[1.02]"
                 style={{ color: COLORS.darkIndigo }}
               >
-                <FiUser className="text-lg" style={{ color: COLORS.coral }} />
+                <motion.div whileHover={{ rotate: 15 }}>
+                  <FiUser className="text-lg" style={{ color: COLORS.coral }} />
+                </motion.div>
                 <span>My Profile</span>
               </Link>
             </li>
           </ul>
         </Card>
       </div>
+
+      {/* Financial Insights Section */}
+      {transactions && transactions.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+        >
+          <Card>
+            <h2 className="font-bold text-lg mb-4" style={{ color: COLORS.indigo }}>
+              💡 Your Financial Insights
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <motion.div 
+                whileHover={{ scale: 1.05 }}
+                className="p-4 rounded-xl"
+                style={{ backgroundColor: COLORS.lightGray }}
+              >
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: COLORS.mint }}>
+                    <FiTrendingUp style={{ color: COLORS.white }} />
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Net Flow</p>
+                    <p className={`text-xl font-bold ${insights.monthlyTrend === 'positive' ? 'text-green-500' : insights.monthlyTrend === 'negative' ? 'text-red-500' : 'text-gray-500'}`}>
+                      {insights.monthlyTrend === 'positive' ? '+' : insights.monthlyTrend === 'negative' ? '-' : ''}
+                      {wallet.currency} {Math.abs(insights.netFlow || 0).toFixed(2)}
+                    </p>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-600">
+                  {insights.monthlyTrend === 'positive' 
+                    ? "You're receiving more than you're spending! 🎉" 
+                    : insights.monthlyTrend === 'negative' 
+                    ? "You're spending more than receiving this month"
+                    : "Balanced spending this month"}
+                </p>
+              </motion.div>
+
+              <motion.div 
+                whileHover={{ scale: 1.05 }}
+                className="p-4 rounded-xl"
+                style={{ backgroundColor: COLORS.lightGray }}
+              >
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: COLORS.gold }}>
+                    <FiDollarSign style={{ color: COLORS.white }} />
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Avg Transaction</p>
+                    <p className="text-xl font-bold" style={{ color: COLORS.indigo }}>
+                      {wallet.currency} {insights.avgTransaction.toFixed(2)}
+                    </p>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-600">
+                  Your typical transaction size
+                </p>
+              </motion.div>
+
+              <motion.div 
+                whileHover={{ scale: 1.05 }}
+                className="p-4 rounded-xl"
+                style={{ backgroundColor: COLORS.lightGray }}
+              >
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: COLORS.coral }}>
+                    <FiTrendingUp style={{ color: COLORS.white }} />
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Total Transactions</p>
+                    <p className="text-xl font-bold" style={{ color: COLORS.indigo }}>
+                      {insights.transactionCount}
+                    </p>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-600">
+                  Activity this period
+                </p>
+              </motion.div>
+            </div>
+
+            {/* Personalized Recommendation */}
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
+              className="mt-4 p-4 rounded-xl"
+              style={{ backgroundColor: `${COLORS.mint}10`, border: `1px solid ${COLORS.mint}30` }}
+            >
+              <p className="text-sm font-semibold mb-1" style={{ color: COLORS.indigo }}>
+                💎 Smart Tip
+              </p>
+              <p className="text-sm text-gray-600">
+                {insights.monthlyTrend === 'negative' 
+                  ? "Consider setting spending alerts to help manage your cash flow better."
+                  : insights.totalReceived > 1000
+                  ? "Great activity! Upgrade your KYC level to unlock higher transaction limits."
+                  : "Invite friends to earn $5 per referral and grow your balance!"}
+              </p>
+            </motion.div>
+          </Card>
+        </motion.div>
+      )}
 
       {/* Recent Activity Card */}
       <Card>
@@ -376,7 +578,8 @@ export default function DashboardPage() {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.3, delay: index * 0.1 }}
-                className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 rounded-lg transition-colors hover:bg-lightGray gap-2"
+                whileHover={{ scale: 1.02, backgroundColor: COLORS.lightGray }}
+                className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 rounded-lg transition-all gap-2"
               >
                 <div className="flex items-center gap-4 flex-1 min-w-0">
                   <div className={`flex items-center justify-center w-10 h-10 rounded-full flex-shrink-0 ${isOutgoing ? 'bg-red-100' : 'bg-green-100'}`}>

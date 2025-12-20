@@ -57,25 +57,25 @@ const KYC_LEVELS: KYCLevel[] = [
     name: 'Unverified',
     description: 'Basic access with limited features',
     requirements: ['Create an account'],
-    benefits: ['View wallet balance', 'Receive money (limited)'],
+    benefits: ['View wallet balance', 'Receive money up to $50/day', 'Explore the platform'],
     icon: FiLock,
     color: COLORS.coral,
   },
   {
     level: 1,
     name: 'Mobile Verified',
-    description: 'Phone number verified via OTP',
+    description: 'Phone number verified via OTP - Takes 2 minutes',
     requirements: ['Verify phone number via OTP'],
-    benefits: ['Send & receive money', 'Daily limit: $500', 'Access to basic features'],
+    benefits: ['Send & receive money freely', 'Daily limit: $500', 'Access to payment features', 'Request money from others', 'Pay merchants'],
     icon: FiPhone,
     color: COLORS.gold,
   },
   {
     level: 2,
     name: 'Identity Verified',
-    description: 'Government-issued ID verified',
-    requirements: ['Upload valid National ID or Passport', 'Wait for admin approval'],
-    benefits: ['Higher transaction limits', 'Daily limit: $2,000', 'Access to all payment features'],
+    description: 'Government-issued ID verified - Reviewed within 24 hours',
+    requirements: ['Upload valid National ID or Passport', 'Clear photo showing all details', 'Typically verified in 24 hours'],
+    benefits: ['Higher transaction limits', 'Daily limit: $2,000', 'Monthly limit: $50,000', 'Business transactions enabled', 'Lower fees on large transfers'],
     icon: FiFileText,
     documentType: 'ID_CARD',
     color: COLORS.mint,
@@ -83,9 +83,9 @@ const KYC_LEVELS: KYCLevel[] = [
   {
     level: 3,
     name: 'Address Verified',
-    description: 'Proof of residence verified',
-    requirements: ['Upload utility bill or bank statement', 'Document must be recent (within 3 months)'],
-    benefits: ['Maximum transaction limits', 'Daily limit: $10,000', 'Premium support', 'Full platform access'],
+    description: 'Full verification - Premium features unlocked',
+    requirements: ['Upload utility bill or bank statement', 'Document dated within last 3 months', 'Address must match ID'],
+    benefits: ['Maximum transaction limits', 'Daily limit: $10,000', 'Monthly limit: Unlimited', 'Priority customer support', 'Full platform access', 'Exclusive features'],
     icon: FiMapPin,
     documentType: 'UTILITY_BILL',
     color: COLORS.indigo,
@@ -286,7 +286,8 @@ export default function KYCPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.1 }}
-        className="bg-white p-6 rounded-2xl shadow-lg"
+        className="bg-white p-6 rounded-2xl shadow-lg border-2"
+        style={{ borderColor: currentLevel.color }}
       >
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="flex items-center gap-4">
@@ -306,19 +307,63 @@ export default function KYCPage() {
               </p>
             </div>
           </div>
-          {user.verification_level < 3 && (
-            <div className="text-right">
-              <p className="text-sm text-gray-500">Next level unlocks</p>
-              <p className="font-semibold" style={{ color: COLORS.mint }}>
-                {KYC_LEVELS[user.verification_level + 1]?.benefits[0]}
+          <div className="text-right">
+            <div className="bg-gray-50 p-4 rounded-xl">
+              <p className="text-sm text-gray-500 mb-1">Your Daily Limit</p>
+              <p className="text-3xl font-bold" style={{ color: currentLevel.color }}>
+                ${['$50', '$500', '$2,000', '$10,000'][user.verification_level]}
               </p>
+              {user.verification_level < 3 && (
+                <div className="mt-2 pt-2 border-t border-gray-200">
+                  <p className="text-xs text-gray-500">Upgrade to unlock</p>
+                  <p className="font-semibold text-sm" style={{ color: COLORS.mint }}>
+                    ${['$500', '$2,000', '$10,000', 'Unlimited'][user.verification_level + 1]} daily
+                  </p>
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
       </motion.div>
 
+      {/* Why Verify Banner */}
+      {user.verification_level < 3 && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5, delay: 0.15 }}
+          className="p-6 rounded-2xl shadow-lg"
+          style={{ 
+            background: `linear-gradient(135deg, ${COLORS.mint} 0%, ${COLORS.indigo} 100%)`,
+            color: COLORS.white
+          }}
+        >
+          <div className="flex items-start gap-4">
+            <FiShield className="text-3xl flex-shrink-0 mt-1" />
+            <div>
+              <h3 className="text-xl font-bold mb-2">Why Complete Your Verification?</h3>
+              <ul className="space-y-2 text-sm opacity-90">
+                <li>✓ Unlock higher transaction limits - send and receive more money</li>
+                <li>✓ Access all platform features including business payments</li>
+                <li>✓ Lower fees on larger transactions</li>
+                <li>✓ Enhanced account security and fraud protection</li>
+                <li>✓ Priority customer support</li>
+                <li>✓ Compliance with financial regulations - keeps your money safe</li>
+              </ul>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
       {/* Verification Levels Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="space-y-4">
+        <h2 className="text-2xl font-bold" style={{ color: COLORS.indigo }}>
+          Verification Levels & Limits
+        </h2>
+        <p className="text-gray-600 mb-6">
+          Each level unlocks more features and higher transaction limits. Choose your path based on how you plan to use Ovii.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {KYC_LEVELS.map((level, index) => {
           const status = getLevelStatus(level);
           const Icon = level.icon;
@@ -376,12 +421,25 @@ export default function KYCPage() {
                 >
                   <Icon className="text-xl" style={{ color: level.color }} />
                 </div>
-                <div>
+                <div className="flex-1">
                   <h3 className="font-bold text-lg" style={{ color: COLORS.indigo }}>
                     Level {level.level}: {level.name}
                   </h3>
                   <p className="text-sm text-gray-500">{level.description}</p>
                 </div>
+              </div>
+
+              {/* Transaction Limits */}
+              <div className="mb-4 p-4 rounded-xl" style={{ backgroundColor: `${level.color}10` }}>
+                <p className="text-xs text-gray-500 mb-1">Transaction Limits</p>
+                <p className="text-2xl font-bold" style={{ color: level.color }}>
+                  ${['$50', '$500', '$2,000', '$10,000'][level.level]}/day
+                </p>
+                {level.level >= 2 && (
+                  <p className="text-sm text-gray-600 mt-1">
+                    Monthly: {level.level === 3 ? 'Unlimited' : `$${level.level === 2 ? '50,000' : 'N/A'}`}
+                  </p>
+                )}
               </div>
 
               {/* Requirements */}
