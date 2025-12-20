@@ -82,23 +82,28 @@ export default function LandingPage() {
   const features = [
     {
       icon: <FiPhone className="text-2xl" />,
-      title: "Send & Receive",
-      description: "Local, regional & global transfers - mobile-first experience"
+      title: "Wallet",
+      description: "Hold your funds securely."
     },
     {
       icon: <FiZap className="text-2xl" />,
-      title: "Secure & Fast",
-      description: "Bank-grade security with instant, borderless transactions"
+      title: "Send/Receive",
+      description: "Instant transfers."
+    },
+    {
+      icon: <FiLock className="text-2xl" />,
+      title: "KYC",
+      description: "Light and secure onboarding."
     },
     {
       icon: <FiUsers className="text-2xl" />,
-      title: "Built for Everyone",
-      description: "Individuals, SMEs, marketplaces & digital creators"
+      title: "Referral System",
+      description: "Earn as you grow."
     },
     {
       icon: <FiSmartphone className="text-2xl" />,
-      title: "Collect Payments",
-      description: "Accept payments for your hustle without friction"
+      title: "Payment Gateway",
+      description: "Perfect for small biz & creators."
     }
   ];
 
@@ -122,22 +127,22 @@ export default function LandingPage() {
 
   const testimonials = [
     {
-      name: "Sarah Chen",
+      name: "Tanaka M.",
       role: "Small Business Owner",
-      content: "Ovii revolutionized how I manage my business finances. Instant payments saved me hours every week!",
+      content: "Finally a wallet that feels like it was made for us.",
       rating: 5
     },
     {
-      name: "David Moyo",
+      name: "Chipo K.",
       role: "Freelancer",
-      content: "The security features give me peace of mind. Finally, a digital wallet I can trust completely.",
+      content: "I invited 10 people, paid my bills, and got rewarded — all in one place.",
       rating: 5
     },
     {
-      name: "Amara Singh",
-      role: "Student",
-      content: "So easy to use! I love the clean design and how quickly I can send money to friends.",
-      rating: 4
+      name: "David M.",
+      role: "Digital Creator",
+      content: "Ovii makes collecting payments so simple. No more friction, just flow.",
+      rating: 5
     }
   ];
 
@@ -333,36 +338,17 @@ export default function LandingPage() {
               className="text-5xl md:text-7xl font-bold mb-6"
               style={{ color: COLORS.white }}
             >
-              Money moves{' '}
-              <span className="block bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">
-                <TypedText
-                  strings={TYPED_STRINGS.landing.hero.taglines}
-                  speed={60}
-                  backSpeed={40}
-                  backDelay={2000}
-                  loop={true}
-                  showCursor={true}
-                  cursorChar="_"
-                />
-              </span>
+              Built for those who move different.
             </motion.h1>
 
             <motion.p
               className="text-xl md:text-2xl mb-8 opacity-90 max-w-3xl mx-auto"
-              style={{ color: COLORS.white, minHeight: TYPED_TEXT_MIN_HEIGHTS.hero }}
+              style={{ color: COLORS.white }}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.7 }}
             >
-              <TypedText
-                strings={TYPED_STRINGS.landing.hero.subtitles}
-                speed={50}
-                backSpeed={30}
-                backDelay={3000}
-                loop={true}
-                showCursor={false}
-                startDelay={1500}
-              />
+              Ovii gives you the freedom to send, receive, and build — from wallet to payment gateway. Fast. Secure. Designed for the next wave of movers.
             </motion.p>
 
             <motion.div
@@ -381,7 +367,7 @@ export default function LandingPage() {
                   color: COLORS.indigo,
                 }}
               >
-                Sign Up
+                Join Now
                 <FiArrowRight className="inline ml-2" />
               </motion.button>
 
@@ -399,7 +385,7 @@ export default function LandingPage() {
                   backgroundColor: 'rgba(255, 255, 255, 0.1)',
                 }}
               >
-                Learn More
+                Learn more
                 <FiArrowRight className="inline ml-2" />
               </motion.button>
             </motion.div>
@@ -464,18 +450,17 @@ export default function LandingPage() {
               className="text-4xl md:text-5xl font-bold mb-4"
               style={{ color: COLORS.indigo }}
             >
-              What is Ovii?
+              What you can do with Ovii
             </h2>
             <p 
               className="text-xl max-w-3xl mx-auto opacity-80"
               style={{ color: COLORS.indigo }}
             >
-              Ovii is your wallet and payment gateway for the everyday doer. From sending cash across borders, 
-              paying team members, or collecting payments for your hustle — Ovii makes it easy, fast, and powerful.
+              Simple, powerful tools for sending, receiving, and building your financial future.
             </p>
           </motion.div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-8">
             {features.map((feature, index) => (
               <motion.div
                 key={index}
@@ -504,6 +489,59 @@ export default function LandingPage() {
                   style={{ color: COLORS.indigo }}
                 >
                   {feature.description}
+                </p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Why Ovii hits different */}
+      <section className="py-20" style={{ backgroundColor: COLORS.lightGray }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            className="text-center mb-16"
+          >
+            <h2 
+              className="text-4xl md:text-5xl font-bold mb-6"
+              style={{ color: COLORS.indigo }}
+            >
+              Why Ovii hits different.
+            </h2>
+          </motion.div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-6 max-w-6xl mx-auto">
+            {[
+              { icon: <FiUsers className="text-2xl" />, text: "Own your money, your data, your path." },
+              { icon: <FiZap className="text-2xl" />, text: "Send and receive in seconds — across borders." },
+              { icon: <FiSmartphone className="text-2xl" />, text: "No fluff, no noise. Just clean, fast, and simple." },
+              { icon: <FiTrendingUp className="text-2xl" />, text: "Invite others, earn rewards, grow your circle." },
+              { icon: <FiAward className="text-2xl" />, text: "Designed with Africa in mind — but made for the world." }
+            ].map((item, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: index * 0.1 }}
+                whileHover={{ y: -5 }}
+                className="p-6 rounded-2xl bg-white hover:shadow-xl transition-all text-center group"
+              >
+                <div 
+                  className="w-14 h-14 rounded-xl mb-4 mx-auto flex items-center justify-center group-hover:scale-110 transition-transform"
+                  style={{ backgroundColor: `${COLORS.coral}30` }}
+                >
+                  <div style={{ color: COLORS.coral }}>
+                    {item.icon}
+                  </div>
+                </div>
+                <p 
+                  className="text-base font-semibold"
+                  style={{ color: COLORS.indigo }}
+                >
+                  {item.text}
                 </p>
               </motion.div>
             ))}
@@ -717,7 +755,7 @@ export default function LandingPage() {
               className="text-4xl md:text-5xl font-bold mb-4"
               style={{ color: COLORS.indigo }}
             >
-              Loved by Thousands
+              Already moving different…
             </h2>
             <p 
               className="text-xl max-w-2xl mx-auto opacity-80"
@@ -780,6 +818,49 @@ export default function LandingPage() {
                 />
               ))}
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Trust Signals */}
+      <section className="py-20" style={{ backgroundColor: COLORS.lightGray }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-5xl mx-auto">
+            {[
+              { icon: <FiLock className="text-3xl" />, title: "Secure & Encrypted", description: "Bank-grade security for your peace of mind" },
+              { icon: <FiCheck className="text-3xl" />, title: "Compliant KYC", description: "Fast, light, and secure verification" },
+              { icon: <FiUsers className="text-3xl" />, title: "Built by a team that gets it", description: "Made for movers, by movers" },
+              { icon: <FiAward className="text-3xl" />, title: "Backed by vision, not hype", description: "Building for the long run" }
+            ].map((item, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: index * 0.1 }}
+                className="text-center"
+              >
+                <div 
+                  className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center"
+                  style={{ backgroundColor: COLORS.mint }}
+                >
+                  <div style={{ color: COLORS.white }}>
+                    {item.icon}
+                  </div>
+                </div>
+                <h3 
+                  className="text-lg font-bold mb-2"
+                  style={{ color: COLORS.indigo }}
+                >
+                  {item.title}
+                </h3>
+                <p 
+                  className="text-sm opacity-70"
+                  style={{ color: COLORS.indigo }}
+                >
+                  {item.description}
+                </p>
+              </motion.div>
+            ))}
           </div>
         </div>
       </section>
@@ -873,13 +954,10 @@ export default function LandingPage() {
             className="bg-gradient-to-r from-blue-600 to-cyan-600 rounded-3xl p-12 text-white shadow-2xl"
           >
             <h2 className="text-4xl md:text-5xl font-bold mb-6">
-              Join the Movement
+              Ovii is more than a wallet. It's a movement.
             </h2>
-            <p className="text-xl mb-4 opacity-90 max-w-2xl mx-auto">
-              We&apos;re not just building an app. We&apos;re building a movement.
-            </p>
-            <p className="text-lg mb-8 opacity-85 max-w-2xl mx-auto">
-              Wallets that work for you. Payments without pain. Global reach with local soul.
+            <p className="text-xl mb-8 opacity-90 max-w-2xl mx-auto">
+              Join thousands building their own lane.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <motion.button
@@ -892,25 +970,49 @@ export default function LandingPage() {
                   color: COLORS.indigo,
                 }}
               >
-                Create Your Account
+                Join Ovii Now
                 <FiArrowRight className="inline ml-2" />
               </motion.button>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => router.push('/login')}
-                className="px-8 py-4 rounded-2xl font-bold text-lg border-2 transition-all"
-                style={{
-                  borderColor: COLORS.white,
-                  color: COLORS.white,
-                  backgroundColor: 'transparent',
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Founder's Note */}
+      <section className="py-20" style={{ backgroundColor: COLORS.darkIndigo }}>
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            className="text-center"
+          >
+            <div className="mb-8">
+              <div 
+                className="w-24 h-24 rounded-full mx-auto mb-6 flex items-center justify-center text-3xl font-bold"
+                style={{ 
+                  backgroundColor: COLORS.gold,
+                  color: COLORS.indigo 
                 }}
               >
-                Login
-              </motion.button>
+                W
+              </div>
             </div>
-            <p className="mt-4 text-sm opacity-80">
-              No credit card required • Free forever
+            <blockquote className="text-xl md:text-2xl italic mb-6" style={{ color: COLORS.white }}>
+              "I didn't build Ovii to impress the world. I built it because the system wasn't built for us. 
+              Ovii is our way out — a tool, a gateway, a rebellion in code. Because power belongs in your hands."
+            </blockquote>
+            <p 
+              className="text-lg font-semibold"
+              style={{ color: COLORS.gold }}
+            >
+              — Wenkosi
+            </p>
+            <p 
+              className="text-base opacity-80 mt-2"
+              style={{ color: COLORS.white }}
+            >
+              Founder, Ovii
             </p>
           </motion.div>
         </div>
