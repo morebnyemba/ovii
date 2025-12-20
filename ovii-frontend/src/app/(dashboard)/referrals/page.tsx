@@ -119,7 +119,7 @@ const getBonusStatusIcon = (status: string) => {
 };
 
 export default function ReferralsPage() {
-  const { _hasHydrated, isAuthenticated, user } = useUserStore();
+  const { _hasHydrated, isAuthenticated } = useUserStore();
   const [stats, setStats] = useState<ReferralStats | null>(null);
   const [referrals, setReferrals] = useState<Referral[]>([]);
   const [loading, setLoading] = useState(true);
@@ -260,11 +260,51 @@ export default function ReferralsPage() {
         />
       </div>
 
-      {/* Referral Code Card */}
+      {/* Rewards Banner */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.1 }}
+        className="p-6 rounded-2xl shadow-lg"
+        style={{ 
+          background: `linear-gradient(135deg, ${COLORS.indigo} 0%, ${COLORS.darkIndigo} 100%)`,
+          color: COLORS.white
+        }}
+      >
+        <div className="text-center">
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ duration: 0.5, delay: 0.2, type: "spring" }}
+            className="inline-block"
+          >
+            <FiGift className="text-5xl mx-auto mb-4" style={{ color: COLORS.gold }} />
+          </motion.div>
+          <h2 className="text-2xl md:text-3xl font-bold mb-2">
+            Earn $5 for Every Friend You Refer!
+          </h2>
+          <p className="text-lg opacity-90 mb-4">
+            Your friends get $2 welcome bonus too!
+          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-6">
+            <div className="bg-white/10 backdrop-blur-sm px-6 py-4 rounded-xl text-center">
+              <p className="text-3xl font-bold" style={{ color: COLORS.gold }}>$5</p>
+              <p className="text-sm opacity-80">You Earn</p>
+            </div>
+            <div className="text-2xl opacity-60">+</div>
+            <div className="bg-white/10 backdrop-blur-sm px-6 py-4 rounded-xl text-center">
+              <p className="text-3xl font-bold" style={{ color: COLORS.mint }}>$2</p>
+              <p className="text-sm opacity-80">Friend Gets</p>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Referral Code Card */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
         className="bg-white p-6 rounded-2xl shadow-lg"
       >
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -273,7 +313,7 @@ export default function ReferralsPage() {
               Your Referral Code
             </h2>
             <p className="text-gray-500 text-sm">
-              Share this code with friends. When they sign up and complete their first transaction, you both earn rewards!
+              Share this code with friends. When they sign up and set their PIN, you both get rewarded instantly!
             </p>
           </div>
           {stats?.referral_code ? (
@@ -333,49 +373,95 @@ export default function ReferralsPage() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.2 }}
+        transition={{ duration: 0.5, delay: 0.3 }}
         className="bg-white p-6 rounded-2xl shadow-lg"
       >
-        <h2 className="text-xl font-bold mb-4" style={{ color: COLORS.indigo }}>
-          How It Works
+        <h2 className="text-xl font-bold mb-6" style={{ color: COLORS.indigo }}>
+          How It Works - Simple as 1-2-3!
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="flex flex-col items-center text-center p-4">
+          <motion.div 
+            className="flex flex-col items-center text-center p-4 rounded-xl transition-all hover:shadow-md"
+            whileHover={{ y: -5 }}
+            style={{ backgroundColor: COLORS.lightGray }}
+          >
             <div 
               className="w-16 h-16 rounded-full flex items-center justify-center mb-4"
-              style={{ backgroundColor: `${COLORS.gold}20` }}
+              style={{ backgroundColor: COLORS.gold }}
             >
-              <FiShare2 className="text-2xl" style={{ color: COLORS.gold }} />
+              <FiShare2 className="text-2xl" style={{ color: COLORS.white }} />
             </div>
-            <h3 className="font-bold mb-2" style={{ color: COLORS.indigo }}>1. Share Your Code</h3>
+            <div className="text-3xl font-bold mb-2" style={{ color: COLORS.gold }}>1</div>
+            <h3 className="font-bold mb-2" style={{ color: COLORS.indigo }}>Share Your Code</h3>
             <p className="text-sm text-gray-500">
-              Share your unique referral code with friends and family.
+              Share your unique referral code with friends via WhatsApp, SMS, or social media.
             </p>
-          </div>
-          <div className="flex flex-col items-center text-center p-4">
+          </motion.div>
+          <motion.div 
+            className="flex flex-col items-center text-center p-4 rounded-xl transition-all hover:shadow-md"
+            whileHover={{ y: -5 }}
+            style={{ backgroundColor: COLORS.lightGray }}
+          >
             <div 
               className="w-16 h-16 rounded-full flex items-center justify-center mb-4"
-              style={{ backgroundColor: `${COLORS.mint}20` }}
+              style={{ backgroundColor: COLORS.mint }}
             >
-              <FiUsers className="text-2xl" style={{ color: COLORS.mint }} />
+              <FiUsers className="text-2xl" style={{ color: COLORS.white }} />
             </div>
-            <h3 className="font-bold mb-2" style={{ color: COLORS.indigo }}>2. Friends Sign Up</h3>
+            <div className="text-3xl font-bold mb-2" style={{ color: COLORS.mint }}>2</div>
+            <h3 className="font-bold mb-2" style={{ color: COLORS.indigo }}>Friend Joins & Sets PIN</h3>
             <p className="text-sm text-gray-500">
-              Your friends create an account using your referral code.
+              Your friend creates an account using your code and completes setup by creating their transaction PIN.
             </p>
-          </div>
-          <div className="flex flex-col items-center text-center p-4">
+          </motion.div>
+          <motion.div 
+            className="flex flex-col items-center text-center p-4 rounded-xl transition-all hover:shadow-md"
+            whileHover={{ y: -5 }}
+            style={{ backgroundColor: COLORS.lightGray }}
+          >
             <div 
               className="w-16 h-16 rounded-full flex items-center justify-center mb-4"
-              style={{ backgroundColor: `${COLORS.coral}20` }}
+              style={{ backgroundColor: COLORS.coral }}
             >
-              <FiGift className="text-2xl" style={{ color: COLORS.coral }} />
+              <FiGift className="text-2xl" style={{ color: COLORS.white }} />
             </div>
-            <h3 className="font-bold mb-2" style={{ color: COLORS.indigo }}>3. Both Earn Rewards</h3>
+            <div className="text-3xl font-bold mb-2" style={{ color: COLORS.coral }}>3</div>
+            <h3 className="font-bold mb-2" style={{ color: COLORS.indigo }}>Both Get Paid Instantly!</h3>
             <p className="text-sm text-gray-500">
-              Once they set up their PIN, you both receive bonus credits!
+              You receive <span className="font-bold" style={{ color: COLORS.gold }}>$5</span> and your friend gets <span className="font-bold" style={{ color: COLORS.mint }}>$2</span> credited immediately!
             </p>
+          </motion.div>
+        </div>
+      </motion.div>
+
+      {/* Earnings Calculator */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.4 }}
+        className="p-6 rounded-2xl"
+        style={{ backgroundColor: `${COLORS.mint}10`, border: `2px solid ${COLORS.mint}30` }}
+      >
+        <div className="text-center">
+          <h2 className="text-xl font-bold mb-4" style={{ color: COLORS.indigo }}>
+            💰 Your Earning Potential
+          </h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[
+              { friends: 5, amount: 25 },
+              { friends: 10, amount: 50 },
+              { friends: 20, amount: 100 },
+              { friends: 50, amount: 250 },
+            ].map((tier) => (
+              <div key={tier.friends} className="bg-white p-4 rounded-xl shadow-sm">
+                <p className="text-2xl font-bold" style={{ color: COLORS.mint }}>${tier.amount}</p>
+                <p className="text-sm text-gray-500">{tier.friends} friends</p>
+              </div>
+            ))}
           </div>
+          <p className="mt-4 text-sm text-gray-600">
+            <strong>Unlimited earning potential!</strong> The more friends you refer, the more you earn.
+          </p>
         </div>
       </motion.div>
 
