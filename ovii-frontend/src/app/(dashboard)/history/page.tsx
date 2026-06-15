@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FiArrowUpRight, FiArrowDownLeft, FiAlertTriangle, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
+import { FiArrowUpRight, FiArrowDownLeft, FiAlertTriangle, FiChevronLeft, FiChevronRight, FiRefreshCcw } from 'react-icons/fi';
 import { useUserStore } from '@/lib/store/useUserStore';
 import Link from 'next/link';
 import Skeleton from 'react-loading-skeleton';
@@ -148,42 +148,30 @@ export default function HistoryPage() {
             className="space-y-3"
           >
             {transactions.map((tx, index) => {
-              // Determine if this is an outgoing or incoming transaction
-              // Check if the current user is the sender or receiver
               const userPhone = user?.phone_number;
-              const isOutgoing = tx.sender === userPhone;
-              const isIncoming = tx.receiver === userPhone;
-              
-              // Safety check: if neither matches, assume incoming to avoid confusion
-              // (This shouldn't happen due to backend filtering, but handle it gracefully)
-              const direction = isOutgoing ? 'outgoing' : 'incoming';
-              
-              // Determine display text based on transaction type and direction
+              const isCompensation = tx.is_compensation;
+              const isOutgoing = !isCompensation && tx.sender === userPhone;
+
               const getTransactionLabel = () => {
+                if (isCompensation) {
+                  return tx.compensates_reference
+                    ? `Compensation — reversal of ${tx.compensates_reference}`
+                    : 'Compensation Transaction';
+                }
                 if (isOutgoing) {
                   switch (tx.transaction_type) {
-                    case 'TRANSFER':
-                      return `Sent to ${tx.receiver || 'Unknown'}`;
-                    case 'WITHDRAWAL':
-                      return `Cash-out to ${tx.receiver || 'Agent'}`;
-                    case 'PAYMENT':
-                      return `Payment to ${tx.receiver || 'Merchant'}`;
-                    case 'COMMISSION':
-                      return 'Commission Fee';
-                    default:
-                      return `Sent ${tx.transaction_type}`;
+                    case 'Transfer': return `Sent to ${tx.receiver || 'Unknown'}`;
+                    case 'Withdrawal': return `Cash-out to ${tx.receiver || 'Agent'}`;
+                    case 'Payment': return `Payment to ${tx.receiver || 'Merchant'}`;
+                    case 'Commission': return 'Commission Fee';
+                    default: return `Sent — ${tx.transaction_type}`;
                   }
                 } else {
-                  // Incoming transaction (or unclear - treat as incoming)
                   switch (tx.transaction_type) {
-                    case 'TRANSFER':
-                      return `Received from ${tx.sender || 'Unknown'}`;
-                    case 'DEPOSIT':
-                      return `Received from ${tx.sender || 'Agent'}`;
-                    case 'PAYMENT':
-                      return `Payment from ${tx.sender || 'Customer'}`;
-                    default:
-                      return `Received ${tx.transaction_type}`;
+                    case 'Transfer': return `Received from ${tx.sender || 'Unknown'}`;
+                    case 'Deposit': return `Deposit from ${tx.sender || 'Agent'}`;
+                    case 'Payment': return `Payment from ${tx.sender || 'Customer'}`;
+                    default: return `Received — ${tx.transaction_type}`;
                   }
                 }
               };
@@ -194,24 +182,35 @@ export default function HistoryPage() {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.3, delay: index * 0.05 }}
-                className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 rounded-lg bg-white shadow-sm hover:shadow-md transition-shadow gap-3"
+                className={`flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow gap-3 ${
+                  isCompensation ? 'bg-purple-50 border border-purple-200' : 'bg-white'
+                }`}
               >
                 <div className="flex items-center gap-4 flex-1 min-w-0">
                   <div
                     className={`flex items-center justify-center w-10 h-10 rounded-full flex-shrink-0 ${
-                      isOutgoing ? 'bg-red-100' : 'bg-green-100'
+                      isCompensation ? 'bg-purple-100' : isOutgoing ? 'bg-red-100' : 'bg-green-100'
                     }`}
                   >
-                    {isOutgoing ? (
+                    {isCompensation ? (
+                      <FiRefreshCcw style={{ color: '#7C3AED' }} />
+                    ) : isOutgoing ? (
                       <FiArrowUpRight style={{ color: COLORS.coral }} />
                     ) : (
                       <FiArrowDownLeft style={{ color: COLORS.mint }} />
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="font-semibold truncate" style={{ color: COLORS.darkIndigo }}>
-                      {getTransactionLabel()}
-                    </p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="font-semibold truncate" style={{ color: COLORS.darkIndigo }}>
+                        {getTransactionLabel()}
+                      </p>
+                      {isCompensation && (
+                        <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 flex-shrink-0">
+                          COMPENSATION
+                        </span>
+                      )}
+                    </div>
                     <p className="text-sm text-gray-500">
                       {new Date(tx.timestamp).toLocaleDateString('en-US', {
                         month: 'short',
@@ -224,7 +223,12 @@ export default function HistoryPage() {
                     {tx.transaction_reference && (
                       <p className="text-xs text-gray-400 mt-1">Ref: {tx.transaction_reference}</p>
                     )}
-                    {tx.description && (
+                    {isCompensation && tx.compensates_reference && (
+                      <p className="text-xs mt-1 font-medium" style={{ color: '#7C3AED' }}>
+                        Reverses: {tx.compensates_reference}
+                      </p>
+                    )}
+                    {tx.description && !isCompensation && (
                       <p className="text-xs text-gray-400 mt-1 truncate">{tx.description}</p>
                     )}
                   </div>
@@ -232,10 +236,14 @@ export default function HistoryPage() {
                 <div className="text-left sm:text-right flex-shrink-0">
                   <p
                     className={`font-bold ${
-                      isOutgoing ? 'text-red-500' : 'text-green-500'
+                      isCompensation
+                        ? 'text-purple-600'
+                        : isOutgoing
+                        ? 'text-red-500'
+                        : 'text-green-500'
                     }`}
                   >
-                    {isOutgoing ? '-' : '+'} {wallet?.currency}{' '}
+                    {isCompensation ? '↺' : isOutgoing ? '-' : '+'} {wallet?.currency}{' '}
                     {tx.amount}
                   </p>
                   <p

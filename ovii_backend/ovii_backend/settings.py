@@ -305,6 +305,8 @@ REST_FRAMEWORK = {
         "otp.request": "5/hour",
     },
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_PAGINATION_CLASS": "core.pagination.StandardResultsPagination",
+    "PAGE_SIZE": 20,
 }
 
 # ------------------------------------------------------------------

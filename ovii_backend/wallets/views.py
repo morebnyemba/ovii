@@ -1,7 +1,7 @@
 from decimal import Decimal, InvalidOperation
 from django.db.models import Q
 from rest_framework import generics, status
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .models import Transaction
@@ -14,6 +14,7 @@ from .serializers import (
 from .permissions import IsMobileVerifiedOrHigher
 from .services import (
     create_transaction,
+    create_compensation_transaction,
     TransactionError,
     TransactionLimitExceededError,
 )
@@ -115,6 +116,40 @@ class CreateTransactionView(generics.CreateAPIView):
                 headers=headers,
             )
         except (TransactionError, TransactionLimitExceededError) as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class CompensationTransactionView(APIView):
+    """
+    Staff-only endpoint to create a compensation (reversal) transaction.
+
+    A compensation is an immutable, clearly-labelled counter-transaction that
+    neutralises the financial effect of an existing completed transaction.
+    The original transaction is never modified.
+    """
+
+    permission_classes = [IsAuthenticated, IsAdminUser]
+
+    def post(self, request, transaction_id, *args, **kwargs):
+        try:
+            original_tx = Transaction.objects.get(id=transaction_id)
+        except Transaction.DoesNotExist:
+            return Response(
+                {"detail": "Transaction not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        reason = request.data.get("reason", "")
+
+        try:
+            compensation = create_compensation_transaction(
+                original_transaction=original_tx,
+                initiated_by=request.user,
+                reason=reason,
+            )
+            response_serializer = TransactionSerializer(compensation)
+            return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+        except TransactionError as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 

@@ -43,6 +43,14 @@ class TransactionSerializer(serializers.ModelSerializer):
         source="get_transaction_type_display", read_only=True
     )
     charge = serializers.StringRelatedField()
+    # For compensation transactions: the reference of the original transaction.
+    compensates_reference = serializers.SerializerMethodField()
+    is_compensation = serializers.BooleanField(read_only=True)
+
+    def get_compensates_reference(self, obj):
+        if obj.compensates_id:
+            return obj.compensates.transaction_reference
+        return None
 
     class Meta:
         model = Transaction
@@ -56,6 +64,8 @@ class TransactionSerializer(serializers.ModelSerializer):
             "charge_amount",
             "status",
             "transaction_type",
+            "is_compensation",
+            "compensates_reference",
             "description",
             "timestamp",
         ]
