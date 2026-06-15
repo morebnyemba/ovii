@@ -144,6 +144,17 @@ class PaynowWebhookView(APIView):
         paynow_reference = data.get("paynowreference")
         payment_status = data.get("status", "").lower()
 
+        # Verify Paynow webhook signature before processing
+        client = PaynowClient()
+        if not client.verify_webhook_hash(data):
+            logging.warning(
+                f"Paynow webhook signature verification failed for transaction: {transaction_id}"
+            )
+            return Response(
+                {"detail": "Invalid webhook signature."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         try:
             tx_to_update = Transaction.objects.select_related("wallet__user").get(
                 id=transaction_id, status=Transaction.Status.PENDING

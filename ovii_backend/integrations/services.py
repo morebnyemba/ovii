@@ -23,69 +23,102 @@ MIN_TOKEN_LENGTH_FOR_MASKING = 14  # Minimum token length to apply masking
 
 class EcoCashClient:
     """
-    A client for interacting with the (hypothetical) EcoCash B2B API.
+    Client for the EcoCash B2B/B2C API.
+
+    Authentication uses HTTP Basic Auth (api_key:api_secret) which is the standard
+    EcoCash merchant integration method. Swap _get_auth_headers() for OAuth2 bearer
+    tokens if EcoCash issues you a token endpoint.
     """
 
     def __init__(self):
-        self.api_base_url = settings.ECOCASH_API_URL
+        self.api_base_url = settings.ECOCASH_API_URL.rstrip("/")
         self.api_key = settings.ECOCASH_API_KEY
         self.api_secret = settings.ECOCASH_API_SECRET
 
-    def _get_auth_headers(self):
-        # This is a placeholder. The actual authentication method
-        # (e.g., Basic Auth, OAuth2) would be specified by EcoCash.
+        if not self.api_key or not self.api_secret:
+            logger.warning(
+                "EcoCash API credentials not configured. "
+                "Set ECOCASH_API_KEY and ECOCASH_API_SECRET."
+            )
+
+    def _get_auth_headers(self) -> dict:
+        """Returns Basic Auth headers as required by the EcoCash merchant API."""
+        import base64
+        raw = f"{self.api_key}:{self.api_secret}"
+        encoded = base64.b64encode(raw.encode()).decode()
         return {
-            "Authorization": f"Bearer {self.api_key}:{self.api_secret}",
+            "Authorization": f"Basic {encoded}",
             "Content-Type": "application/json",
+            "Accept": "application/json",
         }
+
+    def _raise_for_ecocash_error(self, response: requests.Response, context: str):
+        """Raises a descriptive exception for EcoCash API errors."""
+        try:
+            body = response.json()
+            msg = body.get("message") or body.get("error") or response.text
+        except (json.JSONDecodeError, ValueError):
+            msg = response.text or "No response body"
+        logger.error(
+            f"EcoCash API error [{response.status_code}] during {context}: {msg}"
+        )
+        raise Exception(f"EcoCash error ({response.status_code}): {msg}")
 
     def request_c2b_payment(
         self, phone_number: str, amount: Decimal, reference: str
     ) -> dict:
         """
-        Initiates a Customer-to-Business (C2B) payment request.
-        This asks the customer to approve a payment from their EcoCash wallet.
+        Initiates a Customer-to-Business (C2B) payment.
+        The customer receives a USSD push on their EcoCash app to approve the debit.
         """
-        url = f"{self.api_base_url}/c2b/payment-requests/"
+        url = f"{self.api_base_url}/c2b/payment-requests"
         payload = {
-            "customer_phone": phone_number,
+            "customerPhoneNumber": phone_number.replace("+", ""),
             "amount": str(amount),
-            "transaction_reference": reference,
-            "callback_url": settings.ECOCASH_WEBHOOK_URL,  # Your webhook endpoint
+            "transactionReference": reference,
+            "callbackUrl": settings.ECOCASH_WEBHOOK_URL,
         }
         try:
             response = requests.post(
                 url, json=payload, headers=self._get_auth_headers(), timeout=15
             )
-            response.raise_for_status()
+            if not response.ok:
+                self._raise_for_ecocash_error(response, f"C2B payment ref={reference}")
             return response.json()
-        except requests.RequestException as e:
-            logger.error(f"EcoCash C2B request failed for ref {reference}: {e}")
-            raise
+        except requests.exceptions.Timeout:
+            logger.error(f"EcoCash C2B request timed out for ref {reference}")
+            raise Exception("EcoCash C2B request timed out. Please retry.")
+        except requests.exceptions.ConnectionError:
+            logger.error(f"EcoCash C2B connection error for ref {reference}")
+            raise Exception("Unable to reach EcoCash API. Check connectivity.")
 
     def send_b2c_payment(
         self, phone_number: str, amount: Decimal, reference: str
     ) -> dict:
         """
-        Initiates a Business-to-Customer (B2C) payment.
-        This pushes funds from our business account to a customer's EcoCash wallet.
+        Initiates a Business-to-Customer (B2C) payout.
+        Pushes funds from the Ovii merchant account to a customer's EcoCash wallet.
         """
-        url = f"{self.api_base_url}/b2c/payments/"
+        url = f"{self.api_base_url}/b2c/payments"
         payload = {
-            "customer_phone": phone_number,
+            "customerPhoneNumber": phone_number.replace("+", ""),
             "amount": str(amount),
-            "transaction_reference": reference,
-            "callback_url": settings.ECOCASH_WEBHOOK_URL,  # Optional: For confirmation
+            "transactionReference": reference,
+            "callbackUrl": settings.ECOCASH_WEBHOOK_URL,
         }
         try:
             response = requests.post(
                 url, json=payload, headers=self._get_auth_headers(), timeout=20
             )
-            response.raise_for_status()
+            if not response.ok:
+                self._raise_for_ecocash_error(response, f"B2C payment ref={reference}")
             return response.json()
-        except requests.RequestException as e:
-            logger.error(f"EcoCash B2C payment failed for ref {reference}: {e}")
-            raise
+        except requests.exceptions.Timeout:
+            logger.error(f"EcoCash B2C request timed out for ref {reference}")
+            raise Exception("EcoCash B2C request timed out. Please retry.")
+        except requests.exceptions.ConnectionError:
+            logger.error(f"EcoCash B2C connection error for ref {reference}")
+            raise Exception("Unable to reach EcoCash API. Check connectivity.")
 
 
 class PaynowClient:
@@ -96,7 +129,12 @@ class PaynowClient:
     def __init__(self):
         self.integration_id = settings.PAYNOW_INTEGRATION_ID
         self.integration_key = settings.PAYNOW_INTEGRATION_KEY
-        self.initiate_transaction_url = f"{settings.PAYNOW_API_URL}/initiatetransaction"
+        base = settings.PAYNOW_API_URL.rstrip("/")
+        # Normalise: always point to the correct Paynow initiate endpoint
+        if base.endswith("/remotetransaction"):
+            self.initiate_transaction_url = base
+        else:
+            self.initiate_transaction_url = f"{base}/remotetransaction"
 
     def _generate_hash(self, values_string: str) -> str:
         """Generates a SHA512 hash as required by Paynow."""
@@ -254,41 +292,69 @@ class WhatsAppClient:
         components: list = None
     ) -> dict:
         """
-        Sends a pre-approved WhatsApp template message.
-        
+        Sends a pre-approved WhatsApp template message via direct Meta Graph API call.
+
+        Uses the Graph API directly (not heyoo) to ensure correct component formatting
+        and compatibility with the latest Meta Cloud API.
+
         Args:
-            phone_number: Recipient's phone number in international format
+            phone_number: Recipient phone number in international format (e.g. +263777123456)
             template_name: Name of the approved template
             language_code: Language code for the template (default: "en")
-            components: List of template components (headers, body, buttons)
-            
+            components: List of Meta-formatted component dicts
+
         Returns:
-            dict: Response from WhatsApp API
-            
+            dict: Response from Meta Graph API
+
         Raises:
-            Exception: If WhatsApp is not configured or message fails to send
+            Exception: If credentials are missing or the API call fails
         """
-        if not self.client:
+        if not self.phone_number_id or not self.access_token:
             raise Exception("WhatsApp client not configured. Check credentials.")
-        
-        # Import here to avoid circular imports
+
         from integrations.whatsapp_templates import normalize_language_code
-        
-        # Normalize language code to Meta's expected format (e.g., "en" -> "en_US")
+
         normalized_lang = normalize_language_code(language_code)
-        
+        clean_number = phone_number.replace("+", "")
+
+        url = (
+            f"https://graph.facebook.com/{self.api_version or 'v20.0'}"
+            f"/{self.phone_number_id}/messages"
+        )
+        headers = {
+            "Authorization": f"Bearer {self.access_token}",
+            "Content-Type": "application/json",
+        }
+        payload = {
+            "messaging_product": "whatsapp",
+            "to": clean_number,
+            "type": "template",
+            "template": {
+                "name": template_name,
+                "language": {"code": normalized_lang},
+                "components": components or [],
+            },
+        }
+
         try:
-            # Remove '+' if present for API call
-            clean_number = phone_number.replace("+", "")
-            response = self.client.send_template(
-                template=template_name,
-                recipient_id=clean_number,
-                lang=normalized_lang,
-                components=components or []
-            )
+            response = requests.post(url, json=payload, headers=headers, timeout=15)
+            response.raise_for_status()
+            result = response.json()
             logger.info(f"WhatsApp template '{template_name}' sent to {phone_number}")
-            return response
-        except Exception as e:
+            return result
+        except requests.exceptions.HTTPError as e:
+            status_code = e.response.status_code if e.response else None
+            try:
+                err_body = e.response.json() if e.response else {}
+            except (json.JSONDecodeError, ValueError):
+                err_body = {}
+            err_msg = err_body.get("error", {}).get("message", str(e))
+            logger.error(
+                f"Failed to send WhatsApp template '{template_name}' to {phone_number}: "
+                f"HTTP {status_code} — {err_msg}"
+            )
+            raise Exception(f"Meta API error ({status_code}): {err_msg}") from e
+        except requests.exceptions.RequestException as e:
             logger.error(
                 f"Failed to send WhatsApp template '{template_name}' to {phone_number}: {e}"
             )
