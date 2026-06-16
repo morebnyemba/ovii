@@ -7,6 +7,7 @@ from django.contrib import messages
 
 from .models import Wallet, Transaction, TransactionCharge, SystemWallet
 from .forms import WalletTopUpForm
+from .services import create_compensation_transaction, TransactionError
 
 
 @admin.register(SystemWallet)
@@ -105,33 +106,79 @@ class WalletAdmin(admin.ModelAdmin):
 class TransactionAdmin(admin.ModelAdmin):
     """
     Admin configuration for the Transaction model.
+    Transactions are immutable — no editing or deletion is permitted.
+    Compensation transactions can be created via the admin action.
     """
 
     list_display = (
+        "transaction_reference",
         "wallet",
         "related_wallet",
         "transaction_type",
         "amount",
         "status",
+        "is_compensation_display",
         "timestamp",
     )
     list_filter = ("status", "transaction_type")
     search_fields = (
+        "transaction_reference",
         "wallet__user__phone_number",
         "related_wallet__user__phone_number",
         "description",
     )
-    list_select_related = ("wallet__user", "related_wallet__user")
+    list_select_related = ("wallet__user", "related_wallet__user", "compensates")
     readonly_fields = (
         "wallet",
         "related_wallet",
         "amount",
+        "charge",
+        "charge_amount",
         "status",
         "timestamp",
         "transaction_type",
+        "transaction_reference",
+        "sender_identifier",
+        "receiver_identifier",
         "description",
+        "compensates",
     )
+    actions = ["compensate_transaction_action"]
+
+    @admin.display(description="Compensation", boolean=True)
+    def is_compensation_display(self, obj):
+        return obj.is_compensation
 
     def has_add_permission(self, request):
-        # Transactions should only be created via the API, not the admin.
         return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    @admin.action(description="[COMPENSATION] Reverse selected transaction(s)")
+    def compensate_transaction_action(self, request, queryset):
+        if queryset.count() != 1:
+            self.message_user(
+                request,
+                "Please select exactly one transaction to compensate.",
+                level=messages.WARNING,
+            )
+            return
+
+        original = queryset.first()
+        try:
+            comp = create_compensation_transaction(
+                original_transaction=original,
+                initiated_by=request.user,
+                reason="Admin-initiated compensation",
+            )
+            self.message_user(
+                request,
+                f"Compensation transaction {comp.transaction_reference} created successfully "
+                f"to reverse {original.transaction_reference}.",
+            )
+        except TransactionError as e:
+            self.message_user(request, str(e), level=messages.ERROR)

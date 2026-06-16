@@ -131,6 +131,7 @@ class Transaction(models.Model):
         WITHDRAWAL = "WITHDRAWAL", _("Withdrawal")
         PAYMENT = "PAYMENT", _("Payment")
         COMMISSION = "COMMISSION", _("Commission")
+        COMPENSATION = "COMPENSATION", _("Compensation")
 
     # The primary wallet involved in the transaction (e.g., the sender).
     wallet = models.ForeignKey(
@@ -205,6 +206,20 @@ class Transaction(models.Model):
 
     description = models.CharField(_("description"), max_length=255, blank=True)
 
+    # For compensation transactions only: reference to the original transaction being compensated.
+    compensates = models.ForeignKey(
+        "self",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="compensation_transactions",
+        help_text=_("The original transaction this compensation reverses."),
+    )
+
+    @property
+    def is_compensation(self) -> bool:
+        return self.transaction_type == self.TransactionType.COMPENSATION
+
     def _generate_transaction_reference(self):
         """
         Generate a unique transaction reference based on transaction type.
@@ -223,6 +238,7 @@ class Transaction(models.Model):
             self.TransactionType.PAYMENT: "MP",
             self.TransactionType.DEPOSIT: "DP",
             self.TransactionType.COMMISSION: "CM",
+            self.TransactionType.COMPENSATION: "CP",
         }
         
         prefix = prefix_map.get(self.transaction_type, "TR")
@@ -237,11 +253,20 @@ class Transaction(models.Model):
         return f"{self.get_transaction_type_display()}: {self.sender_identifier} - {self.amount}"
 
     def save(self, *args, **kwargs):
+        # Enforce immutability: completed or failed transactions cannot be modified.
+        if self.pk:
+            original = Transaction.objects.filter(pk=self.pk).values("status").first()
+            if original and original["status"] in (self.Status.COMPLETED, self.Status.FAILED):
+                raise ValueError(
+                    f"Transaction {self.transaction_reference} is immutable and cannot be modified. "
+                    "Use a compensation transaction to reverse its effect."
+                )
+
         # Automatically populate the identifier fields before saving.
         self.sender_identifier = str(self.wallet.user.phone_number)
         if self.related_wallet:
             self.receiver_identifier = str(self.related_wallet.user.phone_number)
-        
+
         # Generate transaction reference if not already set
         if not self.transaction_reference:
             self.transaction_reference = self._generate_transaction_reference()

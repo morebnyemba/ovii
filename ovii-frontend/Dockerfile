@@ -15,8 +15,10 @@ RUN npm ci
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-# Get the build-time argument for the WebSocket URL.
+# Build-time arguments — these become baked-in env vars in the Next.js bundle.
+ARG NEXT_PUBLIC_API_URL
 ARG NEXT_PUBLIC_WEBSOCKET_URL
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 ENV NEXT_PUBLIC_WEBSOCKET_URL=${NEXT_PUBLIC_WEBSOCKET_URL}
 
 # Copy dependencies from the previous stage

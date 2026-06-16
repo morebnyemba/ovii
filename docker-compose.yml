@@ -16,9 +16,9 @@ services:
       - ./.env
     environment:
       # Use POSTGRES_* variables from .env, with fallback to DATABASE_* variables
-      - POSTGRES_DB=${POSTGRES_DB:-ovii_prod_db}
-      - POSTGRES_USER=${POSTGRES_USER:-ovii_prod_user}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-Ovii@PROD2025!}
+      - POSTGRES_DB=${POSTGRES_DB:?POSTGRES_DB must be set in .env}
+      - POSTGRES_USER=${POSTGRES_USER:?POSTGRES_USER must be set in .env}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ovii_prod_user} -d ${POSTGRES_DB:-ovii_prod_db}"]
@@ -38,7 +38,7 @@ services:
   backend:
     build:
       context: ./ovii_backend
-    image: ovii_backend_image # Name the image after building
+    image: ovii_backend_image
     command: daphne -b 0.0.0.0 -p 8000 ovii_backend.asgi:application
     volumes:
       - static_volume:/home/app/web/staticfiles
@@ -48,6 +48,8 @@ services:
       - ./.env
     restart: unless-stopped
     depends_on:
+      db:
+        condition: service_healthy
       redis:
         condition: service_healthy
 
@@ -61,6 +63,8 @@ services:
       - ./.env
     restart: unless-stopped
     depends_on:
+      db:
+        condition: service_healthy
       redis:
         condition: service_healthy
 
@@ -69,29 +73,31 @@ services:
       context: ./ovii_backend
     command: >
       sh -c "mkdir -p /var/run/celery &&
-             rm -f /var/run/celery/celerybeat.pid && 
-             celery -A ovii_backend beat -l info 
-             --scheduler django_celery_beat.schedulers:DatabaseScheduler 
+             rm -f /var/run/celery/celerybeat.pid &&
+             celery -A ovii_backend beat -l info
+             --scheduler django_celery_beat.schedulers:DatabaseScheduler
              --schedule=/var/run/celery/celerybeat-schedule
              --pidfile=/var/run/celery/celerybeat.pid"
     volumes:
       - ./ovii_backend:/home/app/web
-      - celery_beat_schedule:/var/run/celery # Persists schedule and pid files
+      - celery_beat_schedule:/var/run/celery
     env_file:
       - ./.env
     restart: unless-stopped
     depends_on:
+      db:
+        condition: service_healthy
       redis:
         condition: service_healthy
-  
+
   # --- Frontend Service ---
   frontend:
     build:
       context: ./ovii-frontend
       dockerfile: Dockerfile
       args:
-        # This URL should now point to the public-facing API domain
-        - NEXT_PUBLIC_WEBSOCKET_URL=wss://api.ovii.it.com/ws/wallet/
+        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-https://api.ovii.it.com/api}
+        - NEXT_PUBLIC_WEBSOCKET_URL=${NEXT_PUBLIC_WEBSOCKET_URL:-wss://api.ovii.it.com/ws/wallet/}
     restart: unless-stopped
     depends_on:
       - backend

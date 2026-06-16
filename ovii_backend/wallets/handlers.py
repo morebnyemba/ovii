@@ -7,7 +7,7 @@ Description: Defines signal handlers for the wallets app.
 import logging
 from django.dispatch import receiver
 from users.tasks import send_realtime_notification
-from .signals import transaction_completed
+from .signals import transaction_completed, compensation_created
 from merchants.tasks import send_payment_webhook
 from .models import Transaction
 from notifications.models import Notification
@@ -222,9 +222,33 @@ def handle_transaction_completed(sender, **kwargs):
         send_realtime_notification.delay(sender_user.id, commission_msg)
         _create_and_send_notification(sender_user, "Commission Charged", commission_msg)
 
+    # --- Compensation Transaction Notifications ---
+    elif tx_type == Transaction.TransactionType.COMPENSATION:
+        # wallet = receiver of original (who is "sending" funds back)
+        # related_wallet = original sender (who is receiving their refund)
+        original_sender_user = transaction.related_wallet.user if transaction.related_wallet else None
+        original_receiver_user = transaction.wallet.user
+
+        comp_ref = transaction.compensates.transaction_reference if transaction.compensates else "N/A"
+        receiver_msg = (
+            f"[COMPENSATION] A reversal of {amount} {currency} has been returned to your wallet "
+            f"(ref: {comp_ref})."
+        )
+        sender_msg = (
+            f"[COMPENSATION] {amount} {currency} was reversed from your wallet "
+            f"(ref: {comp_ref})."
+        )
+
+        if original_sender_user:
+            send_realtime_notification.delay(original_sender_user.id, receiver_msg)
+            _create_and_send_notification(original_sender_user, "Compensation Received", receiver_msg)
+
+        send_realtime_notification.delay(original_receiver_user.id, sender_msg)
+        _create_and_send_notification(original_receiver_user, "Compensation Processed", sender_msg)
+
     # --- Webhook for Merchant Payments ---
     # If the transaction is a payment and the receiver is a merchant, trigger a webhook.
-    if transaction.transaction_type == Transaction.TransactionType.PAYMENT:
+    if tx_type == Transaction.TransactionType.PAYMENT:
         if hasattr(receiver_user, "merchant_profile") and receiver_user:
             send_payment_webhook.delay(transaction.id)
             
@@ -252,3 +276,24 @@ def handle_transaction_completed(sender, **kwargs):
                     "transaction_id": transaction.transaction_reference,
                 }
             )
+
+
+@receiver(compensation_created, sender=Transaction)
+def handle_compensation_created(sender, **kwargs):
+    """
+    Logs the compensation for audit purposes. Actual user notifications are
+    handled inside handle_transaction_completed via the COMPENSATION type branch.
+    """
+    compensation = kwargs.get("compensation")
+    original = kwargs.get("original")
+    initiated_by = kwargs.get("initiated_by")
+
+    if not compensation or not original:
+        return
+
+    logger.info(
+        "Compensation transaction %s created by staff user %s to reverse %s.",
+        compensation.transaction_reference,
+        getattr(initiated_by, "phone_number", initiated_by),
+        original.transaction_reference,
+    )

@@ -18,13 +18,19 @@ load_dotenv()  # loads variables from .env
 # ------------------------------------------------------------------
 # 2. CORE SETTINGS
 # ------------------------------------------------------------------
-DEBUG = os.getenv("DJANGO_DEBUG", "True").lower() == "true"
+DEBUG = os.getenv("DJANGO_DEBUG", "False").lower() == "true"
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
-if not SECRET_KEY and DEBUG is False:
-    raise ValueError("No DJANGO_SECRET_KEY set for production environment!")
-elif not SECRET_KEY:
-    SECRET_KEY = "django-insecure-x1hv@le&dft+59o624lfp24h(h*c@zc-rv$o53#o3a9@^pc8_#"
+if not SECRET_KEY:
+    if not DEBUG:
+        raise ValueError(
+            "DJANGO_SECRET_KEY environment variable is not set. "
+            "This is required in production. "
+            "Generate one with: python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())'"
+        )
+    # Development-only fallback — never used when DEBUG=False
+    import secrets as _secrets
+    SECRET_KEY = "dev-only-" + _secrets.token_hex(32)
 
 # ALLOWED_HOSTS should be a list of strings representing the host/domain names
 # that this Django site can serve. This is a security measure to prevent
@@ -168,7 +174,7 @@ if not os.getenv("DATABASE_URL"):
     DB_ENGINE = os.getenv("DATABASE_ENGINE", "django.db.backends.postgresql")
     DB_NAME = os.getenv("DATABASE_NAME", "ovii_prod_db")
     DB_USER = os.getenv("DATABASE_USER", "ovii_prod_user")
-    DB_PASSWORD = os.getenv("DATABASE_PASSWORD", "Ovii@PROD2025!")
+    DB_PASSWORD = os.getenv("DATABASE_PASSWORD", "")
     DB_HOST = os.getenv("DATABASE_HOST", "db")
     DB_PORT = os.getenv("DATABASE_PORT", "5432")
 
@@ -305,6 +311,8 @@ REST_FRAMEWORK = {
         "otp.request": "5/hour",
     },
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_PAGINATION_CLASS": "core.pagination.StandardResultsPagination",
+    "PAGE_SIZE": 20,
 }
 
 # ------------------------------------------------------------------
@@ -402,15 +410,52 @@ LOGGING = {
 # ------------------------------------------------------------------
 # 14.1. EMAIL SETTINGS
 # ------------------------------------------------------------------
-# For production, configure a robust email backend (e.g., SendGrid, Mailgun, AWS SES)
-# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-# EMAIL_HOST = os.getenv('EMAIL_HOST')
-# EMAIL_PORT = os.getenv('EMAIL_PORT')
-# EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() == 'true'
-# EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
-# EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
-# DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'webmaster@localhost')
-# SERVER_EMAIL = os.getenv('SERVER_EMAIL', 'root@localhost')
+EMAIL_BACKEND = os.getenv(
+    "EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend"
+)
+EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.gmail.com")
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
+EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True").lower() == "true"
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "noreply@ovii.it.com")
+SERVER_EMAIL = os.getenv("SERVER_EMAIL", "errors@ovii.it.com")
+
+# ------------------------------------------------------------------
+# 14.2. THIRD-PARTY INTEGRATION SETTINGS
+# ------------------------------------------------------------------
+
+# --- WhatsApp Cloud API ---
+WHATSAPP_WABA_ID = os.getenv("WHATSAPP_WABA_ID", "")
+WHATSAPP_PHONE_NUMBER_ID = os.getenv("WHATSAPP_PHONE_NUMBER_ID", "")
+WHATSAPP_ACCESS_TOKEN = os.getenv("WHATSAPP_ACCESS_TOKEN", "")
+WHATSAPP_API_VERSION = os.getenv("WHATSAPP_API_VERSION", "v20.0")
+WHATSAPP_WEBHOOK_VERIFY_TOKEN = os.getenv("WHATSAPP_WEBHOOK_VERIFY_TOKEN", "")
+
+# --- EcoCash B2B API ---
+ECOCASH_API_URL = os.getenv("ECOCASH_API_URL", "https://api.ecocash.co.zw/v1")
+ECOCASH_API_KEY = os.getenv("ECOCASH_API_KEY", "")
+ECOCASH_API_SECRET = os.getenv("ECOCASH_API_SECRET", "")
+# Publicly reachable URL that EcoCash will POST status updates to
+ECOCASH_WEBHOOK_URL = os.getenv(
+    "ECOCASH_WEBHOOK_URL", "https://api.ovii.it.com/api/integrations/webhooks/ecocash/"
+)
+
+# --- Paynow ---
+PAYNOW_INTEGRATION_ID = os.getenv("PAYNOW_INTEGRATION_ID", "")
+PAYNOW_INTEGRATION_KEY = os.getenv("PAYNOW_INTEGRATION_KEY", "")
+PAYNOW_API_URL = os.getenv("PAYNOW_API_URL", "https://www.paynow.co.zw/interface")
+# URL Paynow redirects the customer to after payment
+PAYNOW_RETURN_URL = os.getenv("PAYNOW_RETURN_URL", "https://ovii.it.com/wallet/topup/complete")
+# URL Paynow POSTs the transaction result to (must be publicly reachable)
+PAYNOW_RESULT_URL = os.getenv(
+    "PAYNOW_RESULT_URL", "https://api.ovii.it.com/api/integrations/webhooks/paynow/"
+)
+
+# --- System / Internal ---
+# Phone number of the system wallet user used for agent payouts and reversals.
+# This user must exist in the database.
+SYSTEM_PAYOUT_WALLET_PHONE = os.getenv("SYSTEM_PAYOUT_WALLET_PHONE", "")
 
 # ------------------------------------------------------------------
 # 15. TRANSACTION LIMITS

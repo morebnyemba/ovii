@@ -54,6 +54,7 @@ export interface User {
   created_at: string;
   last_login: string | null;
   is_active: boolean;
+  role: string;
   has_set_pin: boolean;
   verification_level: VerificationLevels;
   agent_profile?: AgentProfile;
@@ -72,8 +73,12 @@ export interface Transaction {
   sender: string;
   receiver: string | null;
   amount: string;
+  charge: string | null;
+  charge_amount: string;
   status: TransactionStatus;
   transaction_type: string;
+  is_compensation: boolean;
+  compensates_reference: string | null;
   description: string;
   timestamp: string;
 }
@@ -140,6 +145,9 @@ export const useUserStore = create<UserState>()(
       user: null,
       wallet: null,
       transactions: [],
+      currentPage: 1,
+      totalPages: 1,
+      totalTransactions: 0,
       isAuthenticated: false,
       _hasHydrated: false,
       loading: { wallet: false, transactions: false, sendMoney: false },

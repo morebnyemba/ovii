@@ -11,7 +11,7 @@ from django.utils import timezone
 from django.conf import settings
 
 from .models import Wallet, Transaction, TransactionCharge, SystemWallet
-from .signals import transaction_completed
+from .signals import transaction_completed, compensation_created
 
 
 class TransactionError(Exception):
@@ -147,4 +147,98 @@ def create_transaction(
     transaction_completed.send(sender=Transaction, transaction=new_transaction)
 
     return new_transaction
+
+
+def create_compensation_transaction(
+    original_transaction: Transaction,
+    initiated_by,
+    reason: str = "",
+) -> Transaction:
+    """
+    Creates a compensation (reversal) transaction for a completed transaction.
+
+    A compensation does NOT modify the original transaction — it creates a new,
+    clearly-labelled COMPENSATION transaction that moves funds in the opposite
+    direction to neutralise the original transaction's effect.
+
+    Args:
+        original_transaction: The completed Transaction to compensate.
+        initiated_by: The User (must be staff/admin) authorising the compensation.
+        reason: Human-readable explanation for the compensation.
+
+    Returns:
+        The newly created compensation Transaction.
+
+    Raises:
+        TransactionError: If the compensation cannot be created.
+    """
+    if not initiated_by.is_staff:
+        raise TransactionError("Only staff members may initiate compensation transactions.")
+
+    if original_transaction.status != Transaction.Status.COMPLETED:
+        raise TransactionError(
+            "Only completed transactions can be compensated. "
+            f"This transaction has status '{original_transaction.status}'."
+        )
+
+    if original_transaction.is_compensation:
+        raise TransactionError("A compensation transaction cannot itself be compensated.")
+
+    # Prevent double-compensation
+    if original_transaction.compensation_transactions.filter(
+        status=Transaction.Status.COMPLETED
+    ).exists():
+        raise TransactionError(
+            f"Transaction {original_transaction.transaction_reference} has already been compensated."
+        )
+
+    sender_wallet = original_transaction.wallet
+    receiver_wallet = original_transaction.related_wallet
+    amount = original_transaction.amount
+
+    if receiver_wallet is None:
+        raise TransactionError(
+            "Cannot compensate a transaction without a receiver wallet."
+        )
+
+    description = (
+        f"[COMPENSATION] Reversal of transaction {original_transaction.transaction_reference}."
+        + (f" Reason: {reason}" if reason else "")
+    )
+
+    with transaction.atomic():
+        # Lock both wallets
+        sender_wallet_locked = Wallet.objects.select_for_update().get(pk=sender_wallet.pk)
+        receiver_wallet_locked = Wallet.objects.select_for_update().get(pk=receiver_wallet.pk)
+
+        # Reverse: money flows from receiver back to sender
+        if receiver_wallet_locked.balance < amount:
+            raise TransactionError(
+                "The receiver's wallet has insufficient funds to process this compensation."
+            )
+
+        receiver_wallet_locked.balance -= amount
+        sender_wallet_locked.balance += amount
+
+        sender_wallet_locked.save(update_fields=["balance", "updated_at"])
+        receiver_wallet_locked.save(update_fields=["balance", "updated_at"])
+
+        compensation_tx = Transaction.objects.create(
+            wallet=receiver_wallet,          # receiver of original becomes "sender" of compensation
+            related_wallet=sender_wallet,    # sender of original gets funds back
+            transaction_type=Transaction.TransactionType.COMPENSATION,
+            amount=amount,
+            status=Transaction.Status.COMPLETED,
+            description=description,
+            compensates=original_transaction,
+        )
+
+    compensation_created.send(
+        sender=Transaction,
+        compensation=compensation_tx,
+        original=original_transaction,
+        initiated_by=initiated_by,
+    )
+
+    return compensation_tx
 
