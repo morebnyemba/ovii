@@ -18,13 +18,19 @@ load_dotenv()  # loads variables from .env
 # ------------------------------------------------------------------
 # 2. CORE SETTINGS
 # ------------------------------------------------------------------
-DEBUG = os.getenv("DJANGO_DEBUG", "True").lower() == "true"
+DEBUG = os.getenv("DJANGO_DEBUG", "False").lower() == "true"
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
-if not SECRET_KEY and DEBUG is False:
-    raise ValueError("No DJANGO_SECRET_KEY set for production environment!")
-elif not SECRET_KEY:
-    SECRET_KEY = "django-insecure-x1hv@le&dft+59o624lfp24h(h*c@zc-rv$o53#o3a9@^pc8_#"
+if not SECRET_KEY:
+    if not DEBUG:
+        raise ValueError(
+            "DJANGO_SECRET_KEY environment variable is not set. "
+            "This is required in production. "
+            "Generate one with: python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())'"
+        )
+    # Development-only fallback — never used when DEBUG=False
+    import secrets as _secrets
+    SECRET_KEY = "dev-only-" + _secrets.token_hex(32)
 
 # ALLOWED_HOSTS should be a list of strings representing the host/domain names
 # that this Django site can serve. This is a security measure to prevent
@@ -168,7 +174,7 @@ if not os.getenv("DATABASE_URL"):
     DB_ENGINE = os.getenv("DATABASE_ENGINE", "django.db.backends.postgresql")
     DB_NAME = os.getenv("DATABASE_NAME", "ovii_prod_db")
     DB_USER = os.getenv("DATABASE_USER", "ovii_prod_user")
-    DB_PASSWORD = os.getenv("DATABASE_PASSWORD", "Ovii@PROD2025!")
+    DB_PASSWORD = os.getenv("DATABASE_PASSWORD", "")
     DB_HOST = os.getenv("DATABASE_HOST", "db")
     DB_PORT = os.getenv("DATABASE_PORT", "5432")
 
