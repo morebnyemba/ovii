@@ -14,6 +14,9 @@ ENV PATH="/opt/venv/bin:${PATH}"
 
 # Install system dependencies required for Python packages (e.g., psycopg2 for PostgreSQL)
 # Using --no-install-recommends keeps the image size down.
+# Force IPv4 for apt: hosts without IPv6 routing fail to resolve/connect to
+# Debian mirrors that publish IPv6-only (AAAA) records (e.g. Fastly-backed deb.debian.org).
+RUN echo 'Acquire::ForceIPv4 "true";' > /etc/apt/apt.conf.d/99force-ipv4
 RUN apt-get update && apt-get install -y --no-install-recommends \
     # build-essential is needed for compiling some Python packages with C extensions
     build-essential \
@@ -47,6 +50,7 @@ ENV PATH="/opt/venv/bin:${PATH}"
 
 # Install runtime dependencies
 # su-exec is not available in Debian; use gosu if similar functionality is needed.
+RUN echo 'Acquire::ForceIPv4 "true";' > /etc/apt/apt.conf.d/99force-ipv4
 RUN apt-get update && apt-get install -y --no-install-recommends libpq5 && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Create and set the working directory
