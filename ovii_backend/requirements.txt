@@ -36,7 +36,7 @@ hyperframe==6.1.0
 hyperlink==21.0.0
 idna==3.11
 incremental==24.7.2
-kombu==5.5.4
+kombu==5.6.2
 msgpack==1.1.2
 packaging==25.0
 phonenumbers==9.0.17
