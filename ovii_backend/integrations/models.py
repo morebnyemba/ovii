@@ -88,6 +88,12 @@ class WhatsAppTemplate(models.Model):
         ('APPROVED', _('Approved')),
         ('REJECTED', _('Rejected')),
         ('DISABLED', _('Disabled')),
+        ('PAUSED', _('Paused')),
+        ('IN_APPEAL', _('In Appeal')),
+        ('PENDING_DELETION', _('Pending Deletion')),
+        ('DELETED', _('Deleted')),
+        ('LIMIT_EXCEEDED', _('Limit Exceeded')),
+        ('ARCHIVED', _('Archived')),
     ]
     
     name = models.CharField(
@@ -130,6 +136,12 @@ class WhatsAppTemplate(models.Model):
         _("Rejection Reason"),
         blank=True,
         help_text=_("Reason for rejection if template was rejected by Meta")
+    )
+    components = models.JSONField(
+        _("Components"),
+        blank=True,
+        null=True,
+        help_text=_("Template components (header/body/footer/buttons) as returned by Meta")
     )
     created_at = models.DateTimeField(_("Created At"), auto_now_add=True)
     updated_at = models.DateTimeField(_("Updated At"), auto_now=True)

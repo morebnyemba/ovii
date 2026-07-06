@@ -8,6 +8,8 @@ This command can:
 1. Display templates (--display-only) - shows templates without syncing
 2. Sync templates to Meta (default) - creates/updates templates via Graph API
 3. Check template status (--check-status) - retrieves approval status from Meta
+4. Pull templates from Meta (--pull) - fetches ALL templates registered on the
+   WABA (the number's WhatsApp Business Account) and stores them locally
 """
 
 from django.core.management.base import BaseCommand, CommandError
@@ -66,6 +68,11 @@ class Command(BaseCommand):
             help='Check approval status of templates from Meta',
         )
         parser.add_argument(
+            '--pull',
+            action='store_true',
+            help='Fetch ALL templates registered on the WABA from Meta and store them locally',
+        )
+        parser.add_argument(
             '--template',
             type=str,
             help='Sync only a specific template by name',
@@ -87,15 +94,21 @@ class Command(BaseCommand):
         output_format = options['format']
         display_only = options['display_only']
         check_status = options['check_status']
+        pull = options.get('pull', False)
         specific_template = options.get('template')
         verbose = options.get('verbose', False)
         delay = options.get('delay', RATE_LIMIT_DELAY)
-        
+
         # Set logging level based on verbose flag
         if verbose:
             logging.getLogger('integrations.services').setLevel(logging.DEBUG)
             self.stdout.write(self.style.WARNING('Verbose mode enabled - showing debug information'))
             self.stdout.write('')
+
+        # Pull mode: fetch everything registered on the WABA from Meta
+        if pull:
+            self._pull_templates_from_meta(specific_template, verbose)
+            return
 
         # Filter to specific template if requested
         if specific_template:
@@ -115,6 +128,119 @@ class Command(BaseCommand):
 
         # Sync templates to Meta (new behavior)
         self._sync_templates_to_meta(templates, verbose, delay)
+
+    def _pull_templates_from_meta(self, specific_template=None, verbose=False):
+        """Fetch all templates from Meta for the configured WABA and upsert locally.
+
+        Args:
+            specific_template: If given, only import templates with this name.
+            verbose: Whether to print each template's components.
+        """
+        self.stdout.write(self.style.SUCCESS('=' * 80))
+        self.stdout.write(self.style.SUCCESS('PULLING TEMPLATES FROM META'))
+        self.stdout.write(self.style.SUCCESS('=' * 80))
+        self.stdout.write('')
+
+        try:
+            client = WhatsAppClient()
+            if not client.waba_id:
+                raise CommandError(
+                    "WABA_ID not configured. Please set WHATSAPP_WABA_ID in .env or "
+                    "add waba_id to WhatsApp configuration in admin panel."
+                )
+        except CommandError:
+            raise
+        except Exception as e:
+            raise CommandError(f"Failed to initialize WhatsApp client: {e}")
+
+        try:
+            meta_templates = client.list_templates()
+        except Exception as e:
+            raise CommandError(f"Failed to fetch templates from Meta: {e}")
+
+        if specific_template:
+            meta_templates = [
+                t for t in meta_templates if t.get('name') == specific_template
+            ]
+            if not meta_templates:
+                raise CommandError(
+                    f"Template '{specific_template}' not found in Meta for this WABA"
+                )
+
+        created_count = 0
+        updated_count = 0
+        failed_count = 0
+        now = timezone.now()
+
+        for meta_template in meta_templates:
+            name = meta_template.get('name')
+            language = meta_template.get('language') or 'en'
+            if not name:
+                logger.warning(f"Skipping Meta template with no name: {meta_template}")
+                continue
+
+            status = (meta_template.get('status') or 'PENDING').upper()
+            rejected_reason = meta_template.get('rejected_reason') or ''
+            if rejected_reason.upper() == 'NONE':
+                rejected_reason = ''
+
+            try:
+                db_template, created = WhatsAppTemplate.objects.update_or_create(
+                    name=name,
+                    language=language,
+                    defaults={
+                        'category': meta_template.get('category') or '',
+                        'status': status,
+                        'template_id': meta_template.get('id'),
+                        'components': meta_template.get('components'),
+                        'rejection_reason': truncate_text(
+                            rejected_reason, MAX_REJECTION_REASON_LENGTH
+                        ),
+                        'last_synced_at': now,
+                    },
+                )
+            except Exception as e:
+                failed_count += 1
+                logger.error(f"Failed to store template '{name}' ({language}): {e}")
+                self.stdout.write(
+                    self.style.ERROR(f"✗ {name} ({language}): failed to store — {e}")
+                )
+                continue
+
+            if created:
+                created_count += 1
+                marker = self.style.SUCCESS('+ created')
+            else:
+                updated_count += 1
+                marker = self.style.WARNING('~ updated')
+
+            status_style = (
+                self.style.SUCCESS if status == 'APPROVED'
+                else self.style.ERROR if status == 'REJECTED'
+                else self.style.WARNING
+            )
+            self.stdout.write(
+                f"{marker}  {name} ({language})  "
+                f"[{status_style(status)}]  ID: {meta_template.get('id')}"
+            )
+            if rejected_reason:
+                self.stdout.write(f"    Rejection reason: {db_template.rejection_reason}")
+            if verbose and meta_template.get('components'):
+                self.stdout.write(
+                    f"    Components: {json.dumps(meta_template['components'], indent=6)}"
+                )
+
+        # Summary
+        self.stdout.write('')
+        self.stdout.write(self.style.SUCCESS('=' * 80))
+        self.stdout.write(self.style.SUCCESS('PULL SUMMARY'))
+        self.stdout.write(self.style.SUCCESS('=' * 80))
+        self.stdout.write(f"Templates in Meta: {len(meta_templates)}")
+        self.stdout.write(self.style.SUCCESS(f"+ Created locally: {created_count}"))
+        self.stdout.write(self.style.WARNING(f"~ Updated locally: {updated_count}"))
+        if failed_count:
+            self.stdout.write(self.style.ERROR(f"✗ Failed: {failed_count}"))
+        self.stdout.write('')
 
     def _display_templates(self, templates, output_format):
         """Display templates in text or JSON format."""

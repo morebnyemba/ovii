@@ -55,6 +55,29 @@ docker compose exec backend python manage.py sync_whatsapp_templates --check-sta
 docker compose exec backend python manage.py sync_whatsapp_templates --check-status --template=welcome_message
 ```
 
+### Pull Templates from Meta
+
+Fetch ALL templates registered on your number's WhatsApp Business Account (WABA)
+from Meta and store them in the local database — including templates created
+manually in Meta Business Manager. This follows pagination, so every template
+is imported with its status, Meta template ID, components, and any rejection
+reason:
+
+```bash
+# Pull all templates from Meta
+docker compose exec backend python manage.py sync_whatsapp_templates --pull
+
+# Pull a specific template only
+docker compose exec backend python manage.py sync_whatsapp_templates --pull --template=welcome_message
+
+# Show each template's components while pulling
+docker compose exec backend python manage.py sync_whatsapp_templates --pull --verbose
+```
+
+The same pull is available in the Django admin: select any row on the
+WhatsApp Templates page and run the "Pull all templates from Meta for this
+WABA" action.
+
 ---
 
 ## Webhook Configuration
