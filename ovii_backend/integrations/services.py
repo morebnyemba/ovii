@@ -689,6 +689,75 @@ class WhatsAppClient:
                 additional_attrs={'template_name': template_name, 'request_url': url}
             )
 
+    def list_templates(self, fields: str = None, limit: int = 100) -> list:
+        """
+        Retrieves ALL message templates registered on the WABA from Meta,
+        following pagination until every page has been fetched.
+
+        Args:
+            fields: Comma-separated Graph API fields to request. Defaults to
+                the fields needed to mirror templates locally.
+            limit: Page size per request (max 100 per Meta docs).
+
+        Returns:
+            list: All template dicts from Meta (each with id, name, status,
+                language, category, components, etc.)
+
+        Raises:
+            Exception: If credentials are missing or the API call fails
+        """
+        if not self.waba_id:
+            raise Exception(
+                "WABA_ID not configured. Set WHATSAPP_WABA_ID in settings or "
+                "add waba_id to WhatsApp configuration in admin panel."
+            )
+        if not self.access_token:
+            raise Exception("WhatsApp access token not configured.")
+
+        if fields is None:
+            fields = (
+                "id,name,status,language,category,components,"
+                "quality_score,rejected_reason"
+            )
+
+        url = f"https://graph.facebook.com/{self.api_version or 'v20.0'}/{self.waba_id}/message_templates"
+        headers = {"Authorization": f"Bearer {self.access_token}"}
+        params = {"fields": fields, "limit": limit}
+
+        templates = []
+        page = 1
+        try:
+            while url:
+                logger.debug(f"Fetching templates page {page} from Meta")
+                response = requests.get(url, headers=headers, params=params, timeout=30)
+                response.raise_for_status()
+                data = response.json()
+
+                templates.extend(data.get("data", []))
+
+                # paging.next is a fully-qualified URL that already includes
+                # fields/limit and the cursor, so drop our params after page 1.
+                url = data.get("paging", {}).get("next")
+                params = None
+                page += 1
+
+            logger.info(f"Fetched {len(templates)} template(s) from Meta WABA {self.waba_id}")
+            return templates
+        except requests.exceptions.HTTPError as e:
+            status_code = e.response.status_code if e.response is not None else None
+            try:
+                err_body = e.response.json() if e.response is not None else {}
+            except (json.JSONDecodeError, ValueError):
+                err_body = {}
+            err_msg = err_body.get("error", {}).get("message", str(e))
+            logger.error(
+                f"Failed to list WhatsApp templates: HTTP {status_code} — {err_msg}"
+            )
+            raise Exception(f"Meta API error ({status_code}): {err_msg}") from e
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Failed to list WhatsApp templates: {e}")
+            raise Exception(f"Request error while listing templates: {e}") from e
+
     def get_template_status(self, template_name: str) -> dict:
         """
         Retrieves the status of a template from Meta.

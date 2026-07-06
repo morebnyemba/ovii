@@ -4,7 +4,7 @@ Date: 2024-12-10
 Description: Admin configuration for integrations app.
 """
 
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.utils.translation import gettext_lazy as _
 from .models import WhatsAppConfig, WhatsAppTemplate
 
@@ -83,14 +83,19 @@ class WhatsAppTemplateAdmin(admin.ModelAdmin):
     ]
     list_filter = ["status", "category", "language", "created_at", "last_synced_at"]
     search_fields = ["name", "template_id", "rejection_reason"]
-    readonly_fields = ["created_at", "updated_at"]
-    
+    readonly_fields = ["created_at", "updated_at", "components"]
+    actions = ["pull_templates_from_meta"]
+
     fieldsets = (
         (_("Template Information"), {
             "fields": ("name", "category", "language")
         }),
         (_("Sync Status"), {
             "fields": ("status", "template_id", "last_synced_at")
+        }),
+        (_("Template Content"), {
+            "fields": ("components",),
+            "classes": ("collapse",)
         }),
         (_("Rejection Details"), {
             "fields": ("rejection_reason",),
@@ -101,7 +106,61 @@ class WhatsAppTemplateAdmin(admin.ModelAdmin):
             "classes": ("collapse",)
         }),
     )
-    
+
     def has_add_permission(self, request):
         """Templates are created via management command, not manually."""
         return False
+
+    @admin.action(description=_("Pull all templates from Meta for this WABA"))
+    def pull_templates_from_meta(self, request, queryset):
+        """Fetch every template on the WABA from Meta and upsert locally.
+
+        The selected rows are ignored — the pull always covers the whole WABA.
+        """
+        from django.utils import timezone
+        from .services import WhatsAppClient
+
+        try:
+            client = WhatsAppClient()
+            meta_templates = client.list_templates()
+        except Exception as e:
+            self.message_user(
+                request,
+                _("Failed to pull templates from Meta: %(error)s") % {"error": e},
+                level=messages.ERROR,
+            )
+            return
+
+        created_count = 0
+        updated_count = 0
+        now = timezone.now()
+        for meta_template in meta_templates:
+            name = meta_template.get("name")
+            if not name:
+                continue
+            rejected_reason = meta_template.get("rejected_reason") or ""
+            if rejected_reason.upper() == "NONE":
+                rejected_reason = ""
+            _obj, created = WhatsAppTemplate.objects.update_or_create(
+                name=name,
+                language=meta_template.get("language") or "en",
+                defaults={
+                    "category": meta_template.get("category") or "",
+                    "status": (meta_template.get("status") or "PENDING").upper(),
+                    "template_id": meta_template.get("id"),
+                    "components": meta_template.get("components"),
+                    "rejection_reason": rejected_reason[:500],
+                    "last_synced_at": now,
+                },
+            )
+            if created:
+                created_count += 1
+            else:
+                updated_count += 1
+
+        self.message_user(
+            request,
+            _("Pulled %(total)d template(s) from Meta: %(created)d created, %(updated)d updated.")
+            % {"total": len(meta_templates), "created": created_count, "updated": updated_count},
+            level=messages.SUCCESS,
+        )

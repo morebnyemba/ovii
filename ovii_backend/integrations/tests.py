@@ -514,3 +514,188 @@ class WhatsAppTemplateSyncTestCase(TestCase):
                 category="MARKETING",
                 language="en"
             )
+
+
+class WhatsAppTemplatePullTestCase(TestCase):
+    """Test cases for pulling templates from Meta (list_templates + --pull)."""
+
+    def setUp(self):
+        """Set up test fixtures."""
+        self.waba_id = "123456789"
+        self.access_token = "test_token"
+        self.meta_template = {
+            "id": "template_111",
+            "name": "otp_verification",
+            "status": "APPROVED",
+            "language": "en",
+            "category": "AUTHENTICATION",
+            "components": [{"type": "BODY", "text": "{{1}} is your code."}],
+        }
+
+    def _create_config(self, waba_id=None):
+        return WhatsAppConfig.objects.create(
+            waba_id=self.waba_id if waba_id is None else waba_id,
+            phone_number_id="test_phone_id",
+            access_token=self.access_token,
+            api_version="v18.0",
+            is_active=True,
+        )
+
+    @patch('integrations.services.requests.get')
+    @patch('integrations.services.WhatsApp')
+    def test_list_templates_single_page(self, mock_whatsapp, mock_get):
+        """Test fetching all templates from Meta in a single page."""
+        self._create_config()
+
+        mock_response = MagicMock()
+        mock_response.json.return_value = {
+            "data": [self.meta_template],
+            "paging": {"cursors": {"before": "a", "after": "b"}},
+        }
+        mock_response.raise_for_status = MagicMock()
+        mock_get.return_value = mock_response
+
+        client = WhatsAppClient()
+        templates = client.list_templates()
+
+        self.assertEqual(len(templates), 1)
+        self.assertEqual(templates[0]["name"], "otp_verification")
+        mock_get.assert_called_once()
+        # Verify the WABA message_templates endpoint was called
+        called_url = mock_get.call_args[0][0]
+        self.assertIn(self.waba_id, called_url)
+        self.assertIn("message_templates", called_url)
+
+    @patch('integrations.services.requests.get')
+    @patch('integrations.services.WhatsApp')
+    def test_list_templates_follows_pagination(self, mock_whatsapp, mock_get):
+        """Test that list_templates follows paging.next across pages."""
+        self._create_config()
+
+        second_template = dict(self.meta_template, id="template_222", name="welcome_message")
+
+        page1 = MagicMock()
+        page1.json.return_value = {
+            "data": [self.meta_template],
+            "paging": {"next": "https://graph.facebook.com/next-page"},
+        }
+        page1.raise_for_status = MagicMock()
+
+        page2 = MagicMock()
+        page2.json.return_value = {"data": [second_template], "paging": {}}
+        page2.raise_for_status = MagicMock()
+
+        mock_get.side_effect = [page1, page2]
+
+        client = WhatsAppClient()
+        templates = client.list_templates()
+
+        self.assertEqual(len(templates), 2)
+        self.assertEqual(templates[1]["name"], "welcome_message")
+        self.assertEqual(mock_get.call_count, 2)
+        # Second call must hit the paging.next URL without re-sending params
+        second_call = mock_get.call_args_list[1]
+        self.assertEqual(second_call[0][0], "https://graph.facebook.com/next-page")
+        self.assertIsNone(second_call[1].get("params"))
+
+    @patch('integrations.services.WhatsApp')
+    def test_list_templates_no_waba_id(self, mock_whatsapp):
+        """Test list_templates fails clearly without WABA_ID."""
+        self._create_config(waba_id="")
+
+        client = WhatsAppClient()
+        with self.assertRaises(Exception) as context:
+            client.list_templates()
+
+        self.assertIn("WABA_ID not configured", str(context.exception))
+
+    @patch('integrations.services.WhatsApp')
+    def test_pull_command_upserts_templates(self, mock_whatsapp):
+        """Test that --pull imports Meta templates into the local database."""
+        from io import StringIO
+        from django.core.management import call_command
+        from .models import WhatsAppTemplate
+
+        self._create_config()
+
+        # Pre-existing record that should be updated, not duplicated
+        WhatsAppTemplate.objects.create(
+            name="otp_verification",
+            category="AUTHENTICATION",
+            language="en",
+            status="PENDING",
+        )
+
+        rejected_template = {
+            "id": "template_333",
+            "name": "deposit_confirmed",
+            "status": "REJECTED",
+            "language": "en",
+            "category": "MARKETING",
+            "components": [{"type": "BODY", "text": "Deposit of {{1}} confirmed."}],
+            "rejected_reason": "INVALID_FORMAT",
+        }
+
+        with patch.object(
+            WhatsAppClient,
+            'list_templates',
+            return_value=[self.meta_template, rejected_template],
+        ):
+            out = StringIO()
+            call_command('sync_whatsapp_templates', '--pull', stdout=out)
+
+        self.assertEqual(WhatsAppTemplate.objects.count(), 2)
+
+        otp = WhatsAppTemplate.objects.get(name="otp_verification", language="en")
+        self.assertEqual(otp.status, "APPROVED")
+        self.assertEqual(otp.template_id, "template_111")
+        self.assertEqual(otp.components, self.meta_template["components"])
+        self.assertIsNotNone(otp.last_synced_at)
+
+        rejected = WhatsAppTemplate.objects.get(name="deposit_confirmed", language="en")
+        self.assertEqual(rejected.status, "REJECTED")
+        self.assertEqual(rejected.rejection_reason, "INVALID_FORMAT")
+
+        output = out.getvalue()
+        self.assertIn("PULL SUMMARY", output)
+        self.assertIn("Templates in Meta: 2", output)
+
+    @patch('integrations.services.WhatsApp')
+    def test_pull_command_specific_template_filter(self, mock_whatsapp):
+        """Test that --pull --template only imports the named template."""
+        from io import StringIO
+        from django.core.management import call_command
+        from .models import WhatsAppTemplate
+
+        self._create_config()
+
+        other_template = dict(self.meta_template, id="template_444", name="welcome_message")
+
+        with patch.object(
+            WhatsAppClient,
+            'list_templates',
+            return_value=[self.meta_template, other_template],
+        ):
+            out = StringIO()
+            call_command(
+                'sync_whatsapp_templates', '--pull',
+                '--template', 'welcome_message', stdout=out,
+            )
+
+        self.assertEqual(WhatsAppTemplate.objects.count(), 1)
+        self.assertTrue(
+            WhatsAppTemplate.objects.filter(name="welcome_message").exists()
+        )
+
+    @patch('integrations.services.WhatsApp')
+    def test_pull_command_no_waba_id(self, mock_whatsapp):
+        """Test that --pull fails with a clear error when WABA_ID is missing."""
+        from django.core.management import call_command
+        from django.core.management.base import CommandError
+
+        self._create_config(waba_id="")
+
+        with self.assertRaises(CommandError) as context:
+            call_command('sync_whatsapp_templates', '--pull')
+
+        self.assertIn("WABA_ID not configured", str(context.exception))
