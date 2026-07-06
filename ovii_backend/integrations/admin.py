@@ -4,9 +4,13 @@ Date: 2024-12-10
 Description: Admin configuration for integrations app.
 """
 
+import logging
+
 from django.contrib import admin, messages
 from django.utils.translation import gettext_lazy as _
 from .models import WhatsAppConfig, WhatsAppTemplate
+
+logger = logging.getLogger(__name__)
 
 
 @admin.register(WhatsAppConfig)
@@ -133,6 +137,7 @@ class WhatsAppTemplateAdmin(admin.ModelAdmin):
 
         created_count = 0
         updated_count = 0
+        failed_count = 0
         now = timezone.now()
         for meta_template in meta_templates:
             name = meta_template.get("name")
@@ -141,26 +146,48 @@ class WhatsAppTemplateAdmin(admin.ModelAdmin):
             rejected_reason = meta_template.get("rejected_reason") or ""
             if rejected_reason.upper() == "NONE":
                 rejected_reason = ""
-            _obj, created = WhatsAppTemplate.objects.update_or_create(
-                name=name,
-                language=meta_template.get("language") or "en",
-                defaults={
-                    "category": meta_template.get("category") or "",
-                    "status": (meta_template.get("status") or "PENDING").upper(),
-                    "template_id": meta_template.get("id"),
-                    "components": meta_template.get("components"),
-                    "rejection_reason": rejected_reason[:500],
-                    "last_synced_at": now,
-                },
-            )
+            try:
+                _obj, created = WhatsAppTemplate.objects.update_or_create(
+                    name=name,
+                    language=meta_template.get("language") or "en",
+                    defaults={
+                        "category": meta_template.get("category") or "",
+                        "status": (meta_template.get("status") or "PENDING").upper(),
+                        "template_id": meta_template.get("id"),
+                        "components": meta_template.get("components"),
+                        "rejection_reason": rejected_reason[:500],
+                        "last_synced_at": now,
+                    },
+                )
+            except Exception as e:
+                failed_count += 1
+                logger.error(
+                    f"Failed to store template '{name}' "
+                    f"({meta_template.get('language')}) during admin pull: {e}"
+                )
+                continue
             if created:
                 created_count += 1
             else:
                 updated_count += 1
 
-        self.message_user(
-            request,
-            _("Pulled %(total)d template(s) from Meta: %(created)d created, %(updated)d updated.")
-            % {"total": len(meta_templates), "created": created_count, "updated": updated_count},
-            level=messages.SUCCESS,
-        )
+        if failed_count:
+            self.message_user(
+                request,
+                _("Pulled %(total)d template(s) from Meta: %(created)d created, "
+                  "%(updated)d updated, %(failed)d failed (see server logs).")
+                % {
+                    "total": len(meta_templates),
+                    "created": created_count,
+                    "updated": updated_count,
+                    "failed": failed_count,
+                },
+                level=messages.WARNING,
+            )
+        else:
+            self.message_user(
+                request,
+                _("Pulled %(total)d template(s) from Meta: %(created)d created, %(updated)d updated.")
+                % {"total": len(meta_templates), "created": created_count, "updated": updated_count},
+                level=messages.SUCCESS,
+            )

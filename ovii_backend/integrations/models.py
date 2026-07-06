@@ -93,6 +93,7 @@ class WhatsAppTemplate(models.Model):
         ('PENDING_DELETION', _('Pending Deletion')),
         ('DELETED', _('Deleted')),
         ('LIMIT_EXCEEDED', _('Limit Exceeded')),
+        ('ARCHIVED', _('Archived')),
     ]
     
     name = models.CharField(

@@ -34,6 +34,7 @@ class Migration(migrations.Migration):
                     ('PENDING_DELETION', 'Pending Deletion'),
                     ('DELETED', 'Deleted'),
                     ('LIMIT_EXCEEDED', 'Limit Exceeded'),
+                    ('ARCHIVED', 'Archived'),
                 ],
                 default='PENDING',
                 help_text='Template approval status in Meta',
