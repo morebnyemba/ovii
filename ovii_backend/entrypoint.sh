@@ -37,12 +37,22 @@ else:
 "
 
 # Apply any pending migrations automatically on startup.
-echo "Running database migrations..."
-python manage.py migrate --noinput
+# Only one service (the backend) should run these; celery workers set
+# RUN_MIGRATIONS=0 so they don't race the backend on the same migrations.
+if [ "${RUN_MIGRATIONS:-1}" = "1" ]; then
+    echo "Running database migrations..."
+    python manage.py migrate --noinput
+else
+    echo "Skipping migrations (RUN_MIGRATIONS=${RUN_MIGRATIONS})."
+fi
 
 # Collect static files into STATIC_ROOT so Nginx / WhiteNoise can serve them.
-echo "Collecting static files..."
-python manage.py collectstatic --noinput --clear
+if [ "${RUN_COLLECTSTATIC:-1}" = "1" ]; then
+    echo "Collecting static files..."
+    python manage.py collectstatic --noinput --clear
+else
+    echo "Skipping collectstatic (RUN_COLLECTSTATIC=${RUN_COLLECTSTATIC})."
+fi
 
 echo "Startup complete. Starting server..."
 exec "$@"

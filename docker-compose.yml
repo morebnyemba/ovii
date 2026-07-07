@@ -47,6 +47,14 @@ services:
     env_file:
       - ./.env
     restart: unless-stopped
+    healthcheck:
+      # TCP check: passes once daphne is listening, i.e. the entrypoint
+      # (db wait, migrations, collectstatic) completed and the server is up.
+      test: ["CMD", "python", "-c", "import socket; socket.create_connection(('127.0.0.1', 8000), 5).close()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
     depends_on:
       db:
         condition: service_healthy
@@ -61,7 +69,17 @@ services:
     command: celery -A ovii_backend worker -l info
     env_file:
       - ./.env
+    environment:
+      # The backend runs migrations/collectstatic; workers must not race it.
+      - RUN_MIGRATIONS=0
+      - RUN_COLLECTSTATIC=0
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A ovii_backend inspect ping -d celery@$$HOSTNAME | grep -q pong"]
+      interval: 60s
+      timeout: 15s
+      retries: 3
+      start_period: 90s
     depends_on:
       db:
         condition: service_healthy
@@ -83,6 +101,10 @@ services:
       - celery_beat_schedule:/var/run/celery
     env_file:
       - ./.env
+    environment:
+      # The backend runs migrations/collectstatic; beat must not race it.
+      - RUN_MIGRATIONS=0
+      - RUN_COLLECTSTATIC=0
     restart: unless-stopped
     depends_on:
       db:
@@ -99,6 +121,12 @@ services:
         - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-https://api.ovii.it.com/api}
         - NEXT_PUBLIC_WEBSOCKET_URL=${NEXT_PUBLIC_WEBSOCKET_URL:-wss://api.ovii.it.com/ws/wallet/}
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
     depends_on:
       - backend
 
