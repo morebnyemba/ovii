@@ -29,11 +29,12 @@ from drf_spectacular.views import (
     SpectacularSwaggerView,
 )
 from users import views as user_views
-from ovii_backend.views_utils import CSRFTokenView
+from ovii_backend.views_utils import CSRFTokenView, HealthCheckView
 
 
 urlpatterns = [
     path("", user_views.ApiRootView.as_view(), name="api-root"),
+    path("api/health/", HealthCheckView.as_view(), name="health-check"),
     path("admin/", admin.site.urls),
     path("api/users/", include("users.urls")),
     path("api/wallets/", include("wallets.urls")),
