@@ -49,3 +49,11 @@ celerybeat-schedule
 /ovii-frontend/.next/
 /ovii-frontend/out/
 /ovii-frontend/.env.local
+
+# Environment files (never commit real secrets)
+.env
+.env.*
+!.env.example
+ovii_backend/.env
+ovii_backend/.env.*
+!ovii_backend/.env.example
