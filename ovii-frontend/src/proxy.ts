@@ -18,7 +18,7 @@ function decodeJwtPayload(token: string): any | null {
     return null; // Invalid token format
   }
 }
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   // Retrieve the access token from the browser's cookies
   const accessToken = request.cookies.get('access_token')?.value;
 
