@@ -62,9 +62,38 @@ fi
 ROOT_ENV="$PROJECT_DIR/.env"
 BACKEND_ENV="$PROJECT_DIR/ovii_backend/.env"
 
+restore_env_from_history() {
+  # restore_env_from_history <path-relative-to-repo-root> <dest-file>
+  local rel_path="$1" dest="$2"
+  local last_commit
+  last_commit="$(git log --all --diff-filter=D --format=%H -- "$rel_path" | head -n1)"
+  if [ -z "$last_commit" ]; then
+    return 1
+  fi
+  git show "${last_commit}^:${rel_path}" > "$dest" 2>/dev/null || return 1
+  chmod 600 "$dest"
+  return 0
+}
+
+# .env used to be tracked in git; if it was ever removed from tracking (as
+# happened when this repo's .env was un-tracked for containing a real
+# secret), a plain 'git pull' deletes it from disk the moment that commit
+# lands -- before this script gets a chance to run and back it up. Recover
+# it from history rather than failing, since the value that was just
+# deleted is still the one currently in use by the running containers.
 if [ ! -f "$ROOT_ENV" ]; then
-  echo "error: $ROOT_ENV not found -- nothing to rotate" >&2
-  exit 1
+  echo "warning: $ROOT_ENV is missing (likely deleted by a prior 'git pull' once it stopped being tracked). Attempting to recover it from git history..."
+  if restore_env_from_history ".env" "$ROOT_ENV"; then
+    echo "Recovered $ROOT_ENV from git history."
+  else
+    echo "error: $ROOT_ENV not found and could not be recovered from git history -- restore it manually before running this script." >&2
+    exit 1
+  fi
+fi
+if [ ! -f "$BACKEND_ENV" ]; then
+  if restore_env_from_history "ovii_backend/.env" "$BACKEND_ENV" 2>/dev/null; then
+    echo "Recovered $BACKEND_ENV from git history."
+  fi
 fi
 
 if [ "$ASSUME_YES" -ne 1 ]; then
