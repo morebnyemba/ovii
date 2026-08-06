@@ -343,9 +343,9 @@ class WhatsAppClient:
             logger.info(f"WhatsApp template '{template_name}' sent to {phone_number}")
             return result
         except requests.exceptions.HTTPError as e:
-            status_code = e.response.status_code if e.response else None
+            status_code = e.response.status_code if e.response is not None else None
             try:
-                err_body = e.response.json() if e.response else {}
+                err_body = e.response.json() if e.response is not None else {}
             except (json.JSONDecodeError, ValueError):
                 err_body = {}
             err_msg = err_body.get("error", {}).get("message", str(e))
@@ -800,12 +800,12 @@ class WhatsAppClient:
             logger.debug(f"Template status response: {result}")
             return result
         except requests.exceptions.HTTPError as e:
-            status_code = e.response.status_code if e.response else None
-            response_text = e.response.text if e.response else None
-            
+            status_code = e.response.status_code if e.response is not None else None
+            response_text = e.response.text if e.response is not None else None
+
             # Try to parse error response
             try:
-                error_data = e.response.json() if e.response else {}
+                error_data = e.response.json() if e.response is not None else {}
                 error_message = error_data.get("error", {}).get("message", response_text)
             except (json.JSONDecodeError, ValueError, TypeError):
                 error_message = response_text or str(e)
